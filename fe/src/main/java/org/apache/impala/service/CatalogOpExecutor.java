@@ -83,6 +83,7 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.iceberg.TableProperties;
 import org.apache.iceberg.catalog.TableIdentifier;
+import org.apache.iceberg.exceptions.CommitFailedException;
 import org.apache.iceberg.mr.Catalogs;
 import org.apache.impala.analysis.AlterTableSortByStmt;
 import org.apache.impala.analysis.FunctionName;
@@ -6857,6 +6858,11 @@ public class CatalogOpExecutor {
           IcebergCatalogOpExecutor.addCatalogVersionToTxn(iceTxn,
               catalog_.getCatalogServiceId(), newCatalogVersion);
           catalog_.addVersionsForInflightEvents(false, table, newCatalogVersion);
+        }
+
+        if (update.isSetDebug_action()) {
+          String debugAction = update.getDebug_action();
+          DebugUtils.executeDebugAction(debugAction, DebugUtils.ICEBERG_COMMIT);
         }
         iceTxn.commitTransaction();
       }

@@ -1107,6 +1107,49 @@ class TestIcebergTable(IcebergTestSuite):
       self.run_test_case('QueryTest/iceberg-migrate-from-external-hdfs-tables',
                          vector, unique_database)
 
+  def test_abort_transaction(self, unique_database):
+    """FIXME"""
+    # Create test dataset for concurrency tests and warm-up the test table
+    tbl_name = unique_database + ".abort_iceberg_transaction"
+    abort_ice_transaction_options = {'debug_action':
+                       'CATALOGD_ICEBERG_COMMIT:EXCEPTION@'
+                       'CommitFailedException@'
+                       'simulated_commit_failure'}
+    self.client.execute("""create table {0} (i int)
+        stored as iceberg""".format(tbl_name))
+    self.execute_query_expect_success(self.client,
+        "insert into {0} values (1);".format(tbl_name))
+    err = self.execute_query_expect_failure(self.client,
+        "insert into {0} values (2);".format(tbl_name),
+        query_options = abort_ice_transaction_options)
+    result = str(err)
+    assert "Query aborted:CommitFailedException: simulated_commit_failure" in result
+
+    data = self.execute_query_expect_success(self.client,
+        "select * from {0}".format(tbl_name))
+    assert data.column_labels == ['I']
+    assert len(data.data) == 1
+    assert data.data[0] == '1'
+
+    self.execute_query_expect_success(self.client,
+        "alter table {0} add column {1} bigint"
+        .format(tbl_name, "j"), query_options = abort_ice_transaction_options)
+    data = self.execute_query_expect_success(self.client,
+        "select * from {0}".format(tbl_name))
+    # Should be:
+    # assert data.column_labels == ['I']
+    # But is:
+    assert data.column_labels == ['I', 'J']
+
+    assert len(data.data) == 1
+    # Should be:
+    # assert data.data[0] == '1'
+    # But is:
+    assert data.data[0] == '1\tNULL'
+    # But this is "as expected" as the alter table is committed in a different place
+
+
+
 
 class TestIcebergV2Table(IcebergTestSuite):
   """Tests related to Iceberg V2 tables."""

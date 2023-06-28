@@ -32,6 +32,7 @@ DECLARE_bool(load_catalog_in_background);
 DECLARE_bool(load_auth_to_local_rules);
 DECLARE_bool(enable_stats_extrapolation);
 DECLARE_bool(use_local_catalog);
+DECLARE_bool(use_standalone_iceberg_catalog);
 DECLARE_int32(local_catalog_cache_expiration_s);
 DECLARE_int32(local_catalog_cache_mb);
 DECLARE_int32(non_impala_java_vlog);
@@ -278,6 +279,7 @@ Status GetConfigFromCommand(const string& flag_cmd, string& result) {
 Status PopulateThriftBackendGflags(TBackendGflags& cfg) {
   cfg.__set_load_catalog_in_background(FLAGS_load_catalog_in_background);
   cfg.__set_use_local_catalog(FLAGS_use_local_catalog);
+  cfg.__set_use_standalone_iceberg_catalog(FLAGS_use_standalone_iceberg_catalog);
   cfg.__set_local_catalog_cache_mb(FLAGS_local_catalog_cache_mb);
   cfg.__set_local_catalog_cache_expiration_s(
     FLAGS_local_catalog_cache_expiration_s);

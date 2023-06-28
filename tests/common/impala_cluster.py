@@ -169,7 +169,8 @@ class ImpalaCluster(object):
         client.close()
     return n
 
-  def wait_until_ready(self, expected_num_impalads=1, expected_num_ready_impalads=None):
+  def wait_until_ready(self, expected_num_impalads=1, expected_num_ready_impalads=None,
+                       ignore_unstarted_catalog=False):
     """Waits for this 'cluster' to be ready to submit queries.
 
       A cluster is deemed "ready" if:
@@ -182,13 +183,14 @@ class ImpalaCluster(object):
       This information is retrieved by querying the statestore debug webpage
       and each individual impalad's metrics webpage.
     """
-    self.wait_for_num_impalads(expected_num_impalads)
+    self.wait_for_num_impalads(expected_num_impalads,
+                               ignore_unstarted_catalog=ignore_unstarted_catalog)
 
     # TODO: fix this for coordinator-only nodes as well.
     if expected_num_ready_impalads is None:
       expected_num_ready_impalads = len(self.impalads)
 
-    def check_processes_still_running():
+    def _check_processes_still_running(ignore_unstarted_catalog=None):
       """Check that the processes we waited for above (i.e. impalads, statestored,
       catalogd) are still running. Throw an exception otherwise."""
       self.refresh()
@@ -196,18 +198,29 @@ class ImpalaCluster(object):
       # process to write a minidump.
       assert len(self.impalads) >= expected_num_impalads
       assert self.statestored is not None
-      assert self.catalogd is not None
+      if not ignore_unstarted_catalog:
+        assert self.catalogd is not None
+
+    def check_processes_still_running():
+      _check_processes_still_running()
+
+    def check_processes_still_running_no_catalog():
+      _check_processes_still_running(ignore_unstarted_catalog=True)
 
 
+    early_abort_fn=check_processes_still_running
+    if ignore_unstarted_catalog:
+      early_abort_fn=check_processes_still_running_no_catalog
     for impalad in self.impalads:
       impalad.service.wait_for_num_known_live_backends(expected_num_ready_impalads,
           timeout=CLUSTER_WAIT_TIMEOUT_IN_SECONDS, interval=2,
-          early_abort_fn=check_processes_still_running)
+          early_abort_fn=early_abort_fn)
       if (impalad._get_arg_value("is_coordinator", default="true") == "true" and
          impalad._get_arg_value("stress_catalog_init_delay_ms", default=0) == 0):
         impalad.wait_for_catalog()
 
-  def wait_for_num_impalads(self, num_impalads, retries=10):
+  def wait_for_num_impalads(self, num_impalads, retries=10,
+                            ignore_unstarted_catalog=False):
     """Checks that at least 'num_impalads' impalad processes are running, along with
     the statestored and catalogd.
 
@@ -225,7 +238,7 @@ class ImpalaCluster(object):
           expected_num=num_impalads, actual_num=len(self.impalads))
     if not self.statestored:
       msg += "statestored failed to start.\n"
-    if not self.catalogd:
+    if not self.catalogd and not ignore_unstarted_catalog:
       msg += "catalogd failed to start.\n"
     if msg:
       raise RuntimeError(msg)

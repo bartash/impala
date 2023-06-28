@@ -45,6 +45,10 @@ import com.google.common.base.Preconditions;
 public class IcebergHadoopCatalog implements IcebergCatalog {
   private final static Logger LOG = LoggerFactory.getLogger(IcebergHadoopTables.class);
 
+  public HadoopCatalog getHadoopCatalog() {
+    return hadoopCatalog;
+  }
+
   private HadoopCatalog hadoopCatalog;
 
   public IcebergHadoopCatalog(String catalogLocation) {

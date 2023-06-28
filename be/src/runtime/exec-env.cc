@@ -108,6 +108,8 @@ DEFINE_bool(use_local_catalog, false,
     "Use the on-demand metadata feature in coordinators. If this is set, coordinators "
     "pull metadata as needed from catalogd and cache it locally. The cached metadata "
     "gets evicted automatically under memory pressure or after an expiration time.");
+DEFINE_bool(use_standalone_iceberg_catalog, false,
+    "Use Andrew's hacky catalog."); // FIXME asherman
 DEFINE_int32(local_catalog_cache_mb, -1,
     "If --use_local_catalog is enabled, configures the size of the catalog "
     "cache within each impalad. If this is set to -1, the cache is auto-"

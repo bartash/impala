@@ -94,6 +94,12 @@ parser.add_option("--restart_catalogd_only", dest="restart_catalogd_only",
 parser.add_option("--restart_statestored_only", dest="restart_statestored_only",
                   action="store_true", default=False,
                   help="Restarts only the statestored process")
+parser.add_option("--no_start_catalogd", dest="no_start_catalogd",
+                  action="store_true", default=False,
+                  help="Do not start the catalogd process")
+parser.add_option("--no_start_statestored", dest="no_start_statestored",
+                  action="store_true", default=False,
+                  help="Do not start the statestored process")
 parser.add_option("--in-process", dest="inprocess", action="store_true", default=False,
                   help="Start all Impala backends and state store in a single process.")
 parser.add_option("--log_dir", dest="log_dir",
@@ -911,8 +917,10 @@ if __name__ == "__main__":
                                  use_exclusive_coordinators, existing_cluster_size)
       expected_cluster_size += existing_cluster_size
     else:
-      cluster_ops.start_statestore()
-      cluster_ops.start_catalogd()
+      if not options.no_start_statestored:
+        cluster_ops.start_statestore()
+      if not options.no_start_catalogd:
+        cluster_ops.start_catalogd()
       if options.enable_admission_service:
         cluster_ops.start_admissiond()
       cluster_ops.start_impalads(options.cluster_size, options.num_coordinators,
@@ -927,7 +935,8 @@ if __name__ == "__main__":
         if int(delay.strip()) != 0: expected_catalog_delays += 1
     # Check for the cluster to be ready.
     impala_cluster.wait_until_ready(expected_cluster_size,
-        expected_cluster_size - expected_catalog_delays)
+        expected_cluster_size - expected_catalog_delays,
+                                    ignore_unstarted_catalog=options.no_start_catalogd)
   except Exception as e:
     LOG.exception("Error starting cluster")
     sys.exit(1)

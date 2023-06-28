@@ -48,7 +48,9 @@ public abstract class FeCatalogManager {
    * configuration.
    */
   public static FeCatalogManager createFromBackendConfig() {
-    if (BackendConfig.INSTANCE.getBackendCfg().use_local_catalog) {
+    if (BackendConfig.INSTANCE.getBackendCfg().use_standalone_iceberg_catalog) {
+      return new StandaloneIcebergCatalogImpl();
+    } else if (BackendConfig.INSTANCE.getBackendCfg().use_local_catalog) {
       return new LocalImpl();
     } else {
       return new CatalogdImpl();
@@ -150,6 +152,27 @@ public abstract class FeCatalogManager {
     TUpdateCatalogCacheResponse updateCatalogCache(TUpdateCatalogCacheRequest req) {
       return PROVIDER.updateCatalogCache(req);
     }
+  }
+
+  /**
+   * Implementation which creates StandaloneIcebergCatalog instances.
+   */
+  private static class StandaloneIcebergCatalogImpl extends FeCatalogManager {
+    private static CatalogdMetaProvider PROVIDER = new CatalogdMetaProvider(
+        BackendConfig.INSTANCE.getBackendCfg());
+
+    @Override
+    public FeCatalog getOrCreateCatalog() {
+      //FIXME if StandaloneIcebergCatalog is stateless and thread safe then we could cache and reuse the same instance.
+      return new StandaloneIcebergCatalog();
+    }
+
+    @Override
+    TUpdateCatalogCacheResponse updateCatalogCache(TUpdateCatalogCacheRequest req)
+        throws CatalogException, TException {
+      throw new IllegalStateException("should not happen");
+    }
+
   }
 
   /**

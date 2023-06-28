@@ -34,6 +34,8 @@
 DECLARE_int32(stress_catalog_init_delay_ms);
 #endif
 
+DECLARE_bool(use_standalone_iceberg_catalog);
+
 using namespace impala;
 
 // Authorization related flags. Must be set to valid values to properly configure
@@ -312,6 +314,9 @@ void Frontend::SetCatalogIsReady() {
 }
 
 void Frontend::WaitForCatalog() {
+  if (FLAGS_use_standalone_iceberg_catalog) {
+    return;
+  }
 #ifndef NDEBUG
   if (FLAGS_stress_catalog_init_delay_ms > 0) {
     SleepForMs(FLAGS_stress_catalog_init_delay_ms);

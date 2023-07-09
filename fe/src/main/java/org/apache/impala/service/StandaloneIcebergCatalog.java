@@ -75,6 +75,7 @@ import org.apache.impala.thrift.TTableStats;
 import org.apache.impala.thrift.TUniqueId;
 import org.apache.impala.util.IcebergUtil;
 import org.apache.impala.util.PatternMatcher;
+import org.jetbrains.annotations.Nullable;
 
 public class StandaloneIcebergCatalog implements FeCatalog {
 
@@ -187,7 +188,7 @@ public class StandaloneIcebergCatalog implements FeCatalog {
   }
 
   @Override
-  public void prioritizeLoad(Set<TableName> tableNames) throws InternalException {
+  public void prioritizeLoad(Set<TableName> tableNames, @Nullable TUniqueId queryId) throws InternalException {
     throw new IllegalStateException("prioritizeLoad not implemented in StandaloneIcebergCatalog");
   }
 

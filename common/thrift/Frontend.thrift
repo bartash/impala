@@ -492,9 +492,6 @@ struct TCatalogOpRequest {
 
   // Parameters for DESCRIBE HISTORY
   19: optional TDescribeHistoryParams describe_history_params
-
-  // Passes the debug actions to catalogd if the query option is set.
-  20: optional string debug_action
 }
 
 // Query options type

@@ -83,7 +83,6 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.iceberg.TableProperties;
 import org.apache.iceberg.catalog.TableIdentifier;
-import org.apache.iceberg.exceptions.CommitFailedException;
 import org.apache.iceberg.mr.Catalogs;
 import org.apache.impala.analysis.AlterTableSortByStmt;
 import org.apache.impala.analysis.FunctionName;
@@ -1032,7 +1031,7 @@ public class CatalogOpExecutor {
       } else if (tbl instanceof IcebergTable &&
           altersIcebergTable(params.getAlter_type())) {
         boolean needToUpdateHms = alterIcebergTable(params, response, (IcebergTable)tbl,
-            newCatalogVersion, wantMinimalResult);
+            newCatalogVersion, wantMinimalResult, debugAction);
         if (!needToUpdateHms) return;
       }
       switch (params.getAlter_type()) {
@@ -1338,7 +1337,8 @@ public class CatalogOpExecutor {
    * Executes the ALTER TABLE command for an Iceberg table and reloads its metadata.
    */
   private boolean alterIcebergTable(TAlterTableParams params, TDdlExecResponse response,
-      IcebergTable tbl, long newCatalogVersion, boolean wantMinimalResult)
+      IcebergTable tbl, long newCatalogVersion, boolean wantMinimalResult,
+      String debugAction)
       throws ImpalaException {
     Preconditions.checkState(tbl.isWriteLockedByCurrentThread());
     boolean needsToUpdateHms = !isIcebergHmsIntegrationEnabled(tbl.getMetaStoreTable());
@@ -1420,6 +1420,10 @@ public class CatalogOpExecutor {
           IcebergCatalogOpExecutor.addCatalogVersionToTxn(iceTxn,
               catalog_.getCatalogServiceId(), newCatalogVersion);
         }
+//        if (update.isSetDebug_action()) {
+//          String debugAction = update.getDebug_action();
+//          DebugUtils.executeDebugAction(debugAction, DebugUtils.ICEBERG_COMMIT);
+//        }
         iceTxn.commitTransaction();
       }
     } catch (IllegalArgumentException ex) {

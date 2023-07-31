@@ -574,6 +574,10 @@ public class Frontend {
   private void createCatalogOpRequest(AnalysisResult analysis, TExecRequest result)
       throws InternalException {
     TCatalogOpRequest ddl = new TCatalogOpRequest();
+    TQueryOptions queryOptions = result.getQuery_options();
+    if (result.getQuery_options().isSetDebug_action()) {
+      ddl.setDebug_action(result.getQuery_options().getDebug_action());
+    }
     TResultSetMetadata metadata = new TResultSetMetadata();
     if (analysis.isUseStmt()) {
       ddl.op_type = TCatalogOpType.USE;
@@ -752,7 +756,6 @@ public class Frontend {
       TruncateStmt stmt = analysis.getTruncateStmt();
       req.setDdl_type(TDdlType.TRUNCATE_TABLE);
       TTruncateParams truncateParams = stmt.toThrift();
-      TQueryOptions queryOptions = result.getQuery_options();
       // if DELETE_STATS_IN_TRUNCATE option is unset forward it to catalogd
       // so that it can skip deleting the statistics during truncate execution
       if (!queryOptions.isDelete_stats_in_truncate()) {

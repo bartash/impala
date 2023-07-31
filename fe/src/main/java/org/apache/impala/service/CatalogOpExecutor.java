@@ -6860,7 +6860,11 @@ public class CatalogOpExecutor {
           catalog_.addVersionsForInflightEvents(false, table, newCatalogVersion);
         }
 
-        commitIcebergTransaction(update, iceTxn);
+        if (update.isSetDebug_action()) {
+          String debugAction = update.getDebug_action();
+          DebugUtils.executeDebugAction(debugAction, DebugUtils.ICEBERG_COMMIT);
+        }
+        iceTxn.commitTransaction();
       }
 
       loadTableMetadata(table, newCatalogVersion, true, false, partsToLoadMetadata,
@@ -6883,14 +6887,6 @@ public class CatalogOpExecutor {
           DebugUtils.INSERT_FINISH_DELAY);
     }
     return response;
-  }
-
-  private void commitIcebergTransaction(TUpdateCatalogRequest update, org.apache.iceberg.Transaction iceTxn) {
-    if (update.isSetDebug_action()) {
-      String debugAction = update.getDebug_action();
-      DebugUtils.executeDebugAction(debugAction, DebugUtils.ICEBERG_COMMIT);
-    }
-    iceTxn.commitTransaction();
   }
 
   /**

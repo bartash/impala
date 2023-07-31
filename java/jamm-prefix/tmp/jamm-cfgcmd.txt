@@ -1,0 +1,1 @@
+cmd='sed;s:JAVA_HOME:/usr/lib/jvm/java-11-openjdk-amd64:g;/home/asherman/git/asf/Impala/java/toolchains.xml.tmpl;>;toolchains.xml'

@@ -62,9 +62,9 @@ $IMPALA_HOME/testdata/bin/run-mini-dfs.sh ${HDFS_FORMAT_CLUSTER-} 2>&1 | \
 if [[ ${DEFAULT_FS} == "hdfs://${INTERNAL_LISTEN_HOST}:20500" ]]; then
   # HBase does not work with kerberos yet.
   if [[ "$IMPALA_KERBERIZE" != true ]]; then
-    echo " --> Starting HBase"
-    $IMPALA_HOME/testdata/bin/run-hbase.sh 2>&1 | \
-        tee ${IMPALA_CLUSTER_LOGS_DIR}/run-hbase.log
+    echo " --> NOT Starting HBase"
+    # $IMPALA_HOME/testdata/bin/run-hbase.sh 2>&1 | \
+        # tee ${IMPALA_CLUSTER_LOGS_DIR}/run-hbase.log
   fi
 
   echo " --> Starting Hive Server and Metastore Service"

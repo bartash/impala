@@ -1420,10 +1420,9 @@ public class CatalogOpExecutor {
           IcebergCatalogOpExecutor.addCatalogVersionToTxn(iceTxn,
               catalog_.getCatalogServiceId(), newCatalogVersion);
         }
-//        if (update.isSetDebug_action()) {
-//          String debugAction = update.getDebug_action();
-//          DebugUtils.executeDebugAction(debugAction, DebugUtils.ICEBERG_COMMIT);
-//        }
+        if (debugAction != null) {
+          DebugUtils.executeDebugAction(debugAction, DebugUtils.ICEBERG_COMMIT);
+        }
         iceTxn.commitTransaction();
       }
     } catch (IllegalArgumentException ex) {

@@ -1,3 +1,0 @@
-repository='https://github.com/jbellis/jamm'
-module=''
-tag='origin'

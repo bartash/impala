@@ -1131,22 +1131,14 @@ class TestIcebergTable(IcebergTestSuite):
     assert len(data.data) == 1
     assert data.data[0] == '1'
 
-    self.execute_query_expect_success(self.client,
+    self.execute_query_expect_failure(self.client,
         "alter table {0} add column {1} bigint"
         .format(tbl_name, "j"), query_options = abort_ice_transaction_options)
     data = self.execute_query_expect_success(self.client,
         "select * from {0}".format(tbl_name))
-    # Should be:
-    # assert data.column_labels == ['I']
-    # But is:
-    assert data.column_labels == ['I', 'J']
-
+    assert data.column_labels == ['I']
     assert len(data.data) == 1
-    # Should be:
-    # assert data.data[0] == '1'
-    # But is:
-    assert data.data[0] == '1\tNULL'
-    # But this is "as expected" as the alter table is committed in a different place
+    assert data.data[0] == '1'
 
 
 

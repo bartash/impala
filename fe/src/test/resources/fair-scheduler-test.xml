@@ -12,6 +12,12 @@
       <aclSubmitApps>* </aclSubmitApps>
       <maxResources>1024 mb, 0 vcores</maxResources>
     </queue>
+    <queue name="queueD">
+      <aclSubmitApps>userA,userB </aclSubmitApps>
+      <userQueryLimit>userA 2</userQueryLimit>
+      <userQueryLimit>* 3</userQueryLimit>
+      <groupQueryLimit>group2 1</groupQueryLimit>
+    </queue>
     <aclSubmitApps> </aclSubmitApps>
   </queue>
   <queuePlacementPolicy>

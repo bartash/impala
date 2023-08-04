@@ -21,7 +21,12 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URISyntaxException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
+import com.ibm.icu.impl.coll.Collation;
+import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationConfigurationException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -195,6 +200,10 @@ public class TestRequestPoolService {
     Assert.assertTrue(poolService_.hasAccess("root.queueB", "userB"));
     Assert.assertFalse(poolService_.hasAccess("root.queueB", "userA"));
     Assert.assertTrue(poolService_.hasAccess("root.queueB", "root"));
+    // Test comma separated users.
+    Assert.assertTrue(poolService_.hasAccess("root.queueD", "userA"));
+    Assert.assertTrue(poolService_.hasAccess("root.queueD", "userB"));
+    Assert.assertFalse(poolService_.hasAccess("root.queueD", "userZ"));
   }
 
   @Test
@@ -205,7 +214,15 @@ public class TestRequestPoolService {
         10000L, "mem_limit=1024m,query_timeout_s=10");
     checkPoolConfigResult("root.queueB", 5, 10, -1, 30000L, "mem_limit=1024m");
     checkPoolConfigResult("root.queueC", 5, 10, 1024 * ByteUnits.MEGABYTE, 30000L,
-            "mem_limit=1024m", 1000, 10, false, 8, 8);
+            "mem_limit=1024m", 1000, 10, false, 8, 8, null, null);
+    Map<String, Integer> queueDUserQueryLimits = new HashMap<>();
+    queueDUserQueryLimits.put("userA", 2);
+    queueDUserQueryLimits.put("*", 3);
+    Map<String, Integer> queueDGroupQueryLimits = new HashMap<>();
+    queueDGroupQueryLimits.put("group2", 1);
+    checkPoolConfigResult("root.queueD", 5, 10, -1, 30000L, "mem_limit=1024m",
+        queueDUserQueryLimits, queueDGroupQueryLimits);
+
   }
 
   @Test
@@ -213,7 +230,7 @@ public class TestRequestPoolService {
     createPoolService(ALLOCATION_FILE_EMPTY, LLAMA_CONFIG_FILE_EMPTY);
     Assert.assertEquals("root.userA", poolService_.assignToPool("", "userA"));
     Assert.assertTrue(poolService_.hasAccess("root.userA", "userA"));
-    checkPoolConfigResult("root", -1, 200, -1, null, "", 0, 0, true, 0, 0);
+    checkPoolConfigResult("root", -1, 200, -1, null, "", 0, 0, true, 0, 0, null, null);
   }
 
   @Ignore("IMPALA-4868") @Test
@@ -270,12 +287,69 @@ public class TestRequestPoolService {
     Assert.assertTrue(poolService_.hasAccess("root.queueB", "userA"));
     Assert.assertFalse(poolService_.hasAccess("root.queueC", "userA"));
     Assert.assertTrue(poolService_.hasAccess("root.queueC", "root"));
+    Assert.assertTrue(poolService_.hasAccess("root.queueD", "userA"));
 
     // Test pool limits
     checkPoolConfigResult("root", -1, 200, -1);
     checkPoolConfigResult("root.queueA", -1, 200, 100000 * ByteUnits.MEGABYTE);
     checkPoolConfigResult("root.queueB", -1, 200, -1);
     checkPoolConfigResult("root.queueC", -1, 200, 128 * ByteUnits.MEGABYTE);
+
+    Map<String, Integer> queueDUserQueryLimits = new HashMap<>();
+    queueDUserQueryLimits.put("userA", 2);
+    queueDUserQueryLimits.put("*", 3);
+    Map<String, Integer> queueDGroupQueryLimits = new HashMap<>();
+    queueDGroupQueryLimits.put("group2", 1);
+    checkPoolConfigResult("root.queueE", -1, 200, -1, null, "",
+        queueDUserQueryLimits, queueDGroupQueryLimits);
+  }
+
+  /**
+   * Unit test for  AllocationFileLoaderService.addQueryLimits().
+   */
+  @Test
+  public void testLimitsParsing() throws AllocationConfigurationException {
+    Map<String, Map<String, Integer>> allLimits = new HashMap<>();
+    String QUEUE1 = "queue1";
+    String QUEUE2 = "queue2";
+    String QUEUE3 = "queue3";
+    AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user1 1");
+    AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, " user2     2 ");
+    AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "* 2");
+    AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE2, "user1 12 ");
+
+    Map<String, Integer> queue1 = allLimits.get(QUEUE1);
+    Map<String, Integer> queue2 = allLimits.get(QUEUE2);
+    Map<String, Integer> queue3 = allLimits.get(QUEUE3);
+    Assert.assertEquals(1,(long) queue1.get("user1"));
+    Assert.assertEquals(2,(long) queue1.get("user2"));
+    Assert.assertEquals(12,(long) queue2.get("user1"));
+    Assert.assertNull(queue3);
+
+    allLimits = new HashMap<>();
+    AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user1 1");
+    try {
+      AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user1 2");
+      Assert.fail("should have got exception");
+    } catch (AllocationConfigurationException e) {
+      Assert.assertTrue(e.getMessage().contains("Duplicate value"));
+    }
+
+    allLimits = new HashMap<>();
+    try {
+      AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user1 xxx");
+      Assert.fail("should have got exception");
+    } catch (AllocationConfigurationException e) {
+      Assert.assertTrue(e.getMessage().contains("Cannot parse"));
+    }
+
+    allLimits = new HashMap<>();
+    try {
+      AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user1=xxx");
+      Assert.fail("should have got exception");
+    } catch (AllocationConfigurationException e) {
+      Assert.assertTrue(e.getMessage().contains("name and number"));
+    }
   }
 
   private void checkModifiedConfigResults()
@@ -310,7 +384,8 @@ public class TestRequestPoolService {
       long expectedMaxQueued, long expectedMaxMem, Long expectedQueueTimeoutMs,
       String expectedQueryOptions, long max_query_mem_limit, long min_query_mem_limit,
       boolean clamp_mem_limit_query_option, long max_query_cpu_core_per_node_limit,
-      long max_query_cpu_core_coordinator_limit) {
+      long max_query_cpu_core_coordinator_limit, Map<String, Integer> userQueryLimits,
+      Map<String, Integer> groupQueryLimits) {
     TPoolConfig expectedResult = new TPoolConfig();
     expectedResult.setMax_requests(expectedMaxRequests);
     expectedResult.setMax_queued(expectedMaxQueued);
@@ -328,15 +403,28 @@ public class TestRequestPoolService {
     if (expectedQueryOptions != null) {
       expectedResult.setDefault_query_options(expectedQueryOptions);
     }
+    expectedResult.setUser_query_limits(userQueryLimits != null ? userQueryLimits:Collections.emptyMap());
+    expectedResult.setGroup_query_limits(groupQueryLimits != null ? groupQueryLimits: Collections.emptyMap());
+    TPoolConfig poolConfig = poolService_.getPoolConfig(pool);
     Assert.assertEquals("Unexpected config values for pool " + pool,
-        expectedResult, poolService_.getPoolConfig(pool));
+        expectedResult, poolConfig);
   }
 
   private void checkPoolConfigResult(String pool, long expectedMaxRequests,
       long expectedMaxQueued, long expectedMaxMem, Long expectedQueueTimeoutMs,
       String expectedQueryOptions) {
+    checkPoolConfigResult( pool,  expectedMaxRequests,
+     expectedMaxQueued,  expectedMaxMem,  expectedQueueTimeoutMs,
+         expectedQueryOptions, Collections.emptyMap(), Collections.emptyMap());
+  }
+
+  private void checkPoolConfigResult(String pool, long expectedMaxRequests,
+      long expectedMaxQueued, long expectedMaxMem, Long expectedQueueTimeoutMs,
+      String expectedQueryOptions, Map<String, Integer> userQueryLimits,
+      Map<String, Integer> groupQueryLimits) {
     checkPoolConfigResult(pool, expectedMaxRequests, expectedMaxQueued, expectedMaxMem,
-        expectedQueueTimeoutMs, expectedQueryOptions, 0, 0, true, 0, 0);
+        expectedQueueTimeoutMs, expectedQueryOptions, 0, 0, true, 0, 0,
+        userQueryLimits, groupQueryLimits);
   }
 
   private void checkPoolConfigResult(String pool, long expectedMaxRequests,

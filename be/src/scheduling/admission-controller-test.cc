@@ -26,8 +26,10 @@
 #include "runtime/test-env.h"
 #include "scheduling/cluster-membership-test-util.h"
 #include "scheduling/schedule-state.h"
+#include "service/frontend.h"
 #include "service/impala-server.h"
 #include "testutil/gtest-util.h"
+#include "util/collection-metrics.h"
 #include "util/metrics.h"
 #include <regex>
 
@@ -47,6 +49,7 @@ static const string QUEUE_A = "root.queueA";
 static const string QUEUE_B = "root.queueB";
 static const string QUEUE_C = "root.queueC";
 static const string QUEUE_D = "root.queueD";
+static const string QUEUE_E = "root.queueE";
 
 // Host names
 static const string HOST_0 = "host0:25000";
@@ -55,6 +58,11 @@ static const string HOST_2 = "host2:25000";
 
 // The default version of the heavy memory query list.
 static std::vector<THeavyMemoryQuery> empty_heavy_memory_query_list;
+
+static const string USER1 = "user1";
+static const string USER2 = "user2";
+static const string USER3 = "user3";
+static const string USER_A = "userA";
 
 /// Parent class for Admission Controller tests.
 /// Common code and constants should go here.
@@ -75,6 +83,10 @@ class AdmissionControllerTest : public testing::Test {
 
   virtual void SetUp() {
     // Establish a TestEnv so that ExecEnv works in tests.
+    setenv("HADOOP_SECURITY_GROUP_MAPPING", "xxxx", 1);
+    setenv("HADOOP_OPTS", "-Dhadoop.security.group.mapping=xxxx", 1);
+    setenv("HADOOP_OPTS", "-Dhadoop.security.group.mapping=xxxx", 1);
+    setenv("HADOOP_CLIENT_OPTS", "-Dhadoop.security.group.mapping=xxxx", 1);
     test_env_.reset(new TestEnv);
     flag_saver_.reset(new google::FlagSaver());
     ASSERT_OK(test_env_->Init());
@@ -90,10 +102,14 @@ class AdmissionControllerTest : public testing::Test {
   ScheduleState* MakeScheduleState(string request_pool_name, int64_t mem_limit,
       TPoolConfig& config, const int num_hosts, const int per_host_mem_estimate,
       const int coord_mem_estimate, bool is_dedicated_coord,
-      const string& executor_group = ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME) {
+      const string& executor_group = ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME,
+      const string& delegated_user = USER1) {
     DCHECK_GT(num_hosts, 0);
     TQueryExecRequest* request = pool_.Add(new TQueryExecRequest());
     request->query_ctx.request_pool = request_pool_name;
+    TSessionState * session = new TSessionState();
+    session->__set_delegated_user(delegated_user);
+    request->query_ctx.__set_session(*session);
     request->__set_per_host_mem_estimate(per_host_mem_estimate);
     request->__set_dedicated_coord_mem_estimate(coord_mem_estimate);
     request->__set_stmt_type(TStmtType::QUERY);
@@ -113,12 +129,14 @@ class AdmissionControllerTest : public testing::Test {
     return schedule_state;
   }
 
-  /// Same as previous MakeScheduleState with fewer input (more default params).
+  /// Same as previous MakeScheduleState with fewer inputs (and more default params).
   ScheduleState* MakeScheduleState(string request_pool_name, TPoolConfig& config,
       const int num_hosts, const int per_host_mem_estimate,
-      const string& executor_group = ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME) {
+      const string& executor_group = ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME,
+      const string& delegated_user = USER1) {
     return MakeScheduleState(request_pool_name, 0, config, num_hosts,
-        per_host_mem_estimate, per_host_mem_estimate, false, executor_group);
+        per_host_mem_estimate, per_host_mem_estimate, false, executor_group,
+        delegated_user);
   }
 
   /// Create ExecutorGroup and BackendDescriptor for Coordinator for the given
@@ -232,6 +250,16 @@ class AdmissionControllerTest : public testing::Test {
     return query_list;
   }
 
+  /// Build a TPoolStats object with user loads.
+  static TPoolStats MakePoolStats(const int backend_mem_reserved,
+      const int num_admitted_running, const int num_queued,
+      std::map<std::string, int64_t>& user_loads) {
+    TPoolStats stats =
+        MakePoolStats(backend_mem_reserved, num_admitted_running, num_queued);
+    stats.__set_user_loads(user_loads);
+    return stats;
+  }
+
   /// Build a TPoolStats object.
   static TPoolStats MakePoolStats(const int backend_mem_reserved,
       const int num_admitted_running, const int num_queued,
@@ -332,6 +360,19 @@ class AdmissionControllerTest : public testing::Test {
       ResetMemConsumed(child);
     }
   }
+
+  // For testing purposes, set the groups that will be used by
+  // org.apache.hadoop.security.Groups
+  static bool SetHadoopGroups(std::map<std::string, std::set<std::string>> groups) {
+    TSetHadoopGroupsRequest req;
+    req.__set_groups(groups);
+    TSetHadoopGroupsResponse res;
+    Status status = ExecEnv::GetInstance()->frontend()->SetHadoopGroups(req, &res);
+    if (!status.ok()) {
+      return false;
+    }
+    return true;
+  }
 };
 
 /// Test that AdmissionController will admit a query into a pool, then simulate other
@@ -379,9 +420,13 @@ TEST_F(AdmissionControllerTest, Simple) {
 
   // Make a TopicDeltaMap describing some activity on host1 and host2.
   TTopicDelta membership = MakeTopicDelta(false);
-  AddStatsToTopic(&membership, HOST_1, QUEUE_B, MakePoolStats(1000, 1, 0));
-  AddStatsToTopic(&membership, HOST_1, QUEUE_C, MakePoolStats(5000, 10, 0));
-  AddStatsToTopic(&membership, HOST_2, QUEUE_C, MakePoolStats(5000, 1, 0));
+
+  AdmissionController::PoolStats::UserLoads loads1{{USER1, 1}, {USER2, 4}};
+  AddStatsToTopic(&membership, HOST_1, QUEUE_B, MakePoolStats(1000, 1, 0, loads1));
+  AdmissionController::PoolStats::UserLoads loads2{{USER2, 3}, {USER3, 2}};
+  AddStatsToTopic(&membership, HOST_1, QUEUE_C, MakePoolStats(5000, 10, 0, loads2));
+  AdmissionController::PoolStats::UserLoads loads3{{USER1, 1}, {USER3, 7}};
+  AddStatsToTopic(&membership, HOST_2, QUEUE_C, MakePoolStats(5000, 1, 0, loads3));
 
   // Imitate the StateStore passing updates on query activity to the
   // AdmissionController.
@@ -400,6 +445,9 @@ TEST_F(AdmissionControllerTest, Simple) {
       admission_controller->GetPoolStats(QUEUE_C);
   ASSERT_EQ(10000, pool_stats->agg_mem_reserved_);
   ASSERT_EQ(11, pool_stats->agg_num_running_);
+  ASSERT_EQ(1, pool_stats->agg_user_loads_.get(USER1));
+  ASSERT_EQ(3, pool_stats->agg_user_loads_.get(USER2));
+  ASSERT_EQ(9, pool_stats->agg_user_loads_.get(USER3));
 
   // Test that the query cannot be admitted now.
   ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_c, true,
@@ -435,8 +483,9 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestMemory) {
   // Check that the query can be admitted.
   string not_admitted_reason;
   bool coordinator_resource_limited = false;
-  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_d, true,
-      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  bool b = admission_controller->CanAdmitRequest(*schedule_state, config_d, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited);
+  ASSERT_TRUE(b);
   ASSERT_FALSE(coordinator_resource_limited);
 
   // Tests that this query cannot be admitted.
@@ -514,6 +563,103 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestCount) {
   ASSERT_FALSE(coordinator_resource_limited);
 }
 
+/// Test CanAdmitRequest in the context of user and group quotas.
+TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
+  // Pass the paths of the configuration files as command line flags.
+  FLAGS_fair_scheduler_allocation_path = GetResourceFile("fair-scheduler-test2.xml");
+  FLAGS_llama_site_path = GetResourceFile("llama-site-test2.xml");
+
+  AdmissionController* admission_controller = MakeAdmissionController();
+  RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
+
+  TPoolConfig config_e;
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_E, &config_e));
+
+  // Check the PoolStats for QUEUE_E.
+  AdmissionController::PoolStats* pool_stats =
+      admission_controller->GetPoolStats(QUEUE_E);
+  CheckPoolStatsEmpty(pool_stats);
+
+  // Create a ScheduleState to run on QUEUE_E on 12 hosts.
+  int64_t host_count = 12;
+  ScheduleState* schedule_state = MakeScheduleState(QUEUE_E, config_e, host_count,
+      30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, USER_A);
+  string not_admitted_reason;
+
+  // Simulate that there are 2 queries queued.
+  pool_stats->local_stats_.num_queued = 2;
+
+  // Query can be admitted from queue...
+  bool coordinator_resource_limited = false;
+  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_FALSE(coordinator_resource_limited);
+  // ... but same Query cannot be admitted directly.
+  ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, false,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  EXPECT_STR_CONTAINS(not_admitted_reason,
+      "queue is not empty (size 2); queued queries are executed first");
+  ASSERT_FALSE(coordinator_resource_limited);
+
+  // Simulate that there are 7 queries already running.
+  pool_stats->agg_num_running_ = 7;
+  ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  // Limit of requests is 5 from llama.am.throttling.maximum.placed.reservations.
+  EXPECT_STR_CONTAINS(
+      not_admitted_reason, "number of running queries 7 is at or over limit 5");
+  ASSERT_FALSE(coordinator_resource_limited);
+
+  pool_stats->agg_num_running_ = 3;
+  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
+
+  // Test with load == limit, should fail
+  pool_stats->agg_user_loads_.insert(USER_A, 2);
+  ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  EXPECT_STR_CONTAINS(not_admitted_reason,
+      "current per-user load 2 for user userA is at or above the limit 2");
+
+  // Test wildcards with User3
+  schedule_state = MakeScheduleState(QUEUE_E, config_e, host_count, 30L * MEGABYTE,
+      ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, USER3);
+  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  pool_stats->agg_user_loads_.insert(USER3, 3);
+  ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  EXPECT_STR_CONTAINS(not_admitted_reason,
+      "current per-user load 3 for user user3 is at or above the wildcard limit 3");
+
+  pool_stats->agg_user_loads_.insert(USER3, 1);
+  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
+
+  // Test group quotas
+
+  // Set up some groups. Note that USER3 is in a group with a quota.
+  std::map<std::string, std::set<std::string>> groups;
+  std::set<std::string> group0_set;
+  group0_set.insert(USER_A);
+  groups.insert({"group0", group0_set});
+  std::set<std::string> group1_set;
+  group1_set.insert(USER1);
+  group1_set.insert(USER3);
+  groups.insert({"group1", group1_set});
+  ASSERT_TRUE(SetHadoopGroups(groups));
+
+  ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  EXPECT_STR_CONTAINS(not_admitted_reason,
+      "current per-group load 1 for user user3 in group group1 is at or above the group "
+      "limit 1");
+
+  // Clean up
+  groups.clear();
+  ASSERT_TRUE(SetHadoopGroups(groups));
+}
+
 /// Test CanAdmitRequest() using the slots mechanism that is enabled with non-default
 /// executor groups.
 TEST_F(AdmissionControllerTest, CanAdmitRequestSlots) {
@@ -548,7 +694,7 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestSlots) {
   // Simulate that there are just enough slots free for the query on all hosts.
   SetSlotsInUse(admission_controller, host_addrs, slots_per_host - slots_per_query);
 
-  // Enough slots are available so it can be admitted in both cases.
+  // Enough slots are available, so it can be admitted in both cases.
   ASSERT_TRUE(admission_controller->CanAdmitRequest(*default_group_schedule, config_d,
       true, &not_admitted_reason, nullptr, coordinator_resource_limited))
       << not_admitted_reason;
@@ -725,7 +871,7 @@ TEST_F(AdmissionControllerTest, GetMaxToDequeue) {
   max_to_dequeue = admission_controller->GetMaxToDequeue(queue_c, &stats, config);
   ASSERT_EQ(1, max_to_dequeue);
 
-  // There is space for 10 but it looks like there are 2 coordinators.
+  // There is space for 10, but it looks like there are 2 coordinators.
   stats.agg_num_running_ = 0;
   max_to_dequeue = admission_controller->GetMaxToDequeue(queue_c, &stats, config);
   ASSERT_EQ(5, max_to_dequeue);
@@ -766,23 +912,39 @@ TEST_F(AdmissionControllerTest, PoolStats) {
   CheckPoolStatsEmpty(pool_stats);
 
   // Show that Queue and Dequeue leave stats at zero.
-  pool_stats->Queue();
+  pool_stats->Queue(USER1);
   ASSERT_EQ(1, pool_stats->agg_num_queued());
   ASSERT_EQ(1, pool_stats->metrics()->agg_num_queued->GetValue());
+  ASSERT_EQ("[" + USER1 + "]", pool_stats->metrics()->agg_current_users->ToHumanReadable());
+  ASSERT_EQ("[" + USER1 + "]", pool_stats->metrics()->local_current_users->ToHumanReadable());
+  ASSERT_EQ(1, pool_stats->agg_user_loads_.get(USER1));
+  ASSERT_EQ(0, pool_stats->agg_user_loads_.get(USER2));
   pool_stats->Dequeue(false);
   CheckPoolStatsEmpty(pool_stats);
+  // the user load should be unchanged.
+  ASSERT_EQ(1, pool_stats->agg_user_loads_.get(USER1));
+  ASSERT_EQ("[" + USER1 + "]", pool_stats->metrics()->agg_current_users->ToHumanReadable());
+  ASSERT_EQ("[" + USER1 + "]", pool_stats->metrics()->local_current_users->ToHumanReadable());
+
 
   // Show that Admit and Release leave stats at zero.
-  pool_stats->AdmitQueryAndMemory(*schedule_state, false);
+  pool_stats->AdmitQueryAndMemory(*schedule_state, USER1, true, false);
   ASSERT_EQ(1, pool_stats->agg_num_running());
   ASSERT_EQ(1, pool_stats->metrics()->agg_num_running->GetValue());
+  ASSERT_EQ("[" + USER1 + "]", pool_stats->metrics()->agg_current_users->ToHumanReadable());
+  ASSERT_EQ("[" + USER1 + "]", pool_stats->metrics()->local_current_users->ToHumanReadable());
+
   int64_t mem_to_release = 0;
   for (auto& backend_state : schedule_state->per_backend_schedule_states()) {
     mem_to_release +=
         admission_controller->GetMemToAdmit(*schedule_state, backend_state.second);
   }
   pool_stats->ReleaseMem(mem_to_release);
-  pool_stats->ReleaseQuery(0, false);
+  ASSERT_EQ(1, pool_stats->agg_user_loads_.get(USER1));
+  pool_stats->ReleaseQuery(0, false, USER1);
+  ASSERT_EQ(0, pool_stats->agg_user_loads_.get(USER1));
+  ASSERT_EQ("[]", pool_stats->metrics()->agg_current_users->ToHumanReadable());
+  ASSERT_EQ("[]", pool_stats->metrics()->local_current_users->ToHumanReadable());
   CheckPoolStatsEmpty(pool_stats);
 }
 
@@ -961,7 +1123,7 @@ TEST_F(AdmissionControllerTest, DedicatedCoordAdmissionChecks) {
   ASSERT_TRUE(coordinator_resource_limited);
   coordinator_resource_limited = false;
   not_admitted_reason.clear();
-  // Neither coordinator or executor has enough available memory.
+  // Neither coordinator nor executor has enough available memory.
   admission_controller->host_stats_[exec_host].mem_reserved = 500 * MEGABYTE;
   ASSERT_FALSE(admission_controller->HasAvailableMemResources(
       *schedule_state, pool_config, &not_admitted_reason, coordinator_resource_limited));
@@ -1048,7 +1210,7 @@ TEST_F(AdmissionControllerTest, DedicatedCoordAdmissionChecks) {
       "minimum memory reservation is greater "
       "than memory available to the query for buffer reservations. Memory reservation "
       "needed given the current plan: 200.00 MB");
-  // Neither coordinator or executor reservation fits.
+  // Neither coordinator nor executor reservation fits.
   schedule_state->set_largest_min_reservation(GIGABYTE);
   ASSERT_FALSE(AdmissionController::CanAccommodateMaxInitialReservation(
       *schedule_state, pool_config, &not_admitted_reason));
@@ -1231,6 +1393,58 @@ TEST_F(AdmissionControllerTest, TopNQueryCheck) {
   // can run cleanly.
   ResetMemConsumed(pool_mem_tracker->GetRootMemTracker());
 #endif
+}
+
+/// Unit test for AdmissionController::PoolStats::AggregatedUserLoads
+/// and for its associated helper methods.
+TEST_F(AdmissionControllerTest, AggregatedUserLoads) {
+  AdmissionController::PoolStats::AggregatedUserLoads user_loads;
+  // Value is zero before any inserts.
+  ASSERT_EQ(0, user_loads.size());
+  ASSERT_EQ(0, user_loads.get(USER1));
+  ASSERT_EQ(0, user_loads.size());
+
+  user_loads.increment(USER1);
+  ASSERT_EQ(1, user_loads.get(USER1));
+  ASSERT_EQ(1, user_loads.size());
+  ASSERT_EQ("user1:1 ", user_loads.DebugString());
+  user_loads.decrement(USER1);
+  ASSERT_EQ(0, user_loads.get(USER1));
+  ASSERT_EQ(0, user_loads.size());
+  // Show we cannot go below zero.
+  user_loads.decrement(USER1);
+  ASSERT_EQ(0, user_loads.get(USER1));
+  ASSERT_EQ(0, user_loads.size());
+
+  user_loads.insert(USER2, 12);
+  ASSERT_EQ(12, user_loads.get(USER2));
+  ASSERT_EQ(1, user_loads.size());
+
+  // Test that clear() works.
+  user_loads.clear();
+  ASSERT_EQ(0, user_loads.get(USER2));
+  ASSERT_EQ(0, user_loads.size());
+
+  AdmissionController::PoolStats::UserLoads loads1{{USER1, 1}, {USER2, 4}};
+  ASSERT_EQ("user1:1 user2:4 ", AdmissionController::PoolStats::DebugString(loads1));
+
+  user_loads.add_loads(loads1);
+  ASSERT_EQ(2, user_loads.size());
+  ASSERT_EQ(1, user_loads.get(USER1));
+  ASSERT_EQ(4, user_loads.get(USER2));
+  // check input is unchanged.
+  ASSERT_EQ(1, loads1[USER1]);
+  ASSERT_EQ(4, loads1[USER2]);
+//  SetMetric<std::string> metrics = SetMetric<std::string>();
+//  user_loads.export_users(&metrics);
+//  ASSERT_EQ( "[" + USER1 + "]", metrics->ToHumanReadable());
+
+  AdmissionController::PoolStats::UserLoads loads2{{USER1, 1}, {USER3, 6}};
+  user_loads.add_loads(loads2);
+  ASSERT_EQ(3, user_loads.size());
+  ASSERT_EQ(2, user_loads.get(USER1));
+  ASSERT_EQ(4, user_loads.get(USER2));
+  ASSERT_EQ(6, user_loads.get(USER3));
 }
 
 } // end namespace impala

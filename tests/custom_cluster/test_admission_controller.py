@@ -545,7 +545,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     cluster_size=2)
   def test_dedicated_coordinator_mem_accounting(self, vector):
     """Verify that when using dedicated coordinators, the memory admitted for and the
-    mem limit applied to the query fragments running on the coordinator is different than
+    mem limit applied to the query fragments running on the coordinator is different from
     the ones on executors."""
     self.__verify_mem_accounting(vector, using_dedicated_coord_estimates=True)
 
@@ -703,7 +703,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
   @SkipIfNotHdfsMinicluster.tuned_for_minicluster
   @pytest.mark.execute_serially
   @CustomClusterTestSuite.with_args(num_exclusive_coordinators=1, cluster_size=2)
-  def test_mem_limit_executors(self, vector, unique_database):
+  def test_mem_limit_executors(self, vector):
     """Verify that the query option mem_limit_executors is only enforced on the
     executors."""
     ImpalaTestSuite.change_database(self.client, vector.get_value('table_format'))
@@ -743,7 +743,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
   @CustomClusterTestSuite.with_args(num_exclusive_coordinators=1, cluster_size=2,
       impalad_args=impalad_admission_ctrl_flags(max_requests=1, max_queued=1,
           pool_max_mem=2 * 1024 * 1024 * 1024, proc_mem_limit=3 * 1024 * 1024 * 1024))
-  def test_mem_limits(self, vector, unique_database):
+  def test_mem_limits(self, vector):
     """Verify that the query option mem_limit_coordinators and mem_limit_executors are
     ignored when mem_limit is set."""
     ImpalaTestSuite.change_database(self.client, vector.get_value('table_format'))
@@ -1162,6 +1162,49 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     # per_cluster values used in the test.
     exec_options['num_nodes'] = 1
     self.run_test_case('QueryTest/admission-max-min-mem-limits', vector)
+
+  @pytest.mark.execute_serially
+  @CustomClusterTestSuite.with_args(
+    impalad_args=impalad_admission_ctrl_config_args(
+      fs_allocation_file="fair-scheduler-test2.xml",
+      llama_site_file="llama-site-test2.xml"),
+    statestored_args=_STATESTORED_ARGS)
+  def test_user_quotas(self, vector):
+    """Test that user loads are propagated"""
+    USER_ROOT = 'root'
+    USER_C = 'userC'
+
+    query = "select count(*) from functional.alltypes where int_col = sleep(20000)"
+
+    impalad1 = self.cluster.impalads[0]
+    impalad2 = self.cluster.impalads[1]
+    client1 = self.execute_aync_and_wait_for_running(impalad1, query, USER_C)
+    client2 = self.execute_aync_and_wait_for_running(impalad2, query, USER_ROOT)
+
+    keys = [
+      "admission-controller.agg-current-users.root.queueB",
+      "admission-controller.local-current-users.root.queueB",
+    ]
+    values1 = impalad1.service.get_metric_values(keys)
+    values2 = impalad2.service.get_metric_values(keys)
+
+    # The aggregate users are the same on either server.
+    assert values1[0] == [USER_ROOT, USER_C]
+    assert values2[0] == [USER_ROOT, USER_C]
+    # The local users differ.
+    assert values1[1] == [USER_C]
+    assert values2[1] == [USER_ROOT]
+
+  def execute_aync_and_wait_for_running(self, impalad, query, user):
+    # Use beeswax client as it allows specifying the user that runs the query.
+    client = impalad.service.create_beeswax_client()
+    client.set_configuration({'request_pool': 'root.queueB'})
+    handle = client.execute_async(query, user=user)
+    timeout_s = 10
+    # Make sure the first query has been admitted.
+    self.wait_for_state(
+      handle, client.QUERY_STATES['RUNNING'], timeout_s, client=client)
+    return client
 
   @pytest.mark.execute_serially
   @CustomClusterTestSuite.with_args(

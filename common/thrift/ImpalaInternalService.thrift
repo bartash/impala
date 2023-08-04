@@ -221,6 +221,16 @@ struct TPoolConfig {
   // of the coordinators.
   // 0 indicates no limit. Default value is set as 0.
   11: required i64 max_query_cpu_core_coordinator_limit = 0;
+
+  // The map is from user name to a limit on the number of queries.
+  // A user name of "*" can be used as a wildcard to limit the number of concurrent queries that can be
+  // queued by any user.
+  // If a user name is present this overrides any wildcard limit.
+  12: required map<string, i32> user_query_limits
+
+  // The map is from group name to limit.
+  // FIXME explain semantics when I knwo what they are.
+  13: required map<string, i32> group_query_limits
 }
 
 struct TParseDateStringResult {

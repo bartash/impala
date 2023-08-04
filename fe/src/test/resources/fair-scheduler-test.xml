@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 <allocations>
   <queue name="root">
+    <userQueryLimit>userB 6</userQueryLimit>
+    <userQueryLimit>* 10</userQueryLimit>
+    <groupQueryLimit>group3 5</groupQueryLimit>
     <queue name="queueA">
       <aclSubmitApps>* </aclSubmitApps>
       <maxResources>1024 mb, 2 vcores</maxResources>
@@ -11,6 +14,13 @@
     <queue name="queueC">
       <aclSubmitApps>* </aclSubmitApps>
       <maxResources>1024 mb, 0 vcores</maxResources>
+    </queue>
+    <queue name="queueD">
+      <aclSubmitApps>userA,userB </aclSubmitApps>
+      <userQueryLimit>userA,userF 2</userQueryLimit>
+      <userQueryLimit>* 3</userQueryLimit>
+      <userQueryLimit> userG  101</userQueryLimit>
+      <groupQueryLimit>group1,group2 1</groupQueryLimit>
     </queue>
     <aclSubmitApps> </aclSubmitApps>
   </queue>

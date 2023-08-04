@@ -545,7 +545,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     cluster_size=2)
   def test_dedicated_coordinator_mem_accounting(self, vector):
     """Verify that when using dedicated coordinators, the memory admitted for and the
-    mem limit applied to the query fragments running on the coordinator is different than
+    mem limit applied to the query fragments running on the coordinator is different from
     the ones on executors."""
     self.__verify_mem_accounting(vector, using_dedicated_coord_estimates=True)
 
@@ -703,7 +703,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
   @SkipIfNotHdfsMinicluster.tuned_for_minicluster
   @pytest.mark.execute_serially
   @CustomClusterTestSuite.with_args(num_exclusive_coordinators=1, cluster_size=2)
-  def test_mem_limit_executors(self, vector, unique_database):
+  def test_mem_limit_executors(self, vector):
     """Verify that the query option mem_limit_executors is only enforced on the
     executors."""
     expected_exec_mem_limit = "999999999"
@@ -743,7 +743,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
   @CustomClusterTestSuite.with_args(num_exclusive_coordinators=1, cluster_size=2,
       impalad_args=impalad_admission_ctrl_flags(max_requests=1, max_queued=1,
           pool_max_mem=2 * 1024 * 1024 * 1024, proc_mem_limit=3 * 1024 * 1024 * 1024))
-  def test_mem_limits(self, vector, unique_database):
+  def test_mem_limits(self, vector):
     """Verify that the query option mem_limit_coordinators and mem_limit_executors are
     ignored when mem_limit is set."""
     exec_mem_limit = "999999999"

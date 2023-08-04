@@ -31,7 +31,9 @@
 #include "scheduling/schedule-state.h"
 #include "scheduling/scheduler.h"
 #include "service/impala-server.h"
+#include "util/auth-util.h"
 #include "util/bit-util.h"
+#include "util/collection-metrics.h"
 #include "util/debug-util.h"
 #include "util/metrics.h"
 #include "util/pretty-printer.h"
@@ -135,6 +137,8 @@ const string AGG_NUM_QUEUED_METRIC_KEY_FORMAT =
   "admission-controller.agg-num-queued.$0";
 const string AGG_MEM_RESERVED_METRIC_KEY_FORMAT =
   "admission-controller.agg-mem-reserved.$0";
+const string AGG_CURRENT_USERS_METRIC_KEY_FORMAT =
+    "admission-controller.agg-current-users.$0";
 const string LOCAL_MEM_ADMITTED_METRIC_KEY_FORMAT =
   "admission-controller.local-mem-admitted.$0";
 const string LOCAL_NUM_ADMITTED_RUNNING_METRIC_KEY_FORMAT =
@@ -145,6 +149,8 @@ const string LOCAL_BACKEND_MEM_USAGE_METRIC_KEY_FORMAT =
   "admission-controller.local-backend-mem-usage.$0";
 const string LOCAL_BACKEND_MEM_RESERVED_METRIC_KEY_FORMAT =
   "admission-controller.local-backend-mem-reserved.$0";
+const string LOCAL_CURRENT_USERS_METRIC_KEY_FORMAT =
+    "admission-controller.local-current-users.$0";
 const string POOL_MAX_MEM_RESOURCES_METRIC_KEY_FORMAT =
   "admission-controller.pool-max-mem-resources.$0";
 const string POOL_MAX_REQUESTS_METRIC_KEY_FORMAT =
@@ -348,6 +354,7 @@ string AdmissionController::PoolStats::DebugPoolStats(const TPoolStats& stats) c
   ss << "num_admitted_running=" << stats.num_admitted_running << ", ";
   ss << "num_queued=" << stats.num_queued << ", ";
   ss << "backend_mem_reserved=" << PrintBytes(stats.backend_mem_reserved) << ", ";
+  ss << "user_loads=" << DebugString(stats.user_loads) << ", ";
   AppendStatsForConsumedMemory(ss, stats);
   return ss.str();
 }
@@ -357,6 +364,7 @@ string AdmissionController::PoolStats::DebugString() const {
   ss << "agg_num_running=" << agg_num_running_ << ", ";
   ss << "agg_num_queued=" << agg_num_queued_ << ", ";
   ss << "agg_mem_reserved=" << PrintBytes(agg_mem_reserved_) << ", ";
+  ss << "agg_user_loads=" << agg_user_loads_.DebugString() << ", ";
   ss << " local_host(local_mem_admitted=" << PrintBytes(local_mem_admitted_) << ", ";
   ss << "local_trivial_running=" << local_trivial_running_ << ", ";
   ss << DebugPoolStats(local_stats_) << ")";
@@ -702,7 +710,7 @@ Status AdmissionController::Init() {
 }
 
 void AdmissionController::PoolStats::AdmitQueryAndMemory(
-    const ScheduleState& state, bool is_trivial) {
+    const ScheduleState& state, const std::string& user, bool was_queued, bool is_trivial) {
   int64_t cluster_mem_admitted = state.GetClusterMemoryToAdmit();
   DCHECK_GT(cluster_mem_admitted, 0);
   local_mem_admitted_ += cluster_mem_admitted;
@@ -716,10 +724,17 @@ void AdmissionController::PoolStats::AdmitQueryAndMemory(
 
   metrics_.total_admitted->Increment(1L);
   if (is_trivial) ++local_trivial_running_;
+
+  if (!was_queued) {
+    agg_user_loads_.increment(user);
+    metrics_.agg_current_users->Add(user);
+    increment_load(local_stats_.user_loads, user);
+    metrics_.local_current_users->Add(user);
+  }
 }
 
 void AdmissionController::PoolStats::ReleaseQuery(
-    int64_t peak_mem_consumption, bool is_trivial) {
+    int64_t peak_mem_consumption, bool is_trivial, const std::string& user) {
   // Update stats tracking the number of running and admitted queries.
   agg_num_running_ -= 1;
   metrics_.agg_num_running->Increment(-1L);
@@ -733,6 +748,15 @@ void AdmissionController::PoolStats::ReleaseQuery(
   if (is_trivial) {
     --local_trivial_running_;
     DCHECK_GE(local_trivial_running_, 0);
+  }
+
+  agg_user_loads_.decrement(user);
+  if (agg_user_loads_.get(user) == 0) {
+    metrics_.agg_current_users->Remove(user);
+  }
+  decrement_load(local_stats_.user_loads, user);
+  if (local_stats_.user_loads.count(user) == 0) {
+    metrics_.local_current_users->Remove(user);
   }
 
   // Update the 'peak_mem_histogram' based on the given peak memory consumption of the
@@ -754,7 +778,7 @@ void AdmissionController::PoolStats::ReleaseMem(int64_t mem_to_release) {
   metrics_.local_mem_admitted->Increment(-mem_to_release);
 }
 
-void AdmissionController::PoolStats::Queue() {
+void AdmissionController::PoolStats::Queue(const std::string& user) {
   agg_num_queued_ += 1;
   metrics_.agg_num_queued->Increment(1L);
 
@@ -762,6 +786,11 @@ void AdmissionController::PoolStats::Queue() {
   metrics_.local_num_queued->Increment(1L);
 
   metrics_.total_queued->Increment(1L);
+
+  increment_load(local_stats_.user_loads, user);
+  metrics_.local_current_users->Add(user);
+  agg_user_loads_.increment(user);
+  metrics_.agg_current_users->Add(user);
 }
 
 void AdmissionController::PoolStats::Dequeue(bool timed_out) {
@@ -778,6 +807,93 @@ void AdmissionController::PoolStats::Dequeue(bool timed_out) {
   } else {
     metrics_.total_dequeued->Increment(1L);
   }
+}
+
+int AdmissionController::PoolStats::AggregatedUserLoads::size() {
+  return loads_.size();
+}
+
+void AdmissionController::PoolStats::AggregatedUserLoads::clear() {
+  return loads_.clear();
+}
+
+void AdmissionController::PoolStats::AggregatedUserLoads::insert(
+    const std::string& key, int64 value) {
+  DCHECK(value > 0);
+  loads_[key] = value;
+}
+
+void AdmissionController::PoolStats::AggregatedUserLoads::add_loads(
+    const UserLoads loads) {
+  for (auto it = loads.begin(); it != loads.end(); ++it) {
+    if (loads_.count(it->first)) {
+      loads_[it->first] += it->second;
+    } else {
+      loads_[it->first] = it->second;
+    }
+  }
+}
+
+void AdmissionController::PoolStats::AggregatedUserLoads::export_users(
+    SetMetric<std::string>* metrics) {
+  for (auto it=loads_.begin(); it!=loads_.end(); ++it) {
+    metrics->Add(it->first);
+  }
+}
+
+std::string AdmissionController::PoolStats::AggregatedUserLoads::DebugString() const {
+  return  AdmissionController::PoolStats::DebugString(loads_);
+}
+
+
+int64 AdmissionController::PoolStats::AggregatedUserLoads::get(const std::string& key) {
+  // Check if key is present as dereferencing the map will insert it.
+  // FIXME C++20: use contains().
+  if (loads_.count(key)) {
+    return loads_[key];
+  }
+  return 0;
+}
+
+void AdmissionController::PoolStats::increment_load(
+    UserLoads& loads, const std::string& key) {
+  loads[key]++;
+}
+
+void AdmissionController::PoolStats::decrement_load(
+    UserLoads& loads, const std::string& key) {
+  // Check if key is present as dereferencing the map will insert it.
+  // FIXME C++20: use contains().
+  if (!loads.count(key)) {
+    return;
+  }
+  int64& current_value = loads[key];
+  if (current_value == 1) {
+    // Remove the entry from the map if the current_value will go to zero.
+    loads.erase(key);
+    return;
+  }
+  if (current_value < 1) {
+    // Don't allow decrement below zero.
+    return;
+  }
+  loads[key]--;
+}
+
+std::string AdmissionController::PoolStats::DebugString(const UserLoads& loads) {
+  std::ostringstream buffer;
+  for (const auto& [key, value] : loads) {
+    buffer << key << ":" << value << " ";
+  }
+  return buffer.str();
+}
+
+void AdmissionController::PoolStats::AggregatedUserLoads::increment(const std::string& key) {
+  increment_load(loads_, key);
+}
+
+void AdmissionController::PoolStats::AggregatedUserLoads::decrement(const std::string& key) {
+  return decrement_load(loads_, key);
 }
 
 void AdmissionController::UpdateStatsOnReleaseForBackends(const UniqueIdPB& query_id,
@@ -806,14 +922,14 @@ void AdmissionController::UpdateStatsOnReleaseForBackends(const UniqueIdPB& quer
 }
 
 void AdmissionController::UpdateStatsOnAdmission(
-    const ScheduleState& state, bool is_trivial) {
+    const ScheduleState& state, const std::string& user, bool was_queued, bool is_trivial) {
   for (const auto& entry : state.per_backend_schedule_states()) {
     const NetworkAddressPB& host_addr = entry.first;
     int64_t mem_to_admit = GetMemToAdmit(state, entry.second);
     UpdateHostStats(host_addr, mem_to_admit, 1, entry.second.exec_params->slots_to_use());
   }
   PoolStats* pool_stats = GetPoolStats(state);
-  pool_stats->AdmitQueryAndMemory(state, is_trivial);
+  pool_stats->AdmitQueryAndMemory(state, user, was_queued, is_trivial);
   pools_for_updates_.insert(state.request_pool());
 }
 
@@ -1322,7 +1438,9 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
       VLOG_RPC << "Top mem consuming queries: " << queue_node->not_admitted_details;
     }
     queue_node->initial_queue_reason = queue_node->not_admitted_reason;
-    stats->Queue();
+
+    const string& user =  GetEffectiveUser(request.request.query_ctx.session);
+    stats->Queue(user);
     queue->Enqueue(queue_node);
 
     // Must be done while we still hold 'admission_ctrl_lock_' as the dequeue loop thread
@@ -1463,7 +1581,7 @@ void AdmissionController::ReleaseQuery(const UniqueIdPB& query_id,
     }
     auto it = host_it->second.find(query_id);
     if (it == host_it->second.end()) {
-      // In the context of the admission control service, this may happen, eg. if a
+      // In the context of the admission control service, this may happen, e.g. if a
       // ReleaseQuery rpc is reported as failed to the coordinator but actually ends up
       // arriving much later, so only log at WARNING level.
       LOG(WARNING) << "Unable to find resources to release for query "
@@ -1487,7 +1605,8 @@ void AdmissionController::ReleaseQuery(const UniqueIdPB& query_id,
     DCHECK_EQ(num_released_backends_.at(query_id), 0) << PrintId(query_id);
     num_released_backends_.erase(num_released_backends_.find(query_id));
     PoolStats* stats = GetPoolStats(running_query.request_pool);
-    stats->ReleaseQuery(peak_mem_consumption, running_query.is_trivial);
+    const std::string& user = running_query.user;
+    stats->ReleaseQuery(peak_mem_consumption, running_query.is_trivial, user);
     // No need to update the Host Stats as they should have been updated in
     // ReleaseQueryBackends.
     pools_for_updates_.insert(running_query.request_pool);
@@ -1564,7 +1683,7 @@ vector<UniqueIdPB> AdmissionController::CleanupQueriesForHost(
     lock_guard<mutex> lock(admission_ctrl_lock_);
     auto host_it = running_queries_.find(coord_id);
     if (host_it == running_queries_.end()) {
-      // This is expected if a coordinator has not submitted any queries yet, eg. at
+      // This is expected if a coordinator has not submitted any queries yet, e.g. at
       // startup, so we log at a higher level to avoid log spam.
       VLOG(3) << "Unable to find host " << PrintId(coord_id)
               << " to cleanup queries for.";
@@ -1743,6 +1862,8 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
   int64_t num_running = 0;
   int64_t num_queued = 0;
   int64_t mem_reserved = 0;
+  agg_user_loads_.clear();
+  metrics_.agg_current_users->Reset();
   for (const PoolStats::RemoteStatsMap::value_type& remote_entry : remote_stats_) {
     const string& host = remote_entry.first;
     // Skip an update from this subscriber as the information may be outdated.
@@ -1754,6 +1875,8 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
     DCHECK_GE(remote_pool_stats.backend_mem_reserved, 0);
     num_running += remote_pool_stats.num_admitted_running;
     num_queued += remote_pool_stats.num_queued;
+
+    agg_user_loads_.add_loads(remote_pool_stats.user_loads);
 
     // Update the per-pool and per-host aggregates with the mem reserved by this host in
     // this pool.
@@ -1767,12 +1890,15 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
   num_queued += local_stats_.num_queued;
   mem_reserved += local_stats_.backend_mem_reserved;
   (*host_mem_reserved)[coord_id] += local_stats_.backend_mem_reserved;
+  agg_user_loads_.add_loads(local_stats_.user_loads);
+  agg_user_loads_.export_users(metrics_.agg_current_users);
 
   DCHECK_GE(num_running, 0);
   DCHECK_GE(num_queued, 0);
   DCHECK_GE(mem_reserved, 0);
   DCHECK_GE(num_running, local_stats_.num_admitted_running);
   DCHECK_GE(num_queued, local_stats_.num_queued);
+  // FIXME add DCHECKS for agg_user_loads_
 
   if (agg_num_running_ == num_running && agg_num_queued_ == num_queued
       && agg_mem_reserved_ == mem_reserved) {
@@ -1839,7 +1965,7 @@ Status AdmissionController::ComputeGroupScheduleStates(
   // Queries may arrive before we've gotten a statestore update containing the descriptor
   // for their coordinator, in which case we queue the query until it arrives. It's also
   // possible (though very unlikely) that the coordinator was removed from the cluster
-  // membership after submitting this query for admission. Currently in this case the
+  // membership after submitting this query for admission. Currently, in this case the
   // query will remain queued until it times out, but we can consider detecting failed
   // coordinators and cleaning up their queued queries.
   auto it = membership_snapshot->current_backends.find(PrintId(request.coord_id));
@@ -1868,8 +1994,8 @@ Status AdmissionController::ComputeGroupScheduleStates(
         || cluster_membership_mgr_->GetEmptyExecutorGroup() == executor_group)
         << executor_group->name();
     // Create a temporary ExecutorGroup if we need to filter out executors with the
-    // the set of blacklisted executor addresses in the request.
-    // Note: Coordinator-only query should not be failed due to RPC error, nor make
+    //  set of blacklisted executor addresses in the request.
+    // Note: Coordinator-only queries should not be failed due to RPC error, nor cause
     // executor to be blacklisted.
     const ExecutorGroup* orig_executor_group = executor_group;
     std::unique_ptr<ExecutorGroup> temp_executor_group;
@@ -2255,8 +2381,11 @@ void AdmissionController::AdmitQuery(QueueNode* node, bool was_queued, bool is_t
            << PrintBytes(state->coord_backend_mem_limit())
            << " coord_backend_mem_to_admit set to: "
            << PrintBytes(state->coord_backend_mem_to_admit());
+  const std::string& user =  GetEffectiveUser(node->admission_request.request.query_ctx.session);
+  // FIXME do we need error checking like the one in request-pool-service
+
   // Update memory and number of queries.
-  UpdateStatsOnAdmission(*state, is_trivial);
+  UpdateStatsOnAdmission(*state, user, was_queued, is_trivial);
   UpdateExecGroupMetric(state->executor_group(), 1);
   // Update summary profile.
   const string& admission_result = was_queued ?
@@ -2269,7 +2398,7 @@ void AdmissionController::AdmitQuery(QueueNode* node, bool was_queued, bool is_t
   state->summary_profile()->AddInfoString(
       PROFILE_INFO_KEY_EXECUTOR_GROUP, state->executor_group());
   // We may have admitted based on stale information. Include a warning in the profile
-  // if this this may be the case.
+  // if this might be the case.
   int64_t time_since_update_ms;
   string staleness_detail = GetStalenessDetailLocked("", &time_since_update_ms);
   // IMPALA-8235: convert to TIME_NS because of issues with tools consuming TIME_MS.
@@ -2297,6 +2426,7 @@ void AdmissionController::AdmitQuery(QueueNode* node, bool was_queued, bool is_t
   running_query.request_pool = state->request_pool();
   running_query.executor_group = state->executor_group();
   running_query.is_trivial = is_trivial;
+  running_query.user = user;
   for (const auto& entry : state->per_backend_schedule_states()) {
     BackendAllocation& allocation = running_query.per_backend_resources[entry.first];
     allocation.slots_to_use = entry.second.exec_params->slots_to_use();
@@ -2419,6 +2549,12 @@ void AdmissionController::PoolStats::ToJson(
       document->GetAllocator());
   pool->AddMember("local_mem_admitted", metrics_.local_mem_admitted->GetValue(),
       document->GetAllocator());
+  Value agg_users(metrics_.agg_current_users->ToHumanReadable().c_str(), document->GetAllocator());
+  pool->AddMember("agg_current_users", agg_users,
+      document->GetAllocator());
+  Value local_users(metrics_.local_current_users->ToHumanReadable().c_str(), document->GetAllocator());
+  pool->AddMember("local_current_users", local_users,
+      document->GetAllocator());
   pool->AddMember(
       "total_admitted", metrics_.total_admitted->GetValue(), document->GetAllocator());
   pool->AddMember(
@@ -2502,6 +2638,8 @@ void AdmissionController::PoolStats::InitMetrics() {
       AGG_NUM_QUEUED_METRIC_KEY_FORMAT, 0, name_);
   metrics_.agg_mem_reserved = parent_->metrics_group_->AddGauge(
       AGG_MEM_RESERVED_METRIC_KEY_FORMAT, 0, name_);
+  metrics_.agg_current_users = SetMetric<std::string>::CreateAndRegister(
+      parent_->metrics_group_, AGG_CURRENT_USERS_METRIC_KEY_FORMAT, set<string>(), name_);
 
   metrics_.local_mem_admitted = parent_->metrics_group_->AddGauge(
       LOCAL_MEM_ADMITTED_METRIC_KEY_FORMAT, 0, name_);
@@ -2513,6 +2651,9 @@ void AdmissionController::PoolStats::InitMetrics() {
       LOCAL_BACKEND_MEM_USAGE_METRIC_KEY_FORMAT, 0, name_);
   metrics_.local_backend_mem_reserved = parent_->metrics_group_->AddGauge(
       LOCAL_BACKEND_MEM_RESERVED_METRIC_KEY_FORMAT, 0, name_);
+  metrics_.local_current_users =
+      SetMetric<std::string>::CreateAndRegister(parent_->metrics_group_,
+          LOCAL_CURRENT_USERS_METRIC_KEY_FORMAT, set<string>(), name_);
 
   metrics_.pool_max_mem_resources = parent_->metrics_group_->AddGauge(
       POOL_MAX_MEM_RESOURCES_METRIC_KEY_FORMAT, 0, name_);
@@ -2637,16 +2778,6 @@ int64_t AdmissionController::GetClusterSize(
   return sum;
 }
 
-int64_t AdmissionController::GetExecutorGroupSize(
-    const ClusterMembershipMgr::Snapshot& membership_snapshot,
-    const string& group_name) {
-  auto it = membership_snapshot.executor_groups.find(group_name);
-  DCHECK(it != membership_snapshot.executor_groups.end())
-      << "Could not find group " << group_name;
-  if (it == membership_snapshot.executor_groups.end()) return 0;
-  return it->second.NumExecutors();
-}
-
 int64_t AdmissionController::GetMaxMemForPool(const TPoolConfig& pool_config) {
   return pool_config.max_mem_resources;
 }
@@ -2722,3 +2853,5 @@ void AdmissionController::UpdateExecGroupMetric(
 }
 
 } // namespace impala
+
+#pragma clang diagnostic pop

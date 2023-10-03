@@ -1167,6 +1167,24 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
   @CustomClusterTestSuite.with_args(
     impalad_args=impalad_admission_ctrl_config_args(
       fs_allocation_file="mem-limit-test-fair-scheduler.xml",
+      llama_site_file="mem-limit-test-llama-site.xml"),
+    statestored_args=_STATESTORED_ARGS)
+  def test_user_quotas(self, vector):
+    """Test that user loads are propagated"""
+    query = "select count(*) from functional.alltypes where int_col = sleep(10000)"
+    impalad1 = self.cluster.impalads[0]
+    client1 = impalad1.service.create_hs2_client()
+    handle1 = client1.execute_async(query, user="andrew")
+    timeout_s = 10
+    # Make sure the first query has been admitted.
+    self.wait_for_state(
+      handle1, self.client.QUERY_STATES['RUNNING'], timeout_s, client=client1)
+
+
+  @pytest.mark.execute_serially
+  @CustomClusterTestSuite.with_args(
+    impalad_args=impalad_admission_ctrl_config_args(
+      fs_allocation_file="mem-limit-test-fair-scheduler.xml",
       llama_site_file="mem-limit-test-llama-site.xml",
       additional_args="-default_pool_max_requests 1", make_copy=True),
     statestored_args=_STATESTORED_ARGS)

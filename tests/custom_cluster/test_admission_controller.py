@@ -1166,20 +1166,23 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
   @pytest.mark.execute_serially
   @CustomClusterTestSuite.with_args(
     impalad_args=impalad_admission_ctrl_config_args(
-      fs_allocation_file="mem-limit-test-fair-scheduler.xml",
-      llama_site_file="mem-limit-test-llama-site.xml"),
+      fs_allocation_file="fair-scheduler-test2.xml",
+      llama_site_file="llama-site-test2.xml"),
     statestored_args=_STATESTORED_ARGS)
   def test_user_quotas(self, vector):
     """Test that user loads are propagated"""
     query = "select count(*) from functional.alltypes where int_col = sleep(10000)"
     impalad1 = self.cluster.impalads[0]
-    client1 = impalad1.service.create_hs2_client()
+    # Use beeswax client as it allows the user that runs teh query to be specified.
+    client1 = impalad1.service.create_beeswax_client()
     client1.set_configuration({'request_pool': 'root.queueB'})
-    handle1 = client1.execute_async(query)
+    handle1 = client1.execute_async(query, user="userC")
     timeout_s = 10
     # Make sure the first query has been admitted.
     self.wait_for_state(
       handle1, self.client.QUERY_STATES['RUNNING'], timeout_s, client=client1)
+
+
 
 
   @pytest.mark.execute_serially

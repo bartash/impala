@@ -1171,7 +1171,8 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     statestored_args=_STATESTORED_ARGS)
   def test_user_quotas(self, vector):
     """Test that user loads are propagated"""
-    query = "select count(*) from functional.alltypes where int_col = sleep(10000)"
+    query = "select count(*) from functional.alltypes where int_col = sleep(20000)"
+
     impalad1 = self.cluster.impalads[0]
     # Use beeswax client as it allows the user that runs teh query to be specified.
     client1 = impalad1.service.create_beeswax_client()
@@ -1183,6 +1184,17 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
       handle1, self.client.QUERY_STATES['RUNNING'], timeout_s, client=client1)
 
 
+    # FIXME should repeated code be in its own function?
+    impalad2 = self.cluster.impalads[1]
+    # Use beeswax client as it allows the user that runs teh query to be specified.
+    client2 = impalad2.service.create_beeswax_client()
+    client2.set_configuration({'request_pool': 'root.queueB'})
+    handle2 = client2.execute_async(query, user="root")
+    # Make sure the first query has been admitted.
+    self.wait_for_state(
+      handle2, self.client.QUERY_STATES['RUNNING'], timeout_s, client=client2)
+
+    sleep(20)
 
 
   @pytest.mark.execute_serially

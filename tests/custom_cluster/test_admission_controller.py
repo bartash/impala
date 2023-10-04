@@ -1174,7 +1174,8 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     query = "select count(*) from functional.alltypes where int_col = sleep(10000)"
     impalad1 = self.cluster.impalads[0]
     client1 = impalad1.service.create_hs2_client()
-    handle1 = client1.execute_async(query, user="andrew")
+    client1.set_configuration({'request_pool': 'root.queueB'})
+    handle1 = client1.execute_async(query)
     timeout_s = 10
     # Make sure the first query has been admitted.
     self.wait_for_state(

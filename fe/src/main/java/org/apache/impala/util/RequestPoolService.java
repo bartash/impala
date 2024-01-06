@@ -68,7 +68,7 @@ import com.google.common.collect.Lists;
  * Yarn {@link AllocationFileLoaderService} and the Llama configuration uses a subclass of
  * the {@link FileWatchService}. There are two different mechanisms because there is
  * different parsing/configuration code for the allocation file and the Llama
- * configuration (which is a regular Hadoop conf file so it can use the
+ * configuration (which is a regular Hadoop conf file, so it can use the
  * {@link Configuration} class). start() and stop() will start/stop watching and reloading
  * both of these files.
  *

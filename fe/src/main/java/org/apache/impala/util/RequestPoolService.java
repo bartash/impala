@@ -138,7 +138,7 @@ public class RequestPoolService {
   @VisibleForTesting
   final AllocationFileLoaderService allocLoader_;
 
-  // Provides access to the fair scheduler allocation file. An AtomicReference becaus it
+  // Provides access to the fair scheduler allocation file. An AtomicReference because it
   // is reset when the allocation configuration file changes and other threads access it.
   private final AtomicReference<AllocationConfiguration> allocationConf_;
 

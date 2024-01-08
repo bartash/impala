@@ -190,4 +190,12 @@ public class AllocationConfiguration {
   public QueuePlacementPolicy getPlacementPolicy() {
     return placementPolicy;
   }
+
+  public Map<String, Integer> getUserQueryLimits(String queueName) {
+    return userQueryLimits.get(queueName);
+  }
+
+  public Map<String, Integer> getGroupQueryLimits(String queueName) {
+
+  }
 }

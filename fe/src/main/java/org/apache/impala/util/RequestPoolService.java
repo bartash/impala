@@ -369,6 +369,8 @@ public class RequestPoolService {
     long maxMemoryMb = allocationConf_.get().getMaxResources(pool).getMemory();
     result.setMax_mem_resources(
         maxMemoryMb == Integer.MAX_VALUE ? -1 : maxMemoryMb * ByteUnits.MEGABYTE);
+    result.setUser_query_limits(allocationConf_.get().getUserQueryLimits(pool));
+    result.setGroup_query_limits(allocationConf_.get().getGroupQueryLimits(pool));
     if (conf_ == null) {
       result.setMax_requests(MAX_PLACED_RESERVATIONS_DEFAULT);
       result.setMax_queued(MAX_QUEUED_RESERVATIONS_DEFAULT);

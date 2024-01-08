@@ -226,11 +226,11 @@ struct TPoolConfig {
   // A user name of "*" can be used as a wildcard to limit the number of concurrent queries that can be
   // queued by any user.
   // If a user name is present this overrides any wildcard limit.
-  12: required map<string, i64> user_query_limits
+  12: required map<string, i32> user_query_limits
 
   // The map is from group name to limit.
   // FIXME explain semantics when I knwo what they are.
-  13: required map<string, i64> group_query_limits
+  13: required map<string, i32> group_query_limits
 }
 
 struct TParseDateStringResult {

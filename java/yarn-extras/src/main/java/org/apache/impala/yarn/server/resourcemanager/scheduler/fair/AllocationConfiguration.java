@@ -73,6 +73,8 @@ public class AllocationConfiguration {
       Map<String, Long> fairSharePreemptionTimeouts,
       Map<String, Float> fairSharePreemptionThresholds,
       Map<String, Map<QueueACL, AccessControlList>> queueAcls,
+      Map<String, Map<String, Integer>> userQueryLimits,
+      Map<String, Map<String, Integer>> groupQueryLimits,
       QueuePlacementPolicy placementPolicy,
       Map<FSQueueType, Set<String>> configuredQueues,
       Set<String> nonPreemptableQueues) {

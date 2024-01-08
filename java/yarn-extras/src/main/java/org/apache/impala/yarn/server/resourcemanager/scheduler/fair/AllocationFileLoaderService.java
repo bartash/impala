@@ -224,6 +224,8 @@ public class AllocationFileLoaderService extends AbstractService {
     Map<String, Long> fairSharePreemptionTimeouts = new HashMap<>();
     Map<String, Float> fairSharePreemptionThresholds = new HashMap<>();
     Map<String, Map<QueueACL, AccessControlList>> queueAcls = new HashMap<>();
+    Map<String, Map<String, Integer>> userQueryLimits = new HashMap<>();
+    Map<String, Map<String, Integer>> groupQueryLimits = new HashMap<>();
     Set<String> nonPreemptableQueues = new HashSet<>();
     int userMaxAppsDefault = Integer.MAX_VALUE;
     int queueMaxAppsDefault = Integer.MAX_VALUE;
@@ -352,7 +354,7 @@ public class AllocationFileLoaderService extends AbstractService {
           maxChildQueueResources, queueMaxApps, userMaxApps, queueMaxAMShares,
           queueWeights, queuePolicies, minSharePreemptionTimeouts,
           fairSharePreemptionTimeouts, fairSharePreemptionThresholds,
-          queueAcls, x, , configuredQueues, nonPreemptableQueues, );
+          queueAcls, userQueryLimits, groupQueryLimits, configuredQueues, nonPreemptableQueues, );
     }
 
     // Load placement policy and pass it configured queues
@@ -388,7 +390,7 @@ public class AllocationFileLoaderService extends AbstractService {
         queueMaxResourcesDefault, queueMaxAMShareDefault, queuePolicies,
         defaultSchedPolicy, minSharePreemptionTimeouts,
         fairSharePreemptionTimeouts, fairSharePreemptionThresholds, queueAcls,
-        newPlacementPolicy, configuredQueues, nonPreemptableQueues);
+            userQueryLimits, userQueryLimits, newPlacementPolicy, configuredQueues, nonPreemptableQueues);
     lastSuccessfulReload = clock.getTime();
     lastReloadAttemptFailed = false;
 
@@ -494,7 +496,7 @@ public class AllocationFileLoaderService extends AbstractService {
         acls.put(QueueACL.SUBMIT_APPLICATIONS, new AccessControlList(text));
       } else if ("userQueryLimit".equals(field.getTagName())) {
         String text = ((Text)field.getFirstChild()).getData();
-        acls.put(QueueACL.SUBMIT_APPLICATIONS, new AccessControlList(text));
+        userQueryLimits.put(queueName, new HashMap<>("x",1));
       } else if ("aclAdministerApps".equals(field.getTagName())) {
         String text = ((Text)field.getFirstChild()).getData();
         acls.put(QueueACL.ADMINISTER_QUEUE, new AccessControlList(text));
@@ -509,7 +511,7 @@ public class AllocationFileLoaderService extends AbstractService {
             maxChildQueueResources, queueMaxApps, userMaxApps, queueMaxAMShares,
             queueWeights, queuePolicies, minSharePreemptionTimeouts,
             fairSharePreemptionTimeouts, fairSharePreemptionThresholds,
-            queueAcls, x, , configuredQueues, nonPreemptableQueues, );
+            queueAcls, userQueryLimits,groupQueryLimits, configuredQueues, nonPreemptableQueues);
         configuredQueues.get(FSQueueType.PARENT).add(queueName);
         isLeaf = false;
       }

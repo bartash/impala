@@ -352,7 +352,7 @@ public class AllocationFileLoaderService extends AbstractService {
           maxChildQueueResources, queueMaxApps, userMaxApps, queueMaxAMShares,
           queueWeights, queuePolicies, minSharePreemptionTimeouts,
           fairSharePreemptionTimeouts, fairSharePreemptionThresholds,
-          queueAcls, configuredQueues, nonPreemptableQueues);
+          queueAcls, x, , configuredQueues, nonPreemptableQueues, );
     }
 
     // Load placement policy and pass it configured queues
@@ -411,6 +411,8 @@ public class AllocationFileLoaderService extends AbstractService {
       Map<String, Long> fairSharePreemptionTimeouts,
       Map<String, Float> fairSharePreemptionThresholds,
       Map<String, Map<QueueACL, AccessControlList>> queueAcls,
+      Map<String, Map<String, Integer>> userQueryLimits,
+      Map<String, Map<String, Integer>> groupQueryLimits,
       Map<FSQueueType, Set<String>> configuredQueues,
       Set<String> nonPreemptableQueues)
       throws AllocationConfigurationException {
@@ -490,6 +492,9 @@ public class AllocationFileLoaderService extends AbstractService {
       } else if ("aclSubmitApps".equals(field.getTagName())) {
         String text = ((Text)field.getFirstChild()).getData();
         acls.put(QueueACL.SUBMIT_APPLICATIONS, new AccessControlList(text));
+      } else if ("userQueryLimit".equals(field.getTagName())) {
+        String text = ((Text)field.getFirstChild()).getData();
+        acls.put(QueueACL.SUBMIT_APPLICATIONS, new AccessControlList(text));
       } else if ("aclAdministerApps".equals(field.getTagName())) {
         String text = ((Text)field.getFirstChild()).getData();
         acls.put(QueueACL.ADMINISTER_QUEUE, new AccessControlList(text));
@@ -504,7 +509,7 @@ public class AllocationFileLoaderService extends AbstractService {
             maxChildQueueResources, queueMaxApps, userMaxApps, queueMaxAMShares,
             queueWeights, queuePolicies, minSharePreemptionTimeouts,
             fairSharePreemptionTimeouts, fairSharePreemptionThresholds,
-            queueAcls, configuredQueues, nonPreemptableQueues);
+            queueAcls, x, , configuredQueues, nonPreemptableQueues, );
         configuredQueues.get(FSQueueType.PARENT).add(queueName);
         isLeaf = false;
       }

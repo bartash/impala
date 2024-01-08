@@ -194,6 +194,15 @@ public class AllocationFileLoaderService extends AbstractService {
     this.reloadListener = reloadListener;
   }
   
+  private static void addQueryLimits(Map<String, Map<String, Integer>> allLimits, String queueName, String text) {
+    Map<String, Integer> limits  = allLimits.get(queueName);
+    if (limits == null) {
+      limits = new HashMap<>();
+      allLimits.put(queueName, limits);
+    }
+
+  }
+  
   /**
    * Updates the allocation list from the allocation config file. This file is
    * expected to be in the XML format specified in the design doc.
@@ -354,7 +363,7 @@ public class AllocationFileLoaderService extends AbstractService {
           maxChildQueueResources, queueMaxApps, userMaxApps, queueMaxAMShares,
           queueWeights, queuePolicies, minSharePreemptionTimeouts,
           fairSharePreemptionTimeouts, fairSharePreemptionThresholds,
-          queueAcls, userQueryLimits, groupQueryLimits, configuredQueues, nonPreemptableQueues, );
+          queueAcls, userQueryLimits, groupQueryLimits, configuredQueues, nonPreemptableQueues);
     }
 
     // Load placement policy and pass it configured queues
@@ -396,7 +405,7 @@ public class AllocationFileLoaderService extends AbstractService {
 
     reloadListener.onReload(info);
   }
-  
+
   /**
    * Loads a queue from a queue element in the configuration file
    */
@@ -496,7 +505,8 @@ public class AllocationFileLoaderService extends AbstractService {
         acls.put(QueueACL.SUBMIT_APPLICATIONS, new AccessControlList(text));
       } else if ("userQueryLimit".equals(field.getTagName())) {
         String text = ((Text)field.getFirstChild()).getData();
-        userQueryLimits.put(queueName, new HashMap<>("x",1));
+        addQueryLimits(userQueryLimits, queueName, text);
+        // FIXME add groups
       } else if ("aclAdministerApps".equals(field.getTagName())) {
         String text = ((Text)field.getFirstChild()).getData();
         acls.put(QueueACL.ADMINISTER_QUEUE, new AccessControlList(text));
@@ -505,7 +515,7 @@ public class AllocationFileLoaderService extends AbstractService {
         if (!Boolean.parseBoolean(text)) {
           nonPreemptableQueues.add(queueName);
         }
-      } else if ("queue".endsWith(field.getTagName()) || 
+      } else if ("queue".endsWith(field.getTagName()) ||
           "pool".equals(field.getTagName())) {
         loadQueue(queueName, field, minQueueResources, maxQueueResources,
             maxChildQueueResources, queueMaxApps, userMaxApps, queueMaxAMShares,
@@ -536,7 +546,7 @@ public class AllocationFileLoaderService extends AbstractService {
               minQueueResources.get(queueName)));
     }
   }
-  
+
   public interface Listener {
     public void onReload(AllocationConfiguration info);
   }

@@ -196,6 +196,6 @@ public class AllocationConfiguration {
   }
 
   public Map<String, Integer> getGroupQueryLimits(String queueName) {
-
+    return groupQueryLimits.get(queueName);
   }
 }

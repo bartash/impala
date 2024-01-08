@@ -195,11 +195,8 @@ public class AllocationFileLoaderService extends AbstractService {
   }
   
   private static void addQueryLimits(Map<String, Map<String, Integer>> allLimits, String queueName, String text) {
-    Map<String, Integer> limits  = allLimits.get(queueName);
-    if (limits == null) {
-      limits = new HashMap<>();
-      allLimits.put(queueName, limits);
-    }
+    Map<String, Integer> limits = allLimits.computeIfAbsent(queueName, k -> new HashMap<>());
+
 
   }
   

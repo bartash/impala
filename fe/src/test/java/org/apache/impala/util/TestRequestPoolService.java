@@ -195,6 +195,10 @@ public class TestRequestPoolService {
     Assert.assertTrue(poolService_.hasAccess("root.queueB", "userB"));
     Assert.assertFalse(poolService_.hasAccess("root.queueB", "userA"));
     Assert.assertTrue(poolService_.hasAccess("root.queueB", "root"));
+    // Test comma separated users.
+    Assert.assertTrue(poolService_.hasAccess("root.queueD", "userA"));
+    Assert.assertTrue(poolService_.hasAccess("root.queueD", "userB"));
+    Assert.assertFalse(poolService_.hasAccess("root.queueD", "userZ"));
   }
 
   @Test

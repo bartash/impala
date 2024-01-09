@@ -203,7 +203,7 @@ public class AllocationFileLoaderService extends AbstractService {
   public static void addQueryLimits(Map<String, Map<String, Integer>> allLimits, String queueName, String text)
       throws AllocationConfigurationException {
     Map<String, Integer> limits = allLimits.computeIfAbsent(queueName, k -> new HashMap<>());
-    Pattern pattern = Pattern.compile("([\\w*]+) *(\\d+)");
+    Pattern pattern = Pattern.compile("(\\S+) +(\\d+)");
     Matcher matcher = pattern.matcher(text);
 
     if (matcher.find()) {

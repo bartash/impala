@@ -213,6 +213,8 @@ public class TestRequestPoolService {
     checkPoolConfigResult("root.queueB", 5, 10, -1, 30000L, "mem_limit=1024m");
     checkPoolConfigResult("root.queueC", 5, 10, 1024 * ByteUnits.MEGABYTE, 30000L,
             "mem_limit=1024m", 1000, 10, false, 8, 8);
+    checkPoolConfigResult("root.queueD", 5, 10, -1, 30000L, "mem_limit=1024m");
+
   }
 
   @Test

@@ -294,7 +294,7 @@ public class TestRequestPoolService {
     String QUEUE2 = "queue2";
     String QUEUE3 = "queue3";
     AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user1 1");
-    AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user2     2");
+    AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, " user2     2 ");
     AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "* 2");
     AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE2, "user1 12 ");
 

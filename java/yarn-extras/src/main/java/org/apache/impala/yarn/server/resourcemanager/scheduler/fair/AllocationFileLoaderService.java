@@ -193,8 +193,9 @@ public class AllocationFileLoaderService extends AbstractService {
   public synchronized void setReloadListener(Listener reloadListener) {
     this.reloadListener = reloadListener;
   }
-  
-  private static void addQueryLimits(Map<String, Map<String, Integer>> allLimits, String queueName, String text) {
+
+  @VisibleForTesting
+  public static void addQueryLimits(Map<String, Map<String, Integer>> allLimits, String queueName, String text) {
     Map<String, Integer> limits = allLimits.computeIfAbsent(queueName, k -> new HashMap<>());
 
 

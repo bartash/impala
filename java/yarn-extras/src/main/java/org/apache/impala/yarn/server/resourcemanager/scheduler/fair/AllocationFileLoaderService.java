@@ -27,6 +27,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -194,11 +196,26 @@ public class AllocationFileLoaderService extends AbstractService {
     this.reloadListener = reloadListener;
   }
 
+  /**
+   * Parse the 'text' parameter to fnd mappings of names to numbers for different queues./
+   */
   @VisibleForTesting
   public static void addQueryLimits(Map<String, Map<String, Integer>> allLimits, String queueName, String text) {
     Map<String, Integer> limits = allLimits.computeIfAbsent(queueName, k -> new HashMap<>());
+    Pattern pattern = Pattern.compile("(\\w+) (\\d+)");
+    Matcher matcher = pattern.matcher(text);
 
-
+    if (matcher.find()) {
+      String name = matcher.group(1); // Group 1 contains the name
+      String numberStr = matcher.group(2); // Group 2 contains the number
+      if (limits.containsKey(name)) {
+        throw new RuntimeException("Duplicate value given for name " + name);
+      }
+      int number = Integer.parseInt(numberStr);
+      limits.put(name, number);
+    } else {
+      throw new RuntimeException("Cannot parse " + text + " into a name and number");
+    }
   }
   
   /**

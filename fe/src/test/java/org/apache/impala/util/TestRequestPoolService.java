@@ -324,7 +324,13 @@ public class TestRequestPoolService {
       Assert.assertTrue(e.getMessage().contains("Cannot parse"));
     }
 
-
+    allLimits = new HashMap<>();
+    try {
+      AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user1=xxx");
+      Assert.fail("should have got exception");
+    } catch (AllocationConfigurationException e) {
+      Assert.assertTrue(e.getMessage().contains("name and number"));
+    }
   }
 
   private void checkModifiedConfigResults()

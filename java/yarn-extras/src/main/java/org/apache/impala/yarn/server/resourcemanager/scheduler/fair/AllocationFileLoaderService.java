@@ -200,7 +200,8 @@ public class AllocationFileLoaderService extends AbstractService {
    * Parse the 'text' parameter to fnd mappings of names to numbers for different queues./
    */
   @VisibleForTesting
-  public static void addQueryLimits(Map<String, Map<String, Integer>> allLimits, String queueName, String text) {
+  public static void addQueryLimits(Map<String, Map<String, Integer>> allLimits, String queueName, String text)
+      throws AllocationConfigurationException {
     Map<String, Integer> limits = allLimits.computeIfAbsent(queueName, k -> new HashMap<>());
     Pattern pattern = Pattern.compile("([\\w*]+) *(\\d+)");
     Matcher matcher = pattern.matcher(text);
@@ -209,12 +210,17 @@ public class AllocationFileLoaderService extends AbstractService {
       String name = matcher.group(1); // Group 1 contains the name
       String numberStr = matcher.group(2); // Group 2 contains the number
       if (limits.containsKey(name)) {
-        throw new RuntimeException("Duplicate value given for name " + name);
+        throw new AllocationConfigurationException("Duplicate value given for name " + name);
       }
-      int number = Integer.parseInt(numberStr);
+      int number = 0;
+      try {
+        number = Integer.parseInt(numberStr);
+      } catch (NumberFormatException e) {
+        throw new AllocationConfigurationException("Could not parse query limit for " + name, e);
+      }
       limits.put(name, number);
     } else {
-      throw new RuntimeException("Cannot parse " + text + " into a name and number");
+      throw new AllocationConfigurationException("Cannot parse " + text + " into a name and number");
     }
   }
   

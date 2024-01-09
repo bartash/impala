@@ -24,6 +24,7 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationConfigurationException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -288,7 +289,7 @@ public class TestRequestPoolService {
    * Unit test for  AllocationFileLoaderService.addQueryLimits().
    */
   @Test
-  public void testLimitsParsing() {
+  public void testLimitsParsing() throws AllocationConfigurationException {
     Map<String, Map<String, Integer>> allLimits = new HashMap<>();
     String QUEUE1 = "queue1";
     String QUEUE2 = "queue2";

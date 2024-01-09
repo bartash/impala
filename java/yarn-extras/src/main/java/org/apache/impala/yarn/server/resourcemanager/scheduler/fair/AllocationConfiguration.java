@@ -51,6 +51,9 @@ public class AllocationConfiguration {
   // ACL's for each queue. Only specifies non-default ACL's from configuration.
   private final Map<String, Map<QueueACL, AccessControlList>> queueAcls;
 
+  private final Map<String, Map<String, Integer>> userQueryLimits;
+  private final Map<String, Map<String, Integer>> groupQueryLimits;
+
   // Policy for mapping apps to queues
   @VisibleForTesting
   QueuePlacementPolicy placementPolicy;
@@ -73,6 +76,8 @@ public class AllocationConfiguration {
       Map<String, Long> fairSharePreemptionTimeouts,
       Map<String, Float> fairSharePreemptionThresholds,
       Map<String, Map<QueueACL, AccessControlList>> queueAcls,
+      Map<String, Map<String, Integer>> userQueryLimits,
+      Map<String, Map<String, Integer>> groupQueryLimits,
       QueuePlacementPolicy placementPolicy,
       Map<FSQueueType, Set<String>> configuredQueues,
       Set<String> nonPreemptableQueues) {
@@ -80,6 +85,8 @@ public class AllocationConfiguration {
     this.maxQueueResources = maxQueueResources;
     this.queueMaxResourcesDefault = queueMaxResourcesDefault;
     this.queueAcls = queueAcls;
+    this.userQueryLimits = userQueryLimits;
+    this.groupQueryLimits = groupQueryLimits;
     this.placementPolicy = placementPolicy;
     this.configuredQueues = configuredQueues;
   }
@@ -89,6 +96,8 @@ public class AllocationConfiguration {
     maxQueueResources = new HashMap<>();
     queueMaxResourcesDefault = Resources.unbounded();
     queueAcls = new HashMap<>();
+    userQueryLimits = new HashMap<>();
+    groupQueryLimits = new HashMap<>();
     configuredQueues = new HashMap<>();
     for (FSQueueType queueType : FSQueueType.values()) {
       configuredQueues.put(queueType, new HashSet<String>());
@@ -180,5 +189,13 @@ public class AllocationConfiguration {
   
   public QueuePlacementPolicy getPlacementPolicy() {
     return placementPolicy;
+  }
+
+  public Map<String, Integer> getUserQueryLimits(String queueName) {
+    return userQueryLimits.get(queueName);
+  }
+
+  public Map<String, Integer> getGroupQueryLimits(String queueName) {
+    return groupQueryLimits.get(queueName);
   }
 }

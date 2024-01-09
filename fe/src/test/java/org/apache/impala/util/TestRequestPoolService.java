@@ -307,7 +307,15 @@ public class TestRequestPoolService {
     Assert.assertEquals(12,(long) queue2.get("user1"));
     Assert.assertNull(queue3);
 
-    // FIXME add negative tests
+    allLimits = new HashMap<>();
+    AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user1 1");
+    try {
+      AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user1 2");
+      Assert.fail("should have got exception");
+    } catch (AllocationConfigurationException e) {
+      Assert.assertTrue(e.getMessage().contains("Duplicate value"));
+    }
+
   }
 
   private void checkModifiedConfigResults()

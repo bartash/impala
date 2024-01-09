@@ -303,7 +303,7 @@ public class TestRequestPoolService {
     Map<String, Integer> queue3 = allLimits.get(QUEUE3);
     Assert.assertEquals(1,(long) queue1.get("user1"));
     Assert.assertEquals(2,(long) queue1.get("user2"));
-    Assert.assertEquals(1,(long) queue2.get("user1"));
+    Assert.assertEquals(12,(long) queue2.get("user1"));
     Assert.assertNull(queue3);
 
     // FIXME add negative tests

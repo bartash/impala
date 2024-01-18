@@ -215,6 +215,7 @@ public class TestRequestPoolService {
             "mem_limit=1024m", 1000, 10, false, 8, 8, null, null);
     Map<String, Integer> queueDUserQueryLimits = new HashMap<>();
     queueDUserQueryLimits.put("userA", 2);
+    queueDUserQueryLimits.put("*", 3);
     Map<String, Integer> queueDGroupQueryLimits = new HashMap<>();
     queueDGroupQueryLimits.put("group2", 1);
     checkPoolConfigResult("root.queueD", 5, 10, -1, 30000L, "mem_limit=1024m",

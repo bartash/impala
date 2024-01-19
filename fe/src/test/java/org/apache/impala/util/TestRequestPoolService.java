@@ -21,9 +21,11 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.ibm.icu.impl.coll.Collation;
 import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationConfigurationException;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -407,7 +409,7 @@ public class TestRequestPoolService {
       String expectedQueryOptions) {
     checkPoolConfigResult( pool,  expectedMaxRequests,
      expectedMaxQueued,  expectedMaxMem,  expectedQueueTimeoutMs,
-         expectedQueryOptions, null, null);
+         expectedQueryOptions, Collections.emptyMap(), Collections.emptyMap());
   }
 
   private void checkPoolConfigResult(String pool, long expectedMaxRequests,

@@ -18,11 +18,13 @@
 package org.apache.impala.yarn.server.resourcemanager.scheduler.fair;
 //YARNUTIL: MODIFIED
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authorize.AccessControlList;
@@ -192,10 +194,18 @@ public class AllocationConfiguration {
   }
 
   public Map<String, Integer> getUserQueryLimits(String queueName) {
-    return userQueryLimits.get(queueName);
+    Map<String, Integer> limits = userQueryLimits.get(queueName);
+    if (limits == null) {
+      limits = Collections.emptyMap();
+    }
+    return limits;
   }
 
   public Map<String, Integer> getGroupQueryLimits(String queueName) {
-    return groupQueryLimits.get(queueName);
+    Map<String, Integer> limits = groupQueryLimits.get(queueName);
+    if (limits == null) {
+      limits =  Collections.emptyMap();
+    }
+    return limits;
   }
 }

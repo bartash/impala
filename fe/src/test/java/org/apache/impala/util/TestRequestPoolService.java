@@ -394,12 +394,8 @@ public class TestRequestPoolService {
     if (expectedQueryOptions != null) {
       expectedResult.setDefault_query_options(expectedQueryOptions);
     }
-    if (userQueryLimits != null) {
-      expectedResult.setUser_query_limits(userQueryLimits);
-    }
-    if (groupQueryLimits != null) {
-      expectedResult.setGroup_query_limits(groupQueryLimits);
-    }
+    expectedResult.setUser_query_limits(userQueryLimits != null ? userQueryLimits:Collections.emptyMap());
+    expectedResult.setGroup_query_limits(groupQueryLimits != null ? groupQueryLimits: Collections.emptyMap());
     Assert.assertEquals("Unexpected config values for pool " + pool,
         expectedResult, poolService_.getPoolConfig(pool));
   }

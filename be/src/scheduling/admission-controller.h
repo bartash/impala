@@ -1078,6 +1078,11 @@ class AdmissionController {
   bool HasAvailableSlots(const ScheduleState& state, const TPoolConfig& pool_cfg,
       string* unavailable_reason, bool& coordinator_resource_limited);
 
+  /// Returns true unless this query exceeds user or grou quotas.
+  /// Must hold admission_ctrl_lock_.
+  bool HasUserAndGroupQuotas(const ScheduleState& state, const TPoolConfig& pool_cfg,
+      std::string* quota_exceeded_reason);
+
   /// Updates the memory admitted and the num of queries running for each backend in
   /// 'state'. Also updates the stats of its associated resource pool. Used only when
   /// the 'state' is admitted.

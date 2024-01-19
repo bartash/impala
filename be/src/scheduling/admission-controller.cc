@@ -1099,6 +1099,12 @@ bool AdmissionController::HasAvailableSlots(const ScheduleState& state,
   return true;
 }
 
+bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
+    const TPoolConfig& pool_cfg, string* quota_exceeded_reason) {
+  return true; // FIXME
+}
+
+
 bool AdmissionController::CanAdmitTrivialRequest(const ScheduleState& state) {
   PoolStats* pool_stats = GetPoolStats(state);
   DCHECK(pool_stats != nullptr);
@@ -1141,6 +1147,10 @@ bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
   }
   if (!HasAvailableMemResources(state, pool_cfg, not_admitted_reason,
           coordinator_resource_limited, not_admitted_details)) {
+    return false;
+  }
+  // FIXME when exactly in this method should we evaluate user quotas?
+  if (!HasUserAndGroupQuotas(state, pool_cfg, not_admitted_reason)) {
     return false;
   }
   return true;

@@ -1101,7 +1101,7 @@ bool AdmissionController::HasAvailableSlots(const ScheduleState& state,
 
 bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
     const TPoolConfig& pool_cfg, string* quota_exceeded_reason) {
-  return true; // FIXME
+  return  true; // FIXME
 }
 
 

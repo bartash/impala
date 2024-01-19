@@ -406,12 +406,18 @@ public class RequestPoolService {
               + " max_queued={},  queue_timeout_ms={}, default_query_options={},"
               + " max_query_mem_limit={}, min_query_mem_limit={},"
               + " clamp_mem_limit_query_option={}, max_query_cpu_core_per_node_limit={},"
-              + " max_query_cpu_core_coordinator_limit={}",
+              + " max_query_cpu_core_coordinator_limit={}"
+              + " user_query_limits={}"
+              + " group_query_limits={}"
+          ,
           pool, result.max_mem_resources, result.max_requests, result.max_queued,
           result.queue_timeout_ms, result.default_query_options,
           result.max_query_mem_limit, result.min_query_mem_limit,
           result.clamp_mem_limit_query_option, result.max_query_cpu_core_per_node_limit,
-          result.max_query_cpu_core_coordinator_limit);
+          result.max_query_cpu_core_coordinator_limit,
+          result.user_query_limits,
+          result.group_query_limits
+      );
     }
     return result;
   }

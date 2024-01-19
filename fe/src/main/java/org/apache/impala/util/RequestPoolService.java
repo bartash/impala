@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -369,8 +370,13 @@ public class RequestPoolService {
     long maxMemoryMb = allocationConf_.get().getMaxResources(pool).getMemory();
     result.setMax_mem_resources(
         maxMemoryMb == Integer.MAX_VALUE ? -1 : maxMemoryMb * ByteUnits.MEGABYTE);
-    result.setUser_query_limits(allocationConf_.get().getUserQueryLimits(pool));
-    result.setGroup_query_limits(allocationConf_.get().getGroupQueryLimits(pool));
+    Map<String, Integer> userQueryLimits = allocationConf_.get().getUserQueryLimits(pool);
+    if (userQueryLimits == null) {
+      throw new RuntimeException("XXXXXXXXXXXXXXXXXXX");
+    }
+    result.setUser_query_limits(userQueryLimits);
+    Map<String, Integer> groupQueryLimits = allocationConf_.get().getGroupQueryLimits(pool);
+    result.setGroup_query_limits(groupQueryLimits);
     if (conf_ == null) {
       result.setMax_requests(MAX_PLACED_RESERVATIONS_DEFAULT);
       result.setMax_queued(MAX_QUEUED_RESERVATIONS_DEFAULT);

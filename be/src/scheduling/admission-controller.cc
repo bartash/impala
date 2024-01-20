@@ -1106,10 +1106,19 @@ bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
   const string& user = state.request().query_ctx.session.delegated_user;
   VLOG_QUERY << user;
   VLOG_QUERY <<  state.request().query_ctx.session.delegated_user;
-  if (pool_cfg.user_query_limits.count(user)) {
-    int32 count = pool_cfg.user_query_limits[user];
-    VLOG_QUERY << count;
+//  if (pool_cfg.user_query_limits.count(state.request().query_ctx.session.delegated_user)) {
+//    const int32 count = pool_cfg.user_query_limits[state.request().query_ctx.session.delegated_user];
+//    VLOG_QUERY << count;
+//  }
+
+  std::map<std::string, int32_t>::const_iterator it = pool_cfg.user_query_limits.find(state.request().query_ctx.session.delegated_user);
+  int32 user_limit;
+  if (it != pool_cfg.user_query_limits.end())
+  {
+    //element found;
+    user_limit = it->second;
   }
+  VLOG_QUERY << user_limit;
   return  true; // FIXME
 }
 

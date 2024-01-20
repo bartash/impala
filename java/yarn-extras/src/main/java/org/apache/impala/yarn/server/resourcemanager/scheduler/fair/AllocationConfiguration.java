@@ -195,17 +195,11 @@ public class AllocationConfiguration {
 
   public Map<String, Integer> getUserQueryLimits(String queueName) {
     Map<String, Integer> limits = userQueryLimits.get(queueName);
-    if (limits == null) {
-      limits = Collections.emptyMap();
-    }
-    return limits;
+    return limits != null ? limits : Collections.emptyMap();
   }
 
   public Map<String, Integer> getGroupQueryLimits(String queueName) {
     Map<String, Integer> limits = groupQueryLimits.get(queueName);
-    if (limits == null) {
-      limits =  Collections.emptyMap();
-    }
-    return limits;
+    return limits != null ? limits : Collections.emptyMap();
   }
 }

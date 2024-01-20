@@ -1101,6 +1101,15 @@ bool AdmissionController::HasAvailableSlots(const ScheduleState& state,
 
 bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
     const TPoolConfig& pool_cfg, string* quota_exceeded_reason) {
+
+//  state.request().query_ctx.session.delegated_user;
+  const string& user = state.request().query_ctx.session.delegated_user;
+  VLOG_QUERY << user;
+  VLOG_QUERY <<  state.request().query_ctx.session.delegated_user;
+  if (pool_cfg.user_query_limits.count(user)) {
+    int32 count = pool_cfg.user_query_limits[user];
+    VLOG_QUERY << count;
+  }
   return  true; // FIXME
 }
 

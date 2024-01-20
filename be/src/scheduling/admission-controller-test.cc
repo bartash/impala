@@ -542,9 +542,11 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestCount) {
 
   TPoolConfig config_e;
   ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_E, &config_d));
-//  ScheduleState* schedule_state2 =
-//      MakeScheduleState(QUEUE_E, config_d, host_count, 30L * MEGABYTE);
 
+  // Check the PoolStats for QUEUE_E.
+  AdmissionController::PoolStats* pool_stats2 =
+      admission_controller->GetPoolStats(QUEUE_E);
+  CheckPoolStatsEmpty(pool_stats2);
 
 }
 

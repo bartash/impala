@@ -1112,7 +1112,7 @@ bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
 //  }
 
   std::map<std::string, int32_t>::const_iterator it = pool_cfg.user_query_limits.find(state.request().query_ctx.session.delegated_user);
-  int32 user_limit;
+  int32 user_limit = 0;
   if (it != pool_cfg.user_query_limits.end())
   {
     //element found;

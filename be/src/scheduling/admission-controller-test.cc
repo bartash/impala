@@ -48,6 +48,7 @@ static const string QUEUE_A = "root.queueA";
 static const string QUEUE_B = "root.queueB";
 static const string QUEUE_C = "root.queueC";
 static const string QUEUE_D = "root.queueD";
+static const string QUEUE_E = "root.queueE";
 
 // Host names
 static const string HOST_0 = "host0:25000";
@@ -538,6 +539,13 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestCount) {
   EXPECT_STR_CONTAINS(
       not_admitted_reason, "number of running queries 7 is at or over limit 6");
   ASSERT_FALSE(coordinator_resource_limited);
+
+  TPoolConfig config_e;
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_E, &config_d));
+//  ScheduleState* schedule_state2 =
+//      MakeScheduleState(QUEUE_E, config_d, host_count, 30L * MEGABYTE);
+
+
 }
 
 /// Test CanAdmitRequest() using the slots mechanism that is enabled with non-default

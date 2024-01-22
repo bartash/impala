@@ -1100,7 +1100,7 @@ bool AdmissionController::HasAvailableSlots(const ScheduleState& state,
 }
 
 bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
-    const TPoolConfig& pool_cfg, string* quota_exceeded_reason) {
+    const TPoolConfig& pool_cfg, PoolStats* pool_stats, string* quota_exceeded_reason) {
 
 //  state.request().query_ctx.session.delegated_user;
   const string& user = state.request().query_ctx.session.delegated_user;
@@ -1168,7 +1168,7 @@ bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
     return false;
   }
   // FIXME when exactly in this method should we evaluate user quotas?
-  if (!HasUserAndGroupQuotas(state, pool_cfg, not_admitted_reason)) {
+  if (!HasUserAndGroupQuotas(state, pool_cfg, pool_stats, not_admitted_reason)) {
     return false;
   }
   return true;

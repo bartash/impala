@@ -539,14 +539,53 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestCount) {
   EXPECT_STR_CONTAINS(
       not_admitted_reason, "number of running queries 7 is at or over limit 6");
   ASSERT_FALSE(coordinator_resource_limited);
+}
+
+/// Test CanAdmitRequest in the context of user and group quotas.
+TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
+  // Pass the paths of the configuration files as command line flags.
+  FLAGS_fair_scheduler_allocation_path = GetResourceFile("fair-scheduler-test2.xml");
+  FLAGS_llama_site_path = GetResourceFile("llama-site-test2.xml");
+
+  AdmissionController* admission_controller = MakeAdmissionController();
+  RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
+
 
   TPoolConfig config_e;
-  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_E, &config_d));
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_E, &config_e));
 
   // Check the PoolStats for QUEUE_E.
-  AdmissionController::PoolStats* pool_stats2 =
-      admission_controller->GetPoolStats(QUEUE_E);
-  CheckPoolStatsEmpty(pool_stats2);
+  AdmissionController::PoolStats* pool_stats = admission_controller->GetPoolStats(QUEUE_E);
+  CheckPoolStatsEmpty(pool_stats);
+
+  // Create a ScheduleState to run on QUEUE_E on 12 hosts.
+  int64_t host_count = 12;
+  ScheduleState* schedule_state =
+      MakeScheduleState(QUEUE_E, config_e, host_count, 30L * MEGABYTE);
+  string not_admitted_reason;
+
+  // Simulate that there are 2 queries queued.
+  pool_stats->local_stats_.num_queued = 2;
+
+  // Query can be admitted from queue...
+  bool coordinator_resource_limited = false;
+  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_FALSE(coordinator_resource_limited);
+  // ... but same Query cannot be admitted directly.
+  ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, false,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  EXPECT_STR_CONTAINS(not_admitted_reason,
+      "queue is not empty (size 2); queued queries are executed first");
+  ASSERT_FALSE(coordinator_resource_limited);
+
+  // Simulate that there are 7 queries already running.
+  pool_stats->agg_num_running_ = 7;
+  ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  EXPECT_STR_CONTAINS(
+      not_admitted_reason, "number of running queries 7 is at or over limit 6");
+  ASSERT_FALSE(coordinator_resource_limited);
 
 }
 

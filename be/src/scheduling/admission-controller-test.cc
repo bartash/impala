@@ -590,6 +590,9 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
       not_admitted_reason, "number of running queries 7 is at or over limit 5");
   ASSERT_FALSE(coordinator_resource_limited);
 
+  pool_stats->agg_num_running_ = 3;
+  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
 }
 
 /// Test CanAdmitRequest() using the slots mechanism that is enabled with non-default

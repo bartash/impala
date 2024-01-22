@@ -585,8 +585,9 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   pool_stats->agg_num_running_ = 7;
   ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
       &not_admitted_reason, nullptr, coordinator_resource_limited));
+  // Limit of requests is 5 from llama.am.throttling.maximum.placed.reservations.
   EXPECT_STR_CONTAINS(
-      not_admitted_reason, "number of running queries 7 is at or over limit 6");
+      not_admitted_reason, "number of running queries 7 is at or over limit 5");
   ASSERT_FALSE(coordinator_resource_limited);
 
 }

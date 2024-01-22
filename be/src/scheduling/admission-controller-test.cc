@@ -126,9 +126,11 @@ class AdmissionControllerTest : public testing::Test {
   /// Same as previous MakeScheduleState with fewer inputs (and more default params).
   ScheduleState* MakeScheduleState(string request_pool_name, TPoolConfig& config,
       const int num_hosts, const int per_host_mem_estimate,
-      const string& executor_group = ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME) {
+      const string& executor_group = ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME,
+      const string& delegated_user = USER1) {
     return MakeScheduleState(request_pool_name, 0, config, num_hosts,
-        per_host_mem_estimate, per_host_mem_estimate, false, executor_group, USER1);
+        per_host_mem_estimate, per_host_mem_estimate, false, executor_group,
+        delegated_user);
   }
 
   /// Create ExecutorGroup and BackendDescriptor for Coordinator for the given

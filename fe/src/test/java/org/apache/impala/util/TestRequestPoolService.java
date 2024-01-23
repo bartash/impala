@@ -287,12 +287,21 @@ public class TestRequestPoolService {
     Assert.assertTrue(poolService_.hasAccess("root.queueB", "userA"));
     Assert.assertFalse(poolService_.hasAccess("root.queueC", "userA"));
     Assert.assertTrue(poolService_.hasAccess("root.queueC", "root"));
+    Assert.assertTrue(poolService_.hasAccess("root.queueD", "userA"));
 
     // Test pool limits
     checkPoolConfigResult("root", -1, 200, -1);
     checkPoolConfigResult("root.queueA", -1, 200, 100000 * ByteUnits.MEGABYTE);
     checkPoolConfigResult("root.queueB", -1, 200, -1);
     checkPoolConfigResult("root.queueC", -1, 200, 128 * ByteUnits.MEGABYTE);
+
+    Map<String, Integer> queueDUserQueryLimits = new HashMap<>();
+    queueDUserQueryLimits.put("userA", 2);
+    queueDUserQueryLimits.put("*", 3);
+    Map<String, Integer> queueDGroupQueryLimits = new HashMap<>();
+    queueDGroupQueryLimits.put("group2", 1);
+    checkPoolConfigResult("root.queueE", -1, 200, -1, null, "",
+        queueDUserQueryLimits, queueDGroupQueryLimits);
   }
 
   /**
@@ -396,8 +405,9 @@ public class TestRequestPoolService {
     }
     expectedResult.setUser_query_limits(userQueryLimits != null ? userQueryLimits:Collections.emptyMap());
     expectedResult.setGroup_query_limits(groupQueryLimits != null ? groupQueryLimits: Collections.emptyMap());
+    TPoolConfig poolConfig = poolService_.getPoolConfig(pool);
     Assert.assertEquals("Unexpected config values for pool " + pool,
-        expectedResult, poolService_.getPoolConfig(pool));
+        expectedResult, poolConfig);
   }
 
   private void checkPoolConfigResult(String pool, long expectedMaxRequests,

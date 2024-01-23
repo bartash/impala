@@ -693,6 +693,8 @@ class AdmissionController {
     /// average of wait time.
     void ResetInformationalStats();
 
+    int GetUserLoad(string& user);
+
     const std::string& name() const { return name_; }
 
     /// The max number of running trivial queries that can be allowed at the same time.

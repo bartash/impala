@@ -809,6 +809,10 @@ void AdmissionController::PoolStats::Dequeue(bool timed_out) {
   }
 }
 
+int AdmissionController::PoolStats::GetUserLoad(string& user) {
+  return 0;
+}
+
 int AdmissionController::PoolStats::AggregatedUserLoads::size() {
   return loads_.size();
 }
@@ -1115,8 +1119,11 @@ bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
   int32 user_limit = 0;
   if (it != pool_cfg.user_query_limits.end())
   {
-    //element found;
+    // There is a per-user limit for the delegated user.
     user_limit = it->second;
+    // Find the current aggregated load for this user.
+    pool_stats->agg_num_running()
+
   }
   VLOG_QUERY << user_limit;
   return  true; // FIXME

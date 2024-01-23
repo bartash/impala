@@ -61,7 +61,7 @@ static std::vector<THeavyMemoryQuery> empty_heavy_memory_query_list;
 static const string USER1 = "user1";
 static const string USER2 = "user2";
 static const string USER3 = "user3";
-static const string USERA = "userA";
+static const string USER_A = "userA";
 
 /// Parent class for Admission Controller tests.
 /// Common code and constants should go here.
@@ -564,7 +564,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   // Create a ScheduleState to run on QUEUE_E on 12 hosts.
   int64_t host_count = 12;
   ScheduleState* schedule_state =
-      MakeScheduleState(QUEUE_E, config_e, host_count, 30L * MEGABYTE, USERA);
+      MakeScheduleState(QUEUE_E, config_e, host_count, 30L * MEGABYTE, USER_A);
   string not_admitted_reason;
 
   // Simulate that there are 2 queries queued.
@@ -592,6 +592,12 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   ASSERT_FALSE(coordinator_resource_limited);
 
   pool_stats->agg_num_running_ = 3;
+  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
+
+  pool_stats->agg_user_loads_.insert(USER_A, 6);
+
+  // FIXME should fail
   ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
       &not_admitted_reason, nullptr, coordinator_resource_limited));
 

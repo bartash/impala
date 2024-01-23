@@ -568,7 +568,7 @@ class AdmissionController {
     /// This is basically a wrapper around a UserLoads object.
     class AggregatedUserLoads {
      public:
-      AggregatedUserLoads() {}
+      AggregatedUserLoads() = default;
 
       /// Inserts a new key-value pair into the map.
       void insert(const std::string& key, int64 value);

@@ -693,7 +693,7 @@ class AdmissionController {
     /// average of wait time.
     void ResetInformationalStats();
 
-    int GetUserLoad(string& user);
+    int GetUserLoad(const string& user);
 
     const std::string& name() const { return name_; }
 

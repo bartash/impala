@@ -824,20 +824,20 @@ void AdmissionController::PoolStats::AggregatedUserLoads::insert(
 }
 
 void AdmissionController::PoolStats::AggregatedUserLoads::add_loads(
-    const UserLoads loads) {
-  for (auto it = loads.begin(); it != loads.end(); ++it) {
-    if (loads_.count(it->first)) {
-      loads_[it->first] += it->second;
+    const UserLoads& loads) {
+  for (const auto & load : loads) {
+    if (loads_.count(load.first)) {
+      loads_[load.first] += load.second;
     } else {
-      loads_[it->first] = it->second;
+      loads_[load.first] = load.second;
     }
   }
 }
 
 void AdmissionController::PoolStats::AggregatedUserLoads::export_users(
     SetMetric<std::string>* metrics) {
-  for (auto it=loads_.begin(); it!=loads_.end(); ++it) {
-    metrics->Add(it->first);
+  for (auto & load : loads_) {
+    metrics->Add(load.first);
   }
 }
 

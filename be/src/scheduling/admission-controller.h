@@ -1271,9 +1271,9 @@ class AdmissionController {
       const vector<NetworkAddressPB>& host_addr);
 
   // FIXME asherman add description
-  bool checkQuota(const TPoolConfig& pool_cfg, PoolStats* pool_stats,
+  static bool checkQuota(const TPoolConfig& pool_cfg, PoolStats* pool_stats,
       const ScheduleState& state, const string& user,
-      string* quota_exceeded_reason) const;
+      string* quota_exceeded_reason) ;
 
   FRIEND_TEST(AdmissionControllerTest, Simple);
   FRIEND_TEST(AdmissionControllerTest, PoolStats);

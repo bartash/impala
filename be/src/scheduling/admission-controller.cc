@@ -1127,7 +1127,7 @@ bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
     user_limit = it->second;
     // Find the current aggregated load for this user.
     int user_load = pool_stats->GetUserLoad(state.request().query_ctx.session.delegated_user);
-    if (user_limit > user_load) {
+    if (user_load > user_limit) {
       *quota_exceeded_reason = Substitute(USER_QUOTA_EXCEEDED, user_load, user, user_limit);
       return false;
     }

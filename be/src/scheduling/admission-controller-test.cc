@@ -597,14 +597,19 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
 
   pool_stats->agg_user_loads_.insert(USER_A, 6);
 
-  // FIXME should fail
   ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
       &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(
       not_admitted_reason, "current per-user load 6 for user userA exceeded the configured limit 2");
 
   // test if * works
+
+
+
+
   // test group quota
+
+
 }
 
 /// Test CanAdmitRequest() using the slots mechanism that is enabled with non-default

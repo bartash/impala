@@ -1119,6 +1119,14 @@ bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
 //    VLOG_QUERY << count;
 //  }
 
+  int32 user_limit = checkQuota(pool_cfg, pool_stats, state, user, quota_exceeded_reason);
+
+  VLOG_QUERY << user_limit;
+  return  true; // FIXME
+}
+int32 AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
+    AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
+    const string& user, string* quota_exceeded_reason) const {
   auto it = pool_cfg.user_query_limits.find(state.request().query_ctx.session.delegated_user);
   int32 user_limit = 0;
   if (it != pool_cfg.user_query_limits.end())
@@ -1129,14 +1137,11 @@ bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
     int user_load = pool_stats->GetUserLoad(state.request().query_ctx.session.delegated_user);
     if (user_load > user_limit) {
       *quota_exceeded_reason = Substitute(USER_QUOTA_EXCEEDED, user_load, user, user_limit);
-      return false;
+//      return false;
     }
-
   }
-  VLOG_QUERY << user_limit;
-  return  true; // FIXME
+  return user_limit;
 }
-
 
 bool AdmissionController::CanAdmitTrivialRequest(const ScheduleState& state) {
   PoolStats* pool_stats = GetPoolStats(state);

@@ -810,7 +810,7 @@ void AdmissionController::PoolStats::Dequeue(bool timed_out) {
 }
 
 int AdmissionController::PoolStats::GetUserLoad(const string& user) {
-  return 0;
+  return agg_user_loads_.get(user);
 }
 
 int AdmissionController::PoolStats::AggregatedUserLoads::size() {

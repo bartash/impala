@@ -1270,6 +1270,10 @@ class AdmissionController {
   void ReleaseQueryBackendsLocked(const UniqueIdPB& query_id, const UniqueIdPB& coord_id,
       const vector<NetworkAddressPB>& host_addr);
 
+  bool checkQuota(const TPoolConfig& pool_cfg, PoolStats* pool_stats,
+      const ScheduleState& state, const string& user,
+      string* quota_exceeded_reason) const;
+
   FRIEND_TEST(AdmissionControllerTest, Simple);
   FRIEND_TEST(AdmissionControllerTest, PoolStats);
   FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestMemory);
@@ -1283,9 +1287,7 @@ class AdmissionController {
   FRIEND_TEST(AdmissionControllerTest, TopNQueryCheck);
   FRIEND_TEST(AdmissionControllerTest, AggregatedUserLoads);
   friend class AdmissionControllerTest;
-  int32 checkQuota(const TPoolConfig& pool_cfg, PoolStats* pool_stats,
-      const ScheduleState& state, const string& user,
-      string* quota_exceeded_reason) const;
+
 };
 
 } // namespace impala

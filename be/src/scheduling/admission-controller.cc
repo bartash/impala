@@ -1129,13 +1129,13 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
     AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
     const string& user, string* quota_exceeded_reason) const {
   auto it = pool_cfg.user_query_limits.find(user);
-  int32 user_limit = 0;
+  int64 user_limit = 0;
   if (it != pool_cfg.user_query_limits.end())
   {
     // There is a per-user limit for the delegated user.
     user_limit = it->second;
     // Find the current aggregated load for this user.
-    int user_load = pool_stats->GetUserLoad(state.request().query_ctx.session.delegated_user);
+    int64 user_load = pool_stats->GetUserLoad(state.request().query_ctx.session.delegated_user);
     if (user_load > user_limit) {
       *quota_exceeded_reason = Substitute(USER_QUOTA_EXCEEDED, user_load, user, user_limit);
       return false;

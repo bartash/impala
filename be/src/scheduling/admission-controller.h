@@ -1270,6 +1270,7 @@ class AdmissionController {
   void ReleaseQueryBackendsLocked(const UniqueIdPB& query_id, const UniqueIdPB& coord_id,
       const vector<NetworkAddressPB>& host_addr);
 
+  // FIXME asherman add description
   bool checkQuota(const TPoolConfig& pool_cfg, PoolStats* pool_stats,
       const ScheduleState& state, const string& user,
       string* quota_exceeded_reason) const;

@@ -1128,7 +1128,7 @@ bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
 bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
     AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
     const string& user, string* quota_exceeded_reason) const {
-  auto it = pool_cfg.user_query_limits.find(state.request().query_ctx.session.delegated_user);
+  auto it = pool_cfg.user_query_limits.find(user);
   int32 user_limit = 0;
   if (it != pool_cfg.user_query_limits.end())
   {

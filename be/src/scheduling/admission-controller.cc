@@ -1125,6 +1125,7 @@ bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
     int user_load = pool_stats->GetUserLoad(state.request().query_ctx.session.delegated_user);
     if (user_limit > user_load) {
       *quota_exceeded_reason = "The current per-user load XX exceeded the configured limit YY"; // FIXME asherman
+      return false;
     }
 
   }

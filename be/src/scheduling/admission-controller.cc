@@ -1122,7 +1122,10 @@ bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
     // There is a per-user limit for the delegated user.
     user_limit = it->second;
     // Find the current aggregated load for this user.
-    pool_stats->GetUserLoad(state.request().query_ctx.session.delegated_user);
+    int user_load = pool_stats->GetUserLoad(state.request().query_ctx.session.delegated_user);
+    if (user_limit > user_load) {
+      *quota_exceeded_reason = "The current per-user load XX exceeded the configured limit YY"; // FIXME asherman
+    }
 
   }
   VLOG_QUERY << user_limit;

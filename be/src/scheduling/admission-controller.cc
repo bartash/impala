@@ -273,6 +273,10 @@ const string HOST_SLOT_NOT_AVAILABLE = "Not enough admission control slots avail
                                        "host $0. Needed $1 slots but $2/$3 are already "
                                        "in use.";
 
+// $0 = current load for user, $1 = user name, $2 = per-user quota
+const string USER_QUOTA_EXCEEDED =
+    "current per-user load $0 for user $1 exceeded the configured limit $2";
+
 // Parses the topic key to separate the prefix that helps recognize the kind of update
 // received.
 static inline bool ParseTopicKey(
@@ -1124,7 +1128,7 @@ bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
     // Find the current aggregated load for this user.
     int user_load = pool_stats->GetUserLoad(state.request().query_ctx.session.delegated_user);
     if (user_limit > user_load) {
-      *quota_exceeded_reason = "The current per-user load XX exceeded the configured limit YY"; // FIXME asherman
+      *quota_exceeded_reason = Substitute(USER_QUOTA_EXCEEDED, user_load, user, user_limit);
       return false;
     }
 

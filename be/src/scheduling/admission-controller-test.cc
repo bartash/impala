@@ -572,8 +572,9 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
 
   // Query can be admitted from queue...
   bool coordinator_resource_limited = false;
-  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
-      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  bool b = admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited);
+  ASSERT_TRUE(b);
   ASSERT_FALSE(coordinator_resource_limited);
   // ... but same Query cannot be admitted directly.
   ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, false,

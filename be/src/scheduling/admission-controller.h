@@ -583,7 +583,7 @@ class AdmissionController {
       void decrement(const std::string& key);
 
       /// Return the number of keys. For testing only.
-      int size();
+      int64 size();
 
       /// Clear all values
       void clear();
@@ -693,7 +693,7 @@ class AdmissionController {
     /// average of wait time.
     void ResetInformationalStats();
 
-    int GetUserLoad(const string& user);
+    int64 GetUserLoad(const string& user);
 
     const std::string& name() const { return name_; }
 

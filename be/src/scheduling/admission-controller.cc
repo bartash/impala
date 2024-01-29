@@ -809,11 +809,11 @@ void AdmissionController::PoolStats::Dequeue(bool timed_out) {
   }
 }
 
-int AdmissionController::PoolStats::GetUserLoad(const string& user) {
+int64 AdmissionController::PoolStats::GetUserLoad(const string& user) {
   return agg_user_loads_.get(user);
 }
 
-int AdmissionController::PoolStats::AggregatedUserLoads::size() {
+int64 AdmissionController::PoolStats::AggregatedUserLoads::size() {
   return loads_.size();
 }
 

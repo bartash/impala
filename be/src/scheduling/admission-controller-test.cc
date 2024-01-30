@@ -553,18 +553,18 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   AdmissionController* admission_controller = MakeAdmissionController();
   RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
 
-
   TPoolConfig config_e;
   ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_E, &config_e));
 
   // Check the PoolStats for QUEUE_E.
-  AdmissionController::PoolStats* pool_stats = admission_controller->GetPoolStats(QUEUE_E);
+  AdmissionController::PoolStats* pool_stats =
+      admission_controller->GetPoolStats(QUEUE_E);
   CheckPoolStatsEmpty(pool_stats);
 
   // Create a ScheduleState to run on QUEUE_E on 12 hosts.
   int64_t host_count = 12;
-  ScheduleState* schedule_state =
-      MakeScheduleState(QUEUE_E, config_e, host_count, 30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, USER_A);
+  ScheduleState* schedule_state = MakeScheduleState(QUEUE_E, config_e, host_count,
+      30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, USER_A);
   string not_admitted_reason;
 
   // Simulate that there are 2 queries queued.
@@ -595,28 +595,23 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
       &not_admitted_reason, nullptr, coordinator_resource_limited));
 
-  // test with load == limit, should fail
+  // Test with load == limit, should fail
   pool_stats->agg_user_loads_.insert(USER_A, 2);
-
   ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
       &not_admitted_reason, nullptr, coordinator_resource_limited));
-  EXPECT_STR_CONTAINS(
-      not_admitted_reason, "current per-user load 2 for user userA is at or above the limit 2");
+  EXPECT_STR_CONTAINS(not_admitted_reason,
+      "current per-user load 2 for user userA is at or above the limit 2");
 
-  // test if * works
-  // to dp this use a different user
-
-  schedule_state =
-      MakeScheduleState(QUEUE_E, config_e, host_count, 30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, USER3);
+  // Test wildcards with User3
+  schedule_state = MakeScheduleState(QUEUE_E, config_e, host_count, 30L * MEGABYTE,
+      ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, USER3);
   ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
       &not_admitted_reason, nullptr, coordinator_resource_limited));
   pool_stats->agg_user_loads_.insert(USER3, 3);
   ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
       &not_admitted_reason, nullptr, coordinator_resource_limited));
-  EXPECT_STR_CONTAINS(
-      not_admitted_reason, "current per-user load 3 for user user3 is at or above the wildcard limit 3");
-
-
+  EXPECT_STR_CONTAINS(not_admitted_reason,
+      "current per-user load 3 for user user3 is at or above the wildcard limit 3");
 
   // test group quota
 

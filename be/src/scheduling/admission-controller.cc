@@ -1127,7 +1127,7 @@ bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
    return false;
  }
 
-  return  true; // FIXME
+  return  true;
 }
 
 bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,

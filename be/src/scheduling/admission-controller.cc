@@ -1119,10 +1119,12 @@ bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
 //    VLOG_QUERY << count;
 //  }
 
- if (!checkQuota(pool_cfg, pool_stats, state, user, quota_exceeded_reason)) {
+ if (!checkQuota(
+          pool_cfg, pool_stats, state, user, quota_exceeded_reason, <#initializer #>)) {
    return false;
  }
- if (!checkQuota(pool_cfg, pool_stats, state, "*", quota_exceeded_reason)) {
+ if (!checkQuota(
+         pool_cfg, pool_stats, state, "*", quota_exceeded_reason, <#initializer #>)) {
    return false;
  }
 
@@ -1131,7 +1133,8 @@ bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
 
 bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
     AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
-    const string& user_for_load, string* quota_exceeded_reason) {
+    const string& user_for_load, string* quota_exceeded_reason,
+    const string& user_for_limit) {
   auto it = pool_cfg.user_query_limits.find(user_for_load);
   int64 user_limit = 0;
   if (it != pool_cfg.user_query_limits.end()) {

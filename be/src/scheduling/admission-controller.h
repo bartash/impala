@@ -1272,9 +1272,9 @@ class AdmissionController {
 
   // FIXME asherman add description
   static bool checkQuota(const TPoolConfig& pool_cfg,
-      AdmissionController::PoolStats* pool_stats,
-      const ScheduleState& state, const string& user_for_load,
-      string* quota_exceeded_reason) ;
+      AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
+      const string& user_for_load, string* quota_exceeded_reason,
+      const string& user_for_limit);
 
   FRIEND_TEST(AdmissionControllerTest, Simple);
   FRIEND_TEST(AdmissionControllerTest, PoolStats);

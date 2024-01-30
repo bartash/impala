@@ -614,7 +614,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
       &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(
-      not_admitted_reason, "current per-user load 3 for user userA is at or above the wildcard limit 3");
+      not_admitted_reason, "current per-user load 3 for user user3 is at or above the wildcard limit 3");
 
 
 

@@ -275,7 +275,10 @@ const string HOST_SLOT_NOT_AVAILABLE = "Not enough admission control slots avail
 
 // $0 = current load for user, $1 = user name, $2 = per-user quota
 const string USER_QUOTA_EXCEEDED =
-    "current per-user load $0 for user $1 is at or above the configured limit $2";
+    "current per-user load $0 for user $1 is at or above the limit $2";
+
+const string USER_WILDCARD_QUOTA_EXCEEDED =
+    "current per-user load $0 for user $1 is at or above the wildcard limit $2";
 
 // Parses the topic key to separate the prefix that helps recognize the kind of update
 // received.
@@ -1134,10 +1137,11 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
     AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
     const string& user_for_load, const string& user_for_limit,
     string* quota_exceeded_reason, bool use_wildcard) {
+  string user = user_for_load;
   if (use_wildcard) {
-
+      user = "*";
   }
-  auto it = pool_cfg.user_query_limits.find(user_for_limit);
+  auto it = pool_cfg.user_query_limits.find(user);
   int64 user_limit = 0;
   if (it != pool_cfg.user_query_limits.end()) {
     // There is a per-user limit for the delegated user.
@@ -1147,10 +1151,13 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
         pool_stats->GetUserLoad(user_for_load);
     if (user_load + 1 > user_limit) {
       if (use_wildcard) {
-
+        *quota_exceeded_reason =
+            Substitute(USER_QUOTA_EXCEEDED, user_load, user_for_load, user_limit);
+      } else {
+        *quota_exceeded_reason =
+            Substitute(USER_QUOTA_EXCEEDED, user_load, user_for_load, user_limit);
       }
-      *quota_exceeded_reason =
-          Substitute(USER_QUOTA_EXCEEDED, user_load, user_for_load, user_limit);
+
       return false;
     }
   }

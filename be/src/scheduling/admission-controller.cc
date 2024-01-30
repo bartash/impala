@@ -30,6 +30,7 @@
 #include "scheduling/executor-group.h"
 #include "scheduling/schedule-state.h"
 #include "scheduling/scheduler.h"
+#include "service/frontend.h"
 #include "service/impala-server.h"
 #include "util/auth-util.h"
 #include "util/bit-util.h"
@@ -1139,6 +1140,18 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
       *quota_exceeded_reason = Substitute(format, user_load, user_for_load, user_limit);
       return false;
     }
+  }
+  TGetHadoopGroupsRequest req;
+  req.__set_user(user_for_load);
+  TGetHadoopGroupsResponse res;
+  int64_t start = MonotonicMillis();
+  Status status = ExecEnv::GetInstance()->frontend()->GetHadoopGroups(req, &res);
+  VLOG_QUERY << "Getting Hadoop groups for user: " << user_for_load << " took " <<
+      (PrettyPrinter::Print(MonotonicMillis() - start, TUnit::TIME_MS));
+  if (!status.ok()) {
+    LOG(ERROR) << "Error getting Hadoop groups for user: " << user_for_load << ": "
+               << status.GetDetail();
+    return false; // FIXME
   }
   return true;
 }

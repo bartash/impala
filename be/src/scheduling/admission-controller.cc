@@ -1112,34 +1112,23 @@ bool AdmissionController::HasAvailableSlots(const ScheduleState& state,
 
 bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
     const TPoolConfig& pool_cfg, PoolStats* pool_stats, string* quota_exceeded_reason) {
-
-//  state.request().query_ctx.session.delegated_user;
   const string& user = state.request().query_ctx.session.delegated_user;
-  VLOG_QUERY << user;
-  VLOG_QUERY <<  state.request().query_ctx.session.delegated_user;
-//  if (pool_cfg.user_query_limits.count(state.request().query_ctx.session.delegated_user)) {
-//    const int32 count = pool_cfg.user_query_limits[state.request().query_ctx.session.delegated_user];
-//    VLOG_QUERY << count;
-//  }
+  if (!checkQuota(pool_cfg, pool_stats, state, user, quota_exceeded_reason, false)) {
+    return false;
+  }
+  if (!checkQuota(pool_cfg, pool_stats, state, user, quota_exceeded_reason, true)) {
+    return false;
+  }
 
- if (!checkQuota(
-          pool_cfg, pool_stats, state, user, user, quota_exceeded_reason, false)) {
-   return false;
- }
- if (!checkQuota(pool_cfg, pool_stats, state, user, "*", quota_exceeded_reason, true)) {
-   return false;
- }
-
-  return  true;
+  return true;
 }
 
 bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
     AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
-    const string& user_for_load, const string& user_for_limit,
-    string* quota_exceeded_reason, bool use_wildcard) {
+    const string& user_for_load, string* quota_exceeded_reason, bool use_wildcard) {
   string user = user_for_load;
   if (use_wildcard) {
-      user = "*";
+    user = "*";
   }
   auto it = pool_cfg.user_query_limits.find(user);
   int64 user_limit = 0;
@@ -1147,12 +1136,11 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
     // There is a per-user limit for the delegated user.
     user_limit = it->second;
     // Find the current aggregated load for this user.
-    int64 user_load =
-        pool_stats->GetUserLoad(user_for_load);
+    int64 user_load = pool_stats->GetUserLoad(user_for_load);
     if (user_load + 1 > user_limit) {
       if (use_wildcard) {
-        *quota_exceeded_reason =
-            Substitute(USER_WILDCARD_QUOTA_EXCEEDED, user_load, user_for_load, user_limit);
+        *quota_exceeded_reason = Substitute(
+            USER_WILDCARD_QUOTA_EXCEEDED, user_load, user_for_load, user_limit);
       } else {
         *quota_exceeded_reason =
             Substitute(USER_QUOTA_EXCEEDED, user_load, user_for_load, user_limit);

@@ -1152,7 +1152,7 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
     if (user_load + 1 > user_limit) {
       if (use_wildcard) {
         *quota_exceeded_reason =
-            Substitute(USER_QUOTA_EXCEEDED, user_load, user_for_load, user_limit);
+            Substitute(USER_WILDCARD_QUOTA_EXCEEDED, user_load, user_for_load, user_limit);
       } else {
         *quota_exceeded_reason =
             Substitute(USER_QUOTA_EXCEEDED, user_load, user_for_load, user_limit);

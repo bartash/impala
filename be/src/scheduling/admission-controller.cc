@@ -1131,18 +1131,18 @@ bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
 
 bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
     AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
-    const string& user, string* quota_exceeded_reason) {
-  auto it = pool_cfg.user_query_limits.find(user);
+    const string& user_for_load, string* quota_exceeded_reason) {
+  auto it = pool_cfg.user_query_limits.find(user_for_load);
   int64 user_limit = 0;
   if (it != pool_cfg.user_query_limits.end()) {
     // There is a per-user limit for the delegated user.
     user_limit = it->second;
     // Find the current aggregated load for this user.
     int64 user_load =
-        pool_stats->GetUserLoad(user);
+        pool_stats->GetUserLoad(user_for_load);
     if (user_load + 1 > user_limit) {
       *quota_exceeded_reason =
-          Substitute(USER_QUOTA_EXCEEDED, user_load, user, user_limit);
+          Substitute(USER_QUOTA_EXCEEDED, user_load, user_for_load, user_limit);
       return false;
     }
   }

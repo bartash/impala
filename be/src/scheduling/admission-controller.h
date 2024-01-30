@@ -1271,10 +1271,11 @@ class AdmissionController {
       const vector<NetworkAddressPB>& host_addr);
 
   // FIXME asherman add description
+  // In particular explain user_for_load user_for_limit
   static bool checkQuota(const TPoolConfig& pool_cfg,
       AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
-      const string& user_for_load, string* quota_exceeded_reason,
-      const string& user_for_limit);
+      const string& user_for_load, const string& user_for_limit,
+      string* quota_exceeded_reason);
 
   FRIEND_TEST(AdmissionControllerTest, Simple);
   FRIEND_TEST(AdmissionControllerTest, PoolStats);

@@ -1122,6 +1122,9 @@ bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
  if (!checkQuota(pool_cfg, pool_stats, state, user, quota_exceeded_reason)) {
    return false;
  }
+ if (!checkQuota(pool_cfg, pool_stats, state, "*", quota_exceeded_reason)) {
+   return false;
+ }
 
   return  true; // FIXME
 }

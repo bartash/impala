@@ -595,14 +595,17 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
       &not_admitted_reason, nullptr, coordinator_resource_limited));
 
-  pool_stats->agg_user_loads_.insert(USER_A, 6);
+  // test with load == limit, should fail
+  pool_stats->agg_user_loads_.insert(USER_A, 2);
 
   ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
       &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(
-      not_admitted_reason, "current per-user load 6 for user userA exceeded the configured limit 2");
+      not_admitted_reason, "current per-user load 2 for user userA is at or above the configured limit 2");
 
   // test if * works
+  // to dp this use a different user
+  pool_stats->agg_user_loads_.insert(USER3, 1);
 
 
 

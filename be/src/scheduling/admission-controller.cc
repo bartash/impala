@@ -1138,14 +1138,13 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
     // Find the current aggregated load for this user.
     int64 user_load = pool_stats->GetUserLoad(user_for_load);
     if (user_load + 1 > user_limit) {
+      string format;
       if (use_wildcard) {
-        *quota_exceeded_reason = Substitute(
-            USER_WILDCARD_QUOTA_EXCEEDED, user_load, user_for_load, user_limit);
+        format = USER_WILDCARD_QUOTA_EXCEEDED;
       } else {
-        *quota_exceeded_reason =
-            Substitute(USER_QUOTA_EXCEEDED, user_load, user_for_load, user_limit);
+        format = USER_QUOTA_EXCEEDED;
       }
-
+      *quota_exceeded_reason = Substitute(format, user_load, user_for_load, user_limit);
       return false;
     }
   }

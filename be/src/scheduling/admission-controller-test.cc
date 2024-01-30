@@ -605,8 +605,16 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
 
   // test if * works
   // to dp this use a different user
-  pool_stats->agg_user_loads_.insert(USER3, 1);
 
+  schedule_state =
+      MakeScheduleState(QUEUE_E, config_e, host_count, 30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, USER3);
+  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  pool_stats->agg_user_loads_.insert(USER3, 3);
+  ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  EXPECT_STR_CONTAINS(
+      not_admitted_reason, "xxxx");
 
 
 

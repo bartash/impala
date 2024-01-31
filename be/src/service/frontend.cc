@@ -311,6 +311,11 @@ Status Frontend::GetHadoopGroups(const TGetHadoopGroupsRequest& request,
   return JniUtil::CallJniMethod(fe_, get_hadoop_groups_id_, request, response);
 }
 
+Status Frontend::SetHadoopGroups(const TSetHadoopGroupsRequest& request,
+    TSetHadoopGroupsResponse* response) {
+  return JniUtil::CallJniMethod(fe_, set_hadoop_groups_id_, request, response);
+}
+
 Status Frontend::LoadData(const TLoadDataReq& request, TLoadDataResp* response) {
   return JniUtil::CallJniMethod(fe_, load_table_data_id_, request, response);
 }

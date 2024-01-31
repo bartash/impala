@@ -62,6 +62,7 @@ import org.apache.impala.thrift.TDescribeOutputStyle;
 import org.apache.impala.thrift.TDescribeResult;
 import org.apache.impala.thrift.TDescribeTableParams;
 import org.apache.impala.thrift.TDescriptorTable;
+import org.apache.impala.thrift.TErrorCode;
 import org.apache.impala.thrift.TExecRequest;
 import org.apache.impala.thrift.TFunctionCategory;
 import org.apache.impala.thrift.TGetAllHadoopConfigsResponse;
@@ -87,12 +88,15 @@ import org.apache.impala.thrift.TConvertTableRequest;
 import org.apache.impala.thrift.TQueryCompleteContext;
 import org.apache.impala.thrift.TQueryCtx;
 import org.apache.impala.thrift.TResultSet;
+import org.apache.impala.thrift.TSetHadoopGroupsRequest;
+import org.apache.impala.thrift.TSetHadoopGroupsResponse;
 import org.apache.impala.thrift.TShowFilesParams;
 import org.apache.impala.thrift.TShowGrantPrincipalParams;
 import org.apache.impala.thrift.TShowRolesParams;
 import org.apache.impala.thrift.TShowStatsOp;
 import org.apache.impala.thrift.TShowStatsParams;
 import org.apache.impala.thrift.TDescribeHistoryParams;
+import org.apache.impala.thrift.TStatus;
 import org.apache.impala.thrift.TTableName;
 import org.apache.impala.thrift.TUniqueId;
 import org.apache.impala.thrift.TUpdateCatalogCacheRequest;
@@ -120,6 +124,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * JNI-callable interface onto a wrapped Frontend instance. The main point is to serialise
@@ -696,6 +701,28 @@ public class JniFrontend {
   }
 
   /**
+   * set Hadoop groups FIXME
+   */
+  public byte[] setHadoopGroups(byte[] serializedRequest) throws ImpalaException {
+    TSetHadoopGroupsRequest request = new TSetHadoopGroupsRequest();
+    JniUtil.deserializeThrift(protocolFactory_, request, serializedRequest);
+    TSetHadoopGroupsResponse result = new TSetHadoopGroupsResponse();
+
+    Map<String, Set<String>> groups = request.getGroups();
+    System.out.println("groups = " + groups);
+
+    // FIXME do something
+
+    result.setStatus(new TStatus(TErrorCode.OK, Lists.newArrayList()));
+      try {
+      TSerializer serializer = new TSerializer(protocolFactory_);
+      return serializer.serialize(result);
+    } catch (TException e) {
+      throw new InternalException(e.getMessage());
+    }
+  }
+
+  /**
    * JNI wrapper for {@link Frontend#callQueryCompleteHooks(QueryCompleteContext)}.
    *
    * @param serializedRequest
@@ -785,6 +812,7 @@ public class JniFrontend {
     return frontend_.getSaml2Client().validateBearer(webContext);
   }
 
+  /**
   /**
    * Aborts a Kudu transaction.
    * @param queryId the id of the query.

@@ -1141,17 +1141,35 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
       return false;
     }
   }
-  TGetHadoopGroupsRequest req;
-  req.__set_user(user_for_load);
-  TGetHadoopGroupsResponse res;
-  int64_t start = MonotonicMillis();
-  Status status = ExecEnv::GetInstance()->frontend()->GetHadoopGroups(req, &res);
-  VLOG_QUERY << "Getting Hadoop groups for user: " << user_for_load << " took " <<
-      (PrettyPrinter::Print(MonotonicMillis() - start, TUnit::TIME_MS));
-  if (!status.ok()) {
-    LOG(ERROR) << "Error getting Hadoop groups for user: " << user_for_load << ": "
-               << status.GetDetail();
-    return false; // FIXME
+  {
+    TSetHadoopGroupsRequest req;
+    std::map<std::string, std::set<std::string>> groups;
+    std::set<std::string> set1;
+    set1.insert("user2");
+    set1.insert("user5");
+    groups.insert({"group1", set1});
+    req.__set_groups(groups);
+    TSetHadoopGroupsResponse res;
+    Status status = ExecEnv::GetInstance()->frontend()->SetHadoopGroups(req, &res);
+    if (!status.ok()) {
+      LOG(ERROR) << "Error setting Hadoop groups for user: " << user_for_load << ": "
+                 << status.GetDetail();
+      return false; // FIXME
+    }
+  }
+  {
+    TGetHadoopGroupsRequest req;
+    req.__set_user(user_for_load);
+    TGetHadoopGroupsResponse res;
+    int64_t start = MonotonicMillis();
+    Status status = ExecEnv::GetInstance()->frontend()->GetHadoopGroups(req, &res);
+    VLOG_QUERY << "Getting Hadoop groups for user: " << user_for_load << " took "
+               << (PrettyPrinter::Print(MonotonicMillis() - start, TUnit::TIME_MS));
+    if (!status.ok()) {
+      LOG(ERROR) << "Error getting Hadoop groups for user: " << user_for_load << ": "
+                 << status.GetDetail();
+      return false; // FIXME
+    }
   }
   return true;
 }

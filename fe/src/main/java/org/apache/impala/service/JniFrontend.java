@@ -710,9 +710,11 @@ public class JniFrontend {
     TSetHadoopGroupsResponse result = new TSetHadoopGroupsResponse();
 
     Map<String, Set<String>> groups = request.getGroups();
-    System.out.println("groups = " + groups);
+    System.out.println("set groups = " + groups);
 
     // FIXME need to set these in a static var??
+
+    // FIXME consider taht if if groups is empty then reset?
 
     Configuration conf = new Configuration();
     conf.set(CommonConfigurationKeys.HADOOP_SECURITY_GROUP_MAPPING,
@@ -733,21 +735,23 @@ public class JniFrontend {
 
     @Override
     public List<String> getGroups(String s) throws IOException {
+      System.out.println("GroupHack: getGroups called");
       return null;
     }
 
     @Override
     public void cacheGroupsRefresh() throws IOException {
-
+      System.out.println("GroupHack: cacheGroupsRefresh called");
     }
 
     @Override
     public void cacheGroupsAdd(List<String> list) throws IOException {
-
+      System.out.println("GroupHack: cacheGroupsAdd called");
     }
 
     @Override
     public Set<String> getGroupsSet(String s) throws IOException {
+      System.out.println("GroupHack: getGroupsSet called");
       return null;
     }
   }

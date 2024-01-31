@@ -1170,6 +1170,9 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
                  << status.GetDetail();
       return false; // FIXME
     }
+    for (string s : res.groups) {
+      VLOG_QUERY << s;  // FIXME remove
+    }
   }
   return true;
 }

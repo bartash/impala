@@ -62,6 +62,7 @@ import org.apache.impala.thrift.TDescribeOutputStyle;
 import org.apache.impala.thrift.TDescribeResult;
 import org.apache.impala.thrift.TDescribeTableParams;
 import org.apache.impala.thrift.TDescriptorTable;
+import org.apache.impala.thrift.TErrorCode;
 import org.apache.impala.thrift.TExecRequest;
 import org.apache.impala.thrift.TFunctionCategory;
 import org.apache.impala.thrift.TGetAllHadoopConfigsResponse;
@@ -95,6 +96,7 @@ import org.apache.impala.thrift.TShowRolesParams;
 import org.apache.impala.thrift.TShowStatsOp;
 import org.apache.impala.thrift.TShowStatsParams;
 import org.apache.impala.thrift.TDescribeHistoryParams;
+import org.apache.impala.thrift.TStatus;
 import org.apache.impala.thrift.TTableName;
 import org.apache.impala.thrift.TUniqueId;
 import org.apache.impala.thrift.TUpdateCatalogCacheRequest;
@@ -122,6 +124,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * JNI-callable interface onto a wrapped Frontend instance. The main point is to serialise
@@ -705,21 +708,12 @@ public class JniFrontend {
     JniUtil.deserializeThrift(protocolFactory_, request, serializedRequest);
     TSetHadoopGroupsResponse result = new TSetHadoopGroupsResponse();
 
-    request.getGroups();
-    try {
-      result.setGroups(GROUPS.getGroups(request.getUser()));
-    } catch (IOException e) {
-      // HACK: https://issues.apache.org/jira/browse/HADOOP-15505
-      // There is no easy way to know if no groups found for a user
-      // other than reading the exception message.
-      if (e.getMessage().startsWith("No groups found for user")) {
-        result.setGroups(Collections.<String>emptyList());
-      } else {
-        LOG.error("Error getting Hadoop groups for user: " + request.getUser(), e);
-        throw new InternalException(e.getMessage());
-      }
-    }
-    try {
+    Map<String, Set<String>> groups = request.getGroups();
+
+    // FIXME do something
+
+    result.setStatus(new TStatus(TErrorCode.OK, Lists.newArrayList()));
+      try {
       TSerializer serializer = new TSerializer(protocolFactory_);
       return serializer.serialize(result);
     } catch (TException e) {

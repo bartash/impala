@@ -1154,6 +1154,8 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
     if (!status.ok()) {
       LOG(ERROR) << "Error setting Hadoop groups for user: " << user_for_load << ": "
                  << status.GetDetail();
+     *quota_exceeded_reason = "Error setting Hadoop groups for user: " + user_for_load + ": "
+                 + status.GetDetail(); // FIXME
       return false; // FIXME
     }
   }

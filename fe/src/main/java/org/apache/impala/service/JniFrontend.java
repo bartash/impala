@@ -731,7 +731,7 @@ public class JniFrontend {
     }
   }
 
-  class GroupHack implements GroupMappingServiceProvider {
+  public static class GroupHack implements GroupMappingServiceProvider {
 
     public GroupHack() {
     }
@@ -739,7 +739,7 @@ public class JniFrontend {
     @Override
     public List<String> getGroups(String s) throws IOException {
       System.out.println("GroupHack: getGroups called");
-      return null;
+      return Collections.emptyList();
     }
 
     @Override
@@ -755,7 +755,7 @@ public class JniFrontend {
     @Override
     public Set<String> getGroupsSet(String s) throws IOException {
       System.out.println("GroupHack: getGroupsSet called");
-      return null;
+      return Collections.emptySet();
     }
   }
 

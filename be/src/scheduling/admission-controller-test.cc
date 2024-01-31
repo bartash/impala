@@ -83,10 +83,6 @@ class AdmissionControllerTest : public testing::Test {
 
   virtual void SetUp() {
     // Establish a TestEnv so that ExecEnv works in tests.
-    setenv("HADOOP_SECURITY_GROUP_MAPPING", "xxxx", 1);
-    setenv("HADOOP_OPTS", "-Dhadoop.security.group.mapping=xxxx", 1);
-    setenv("HADOOP_OPTS", "-Dhadoop.security.group.mapping=xxxx", 1);
-    setenv("HADOOP_CLIENT_OPTS", "-Dhadoop.security.group.mapping=xxxx", 1);
     test_env_.reset(new TestEnv);
     flag_saver_.reset(new google::FlagSaver());
     ASSERT_OK(test_env_->Init());

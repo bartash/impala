@@ -87,6 +87,8 @@ import org.apache.impala.thrift.TConvertTableRequest;
 import org.apache.impala.thrift.TQueryCompleteContext;
 import org.apache.impala.thrift.TQueryCtx;
 import org.apache.impala.thrift.TResultSet;
+import org.apache.impala.thrift.TSetHadoopGroupsRequest;
+import org.apache.impala.thrift.TSetHadoopGroupsResponse;
 import org.apache.impala.thrift.TShowFilesParams;
 import org.apache.impala.thrift.TShowGrantPrincipalParams;
 import org.apache.impala.thrift.TShowRolesParams;
@@ -674,6 +676,36 @@ public class JniFrontend {
     TGetHadoopGroupsRequest request = new TGetHadoopGroupsRequest();
     JniUtil.deserializeThrift(protocolFactory_, request, serializedRequest);
     TGetHadoopGroupsResponse result = new TGetHadoopGroupsResponse();
+    try {
+      result.setGroups(GROUPS.getGroups(request.getUser()));
+    } catch (IOException e) {
+      // HACK: https://issues.apache.org/jira/browse/HADOOP-15505
+      // There is no easy way to know if no groups found for a user
+      // other than reading the exception message.
+      if (e.getMessage().startsWith("No groups found for user")) {
+        result.setGroups(Collections.<String>emptyList());
+      } else {
+        LOG.error("Error getting Hadoop groups for user: " + request.getUser(), e);
+        throw new InternalException(e.getMessage());
+      }
+    }
+    try {
+      TSerializer serializer = new TSerializer(protocolFactory_);
+      return serializer.serialize(result);
+    } catch (TException e) {
+      throw new InternalException(e.getMessage());
+    }
+  }
+
+  /**
+   * set Hadoop groups FIXME
+   */
+  public byte[] setHadoopGroups(byte[] serializedRequest) throws ImpalaException {
+    TSetHadoopGroupsRequest request = new TSetHadoopGroupsRequest();
+    JniUtil.deserializeThrift(protocolFactory_, request, serializedRequest);
+    TSetHadoopGroupsResponse result = new TSetHadoopGroupsResponse();
+
+    request.getGroups();
     try {
       result.setGroups(GROUPS.getGroups(request.getUser()));
     } catch (IOException e) {

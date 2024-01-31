@@ -966,7 +966,7 @@ struct TGetHadoopGroupsResponse {
 
 struct TSetHadoopGroupsRequest {
   // The list of groups that the user belongs to.
-  1: required list<string> groups
+  1: required map<string, set<string>> groups
 }
 
 struct TSetHadoopGroupsResponse {

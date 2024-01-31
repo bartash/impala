@@ -762,6 +762,7 @@ public class JniFrontend {
     @Override
     public Set<String> getGroupsSet(String userName) throws IOException {
       System.out.println("GroupHack: getGroupsSet called");
+      System.out.println("JniFrontend.groupsToUsers_ = " + JniFrontend.groupsToUsers_);
       Set<String>  ret = new HashSet<>();
       Set<String> groups = JniFrontend.groupsToUsers_.keySet();
       for (String group: groups) {

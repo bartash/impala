@@ -1146,6 +1146,7 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
     std::map<std::string, std::set<std::string>> groups;
     std::set<std::string> set1;
     set1.insert("user2");
+    set1.insert("user1");
     set1.insert("user5");
     groups.insert({"group1", set1});
     req.__set_groups(groups);

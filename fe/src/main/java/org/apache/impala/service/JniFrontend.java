@@ -27,6 +27,7 @@ import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.client.HdfsClientConfigKeys;
+import org.apache.hadoop.security.GroupMappingServiceProvider;
 import org.apache.hadoop.security.Groups;
 import org.apache.hadoop.security.JniBasedUnixGroupsMappingWithFallback;
 import org.apache.hadoop.security.JniBasedUnixGroupsNetgroupMappingWithFallback;
@@ -633,7 +634,7 @@ public class JniFrontend {
 
   // Caching this saves ~50ms per call to getHadoopConfigAsHtml
   private static final Configuration CONF = new Configuration();
-  private static final Groups GROUPS = Groups.getUserToGroupsMappingService(CONF);
+  private static Groups GROUPS = Groups.getUserToGroupsMappingService(CONF);
 
   /**
    * Returns a string of all loaded Hadoop configuration parameters as a table of keys
@@ -711,7 +712,13 @@ public class JniFrontend {
     Map<String, Set<String>> groups = request.getGroups();
     System.out.println("groups = " + groups);
 
-    // FIXME do something
+    // FIXME need to set these in a static var??
+
+    Configuration conf = new Configuration();
+    conf.set(CommonConfigurationKeys.HADOOP_SECURITY_GROUP_MAPPING,
+        GroupHack.class.getName());
+    GROUPS = Groups.getUserToGroupsMappingServiceWithLoadedConfiguration(conf);
+
 
     result.setStatus(new TStatus(TErrorCode.OK, Lists.newArrayList()));
       try {
@@ -719,6 +726,29 @@ public class JniFrontend {
       return serializer.serialize(result);
     } catch (TException e) {
       throw new InternalException(e.getMessage());
+    }
+  }
+
+  class GroupHack implements GroupMappingServiceProvider {
+
+    @Override
+    public List<String> getGroups(String s) throws IOException {
+      return null;
+    }
+
+    @Override
+    public void cacheGroupsRefresh() throws IOException {
+
+    }
+
+    @Override
+    public void cacheGroupsAdd(List<String> list) throws IOException {
+
+    }
+
+    @Override
+    public Set<String> getGroupsSet(String s) throws IOException {
+      return null;
     }
   }
 

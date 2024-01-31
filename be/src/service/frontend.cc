@@ -105,6 +105,7 @@ Frontend::Frontend() {
     {"getHadoopConfig", "([B)[B", &get_hadoop_config_id_},
     {"getAllHadoopConfigs", "()[B", &get_hadoop_configs_id_},
     {"getHadoopGroups", "([B)[B", &get_hadoop_groups_id_},
+    {"setHadoopGroups", "([B)[B", &set_hadoop_groups_id_},
     {"checkConfiguration", "()Ljava/lang/String;", &check_config_id_},
     {"updateCatalogCache", "([B)[B", &update_catalog_cache_id_},
     {"updateExecutorMembership", "([B)V", &update_membership_id_},

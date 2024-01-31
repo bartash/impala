@@ -137,6 +137,9 @@ public class JniFrontend {
       new TBinaryProtocol.Factory();
   private final Frontend frontend_;
 
+  // For testing only, groups to return from getHadoopGroups().
+  static     Map<String, Set<String>> groupsForTesting_;
+
   /**
    * Create a new instance of the Jni Frontend.
    */
@@ -701,6 +704,8 @@ public class JniFrontend {
     }
   }
 
+
+
   /**
    * set Hadoop groups FIXME
    */
@@ -712,7 +717,8 @@ public class JniFrontend {
     Map<String, Set<String>> groups = request.getGroups();
     System.out.println("set groups = " + groups);
 
-    // FIXME need to set these in a static var??
+    // No synchronization as this is just for test
+    groupsForTesting_ = groups;
 
     // FIXME consider that if groups is empty then reset?
 
@@ -737,9 +743,9 @@ public class JniFrontend {
     }
 
     @Override
-    public List<String> getGroups(String s) throws IOException {
+    public List<String> getGroups(String userName) throws IOException {
       System.out.println("GroupHack: getGroups called");
-      return Collections.emptyList();
+      return new ArrayList<>(this.getGroupsSet(userName));
     }
 
     @Override
@@ -753,7 +759,7 @@ public class JniFrontend {
     }
 
     @Override
-    public Set<String> getGroupsSet(String s) throws IOException {
+    public Set<String> getGroupsSet(String userName) throws IOException {
       System.out.println("GroupHack: getGroupsSet called");
       return Collections.emptySet();
     }

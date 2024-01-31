@@ -714,7 +714,7 @@ public class JniFrontend {
 
     // FIXME need to set these in a static var??
 
-    // FIXME consider taht if if groups is empty then reset?
+    // FIXME consider that if groups is empty then reset?
 
     Configuration conf = new Configuration();
     conf.set(CommonConfigurationKeys.HADOOP_SECURITY_GROUP_MAPPING,
@@ -732,6 +732,9 @@ public class JniFrontend {
   }
 
   class GroupHack implements GroupMappingServiceProvider {
+
+    public GroupHack() {
+    }
 
     @Override
     public List<String> getGroups(String s) throws IOException {

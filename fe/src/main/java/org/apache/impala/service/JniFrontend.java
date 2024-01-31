@@ -742,6 +742,10 @@ public class JniFrontend {
     }
   }
 
+  /**
+   * A custom GroupMappingServiceProvider used only for testing.
+   * This class returns groups for a user based on the values in groupsToUsers_.
+   */
   public static class GroupHack implements GroupMappingServiceProvider {
 
     public GroupHack() {

@@ -39,7 +39,6 @@ import org.apache.impala.authentication.saml.WrappedWebContext;
 import org.apache.impala.authorization.AuthorizationFactory;
 import org.apache.impala.authorization.ImpalaInternalAdminUser;
 import org.apache.impala.authorization.User;
-import org.apache.impala.catalog.DatabaseNotFoundException;
 import org.apache.impala.catalog.FeDataSource;
 import org.apache.impala.catalog.FeDb;
 import org.apache.impala.catalog.FeTable;
@@ -56,7 +55,6 @@ import org.apache.impala.service.Frontend.PlanCtx;
 import org.apache.impala.thrift.TBackendGflags;
 import org.apache.impala.thrift.TBuildTestDescriptorTableParams;
 import org.apache.impala.thrift.TCatalogObject;
-import org.apache.impala.thrift.TColumnValue;
 import org.apache.impala.thrift.TDatabase;
 import org.apache.impala.thrift.TDescribeDbParams;
 import org.apache.impala.thrift.TDescribeOutputStyle;
@@ -85,7 +83,6 @@ import org.apache.impala.thrift.TLoadDataReq;
 import org.apache.impala.thrift.TLoadDataResp;
 import org.apache.impala.thrift.TLogLevel;
 import org.apache.impala.thrift.TMetadataOpRequest;
-import org.apache.impala.thrift.TConvertTableRequest;
 import org.apache.impala.thrift.TQueryCompleteContext;
 import org.apache.impala.thrift.TQueryCtx;
 import org.apache.impala.thrift.TResultSet;
@@ -123,6 +120,8 @@ import java.lang.IllegalArgumentException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -138,7 +137,8 @@ public class JniFrontend {
   private final Frontend frontend_;
 
   // For testing only, groups to return from getHadoopGroups().
-  static     Map<String, Set<String>> groupsForTesting_;
+  // Key is group name, value is members of the group.
+  static     Map<String, Set<String>> groupsToUsers_;
 
   /**
    * Create a new instance of the Jni Frontend.
@@ -714,11 +714,12 @@ public class JniFrontend {
     JniUtil.deserializeThrift(protocolFactory_, request, serializedRequest);
     TSetHadoopGroupsResponse result = new TSetHadoopGroupsResponse();
 
+    // Key is group name, value is members of the group.
     Map<String, Set<String>> groups = request.getGroups();
     System.out.println("set groups = " + groups);
 
     // No synchronization as this is just for test
-    groupsForTesting_ = groups;
+    groupsToUsers_ = groups;
 
     // FIXME consider that if groups is empty then reset?
 
@@ -761,7 +762,16 @@ public class JniFrontend {
     @Override
     public Set<String> getGroupsSet(String userName) throws IOException {
       System.out.println("GroupHack: getGroupsSet called");
-      return Collections.emptySet();
+      Set<String>  ret = new HashSet<>();
+      Set<String> groups = JniFrontend.groupsToUsers_.keySet();
+      for (String group: groups) {
+        Set<String> users = JniFrontend.groupsToUsers_.get(group);
+        if (users.contains(userName)) {
+          ret.add(group);
+        }
+      }
+      System.out.println("ret = " + ret);
+      return ret;
     }
   }
 

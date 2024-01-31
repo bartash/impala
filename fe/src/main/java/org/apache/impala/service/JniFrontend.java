@@ -707,7 +707,9 @@ public class JniFrontend {
 
 
   /**
-   * set Hadoop groups FIXME
+   * Set Hadoop groups on the Java side. This causes the UserToGroupsMappingService
+   * implementation to be replaced with a custom class which will return the groups
+   * passed to this function.
    */
   public byte[] setHadoopGroups(byte[] serializedRequest) throws ImpalaException {
     TSetHadoopGroupsRequest request = new TSetHadoopGroupsRequest();

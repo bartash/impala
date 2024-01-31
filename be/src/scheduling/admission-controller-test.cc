@@ -26,6 +26,7 @@
 #include "runtime/test-env.h"
 #include "scheduling/cluster-membership-test-util.h"
 #include "scheduling/schedule-state.h"
+#include "service/frontend.h"
 #include "service/impala-server.h"
 #include "testutil/gtest-util.h"
 #include "util/collection-metrics.h"
@@ -359,6 +360,19 @@ class AdmissionControllerTest : public testing::Test {
       ResetMemConsumed(child);
     }
   }
+
+  // For testing purposes, set the groups that will be used by
+  // org.apache.hadoop.security.Groups
+  bool SetHadoopGroups(std::map<std::string, std::set<std::string>> groups) {
+    TSetHadoopGroupsRequest req;
+    req.__set_groups(groups);
+    TSetHadoopGroupsResponse res;
+    Status status = ExecEnv::GetInstance()->frontend()->SetHadoopGroups(req, &res);
+    if (!status.ok()) {
+      return false;
+    }
+    return true;
+  }
 };
 
 /// Test that AdmissionController will admit a query into a pool, then simulate other
@@ -618,7 +632,26 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "current per-user load 3 for user user3 is at or above the wildcard limit 3");
 
-  // test group quota
+  pool_stats->agg_user_loads_.insert(USER3, 1);
+  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
+
+  // Test group quotas
+  std::map<std::string, std::set<std::string>> groups;
+  std::set<std::string> set1;
+  set1.insert(USER1);
+  set1.insert(USER3);
+  groups.insert({"group1", set1});
+  ASSERT_TRUE(SetHadoopGroups(groups));
+
+  ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  EXPECT_STR_CONTAINS(not_admitted_reason,
+      "xxxxxxx");
+
+
+
+
 
 
 }

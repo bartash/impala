@@ -19,7 +19,7 @@
     <queue name="queueE">
       <userQueryLimit>userA 2</userQueryLimit>
       <userQueryLimit>* 3</userQueryLimit>
-      <groupQueryLimit>group2 1</groupQueryLimit>
+      <groupQueryLimit>group1 1</groupQueryLimit>
     </queue>
     <aclSubmitApps> </aclSubmitApps>
   </queue>

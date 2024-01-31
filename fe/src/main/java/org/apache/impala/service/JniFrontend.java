@@ -786,6 +786,7 @@ public class JniFrontend {
   }
 
   /**
+  /**
    * Aborts a Kudu transaction.
    * @param queryId the id of the query.
    * @throws TransactionException, ImpalaException

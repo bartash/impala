@@ -277,9 +277,12 @@ const string HOST_SLOT_NOT_AVAILABLE = "Not enough admission control slots avail
 // $0 = current load for user, $1 = user name, $2 = per-user quota
 const string USER_QUOTA_EXCEEDED =
     "current per-user load $0 for user $1 is at or above the limit $2";
-
 const string USER_WILDCARD_QUOTA_EXCEEDED =
     "current per-user load $0 for user $1 is at or above the wildcard limit $2";
+
+// $0 = current load for user, $1 = user name, $2 = group name, $3 = per-user quota
+const string GROUP_QUOTA_EXCEEDED =
+    "current per-group load $0 for user $1 in group $2 is at or above the group limit $3";
 
 // Parses the topic key to separate the prefix that helps recognize the kind of update
 // received.
@@ -1120,6 +1123,9 @@ bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
   if (!checkQuota(pool_cfg, pool_stats, state, user, quota_exceeded_reason, true)) {
     return false;
   }
+  if (!checkGroupQuota(pool_cfg, pool_stats, state, user, quota_exceeded_reason, true)) {
+    return false;
+  }
 
   return true;
 }
@@ -1141,40 +1147,41 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
       return false;
     }
   }
-  {
-    TSetHadoopGroupsRequest req;
-    std::map<std::string, std::set<std::string>> groups;
-    std::set<std::string> set1;
-    set1.insert("user2");
-    set1.insert("user1");
-    set1.insert("user5");
-    groups.insert({"group1", set1});
-    req.__set_groups(groups);
-    TSetHadoopGroupsResponse res;
-    Status status = ExecEnv::GetInstance()->frontend()->SetHadoopGroups(req, &res);
-    if (!status.ok()) {
-      LOG(ERROR) << "Error setting Hadoop groups for user: " << user_for_load << ": "
-                 << status.GetDetail();
-     *quota_exceeded_reason = "Error setting Hadoop groups for user: " + user_for_load + ": "
-                 + status.GetDetail(); // FIXME
-      return false; // FIXME
-    }
+  return true;
+}
+
+bool AdmissionController::checkGroupQuota(const TPoolConfig& pool_cfg,
+    AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
+    const string& user, string* quota_exceeded_reason, bool use_wildcard) {
+
+  int64 user_load = pool_stats->GetUserLoad(user);
+
+  // Get the groups the user is in.
+  TGetHadoopGroupsRequest req;
+  req.__set_user(user);
+  TGetHadoopGroupsResponse res;
+  int64_t start = MonotonicMillis();
+  Status status = ExecEnv::GetInstance()->frontend()->GetHadoopGroups(req, &res);
+  VLOG_QUERY << "Getting Hadoop groups for user: " << user << " took "
+             << (PrettyPrinter::Print(MonotonicMillis() - start, TUnit::TIME_MS));
+  if (!status.ok()) {
+    LOG(ERROR) << "Error getting Hadoop groups for user: " << user << ": "
+               << status.GetDetail();
+    return false; // FIXME
   }
-  {
-    TGetHadoopGroupsRequest req;
-    req.__set_user(user_for_load);
-    TGetHadoopGroupsResponse res;
-    int64_t start = MonotonicMillis();
-    Status status = ExecEnv::GetInstance()->frontend()->GetHadoopGroups(req, &res);
-    VLOG_QUERY << "Getting Hadoop groups for user: " << user_for_load << " took "
-               << (PrettyPrinter::Print(MonotonicMillis() - start, TUnit::TIME_MS));
-    if (!status.ok()) {
-      LOG(ERROR) << "Error getting Hadoop groups for user: " << user_for_load << ": "
-                 << status.GetDetail();
-      return false; // FIXME
-    }
-    for (string s : res.groups) {
-      VLOG_QUERY << s;  // FIXME remove
+
+  // For every group see if there is a limit and enforce it.
+
+  for (const string& group : res.groups) {
+    auto it = pool_cfg.group_query_limits.find(group);
+    int64 group_limit = 0;
+    if (it != pool_cfg.user_query_limits.end()) {
+      // There is a per-user limit for the delegated user.
+      group_limit = it->second;
+      if (user_load + 1 > group_limit) {
+        *quota_exceeded_reason = Substitute(GROUP_QUOTA_EXCEEDED, user_load, user, group, group_limit);
+        return false;
+      }
     }
   }
   return true;

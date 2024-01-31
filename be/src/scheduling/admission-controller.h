@@ -1275,6 +1275,9 @@ class AdmissionController {
   static bool checkQuota(const TPoolConfig& pool_cfg,
       AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
       const string& user_for_load, string* quota_exceeded_reason, bool use_wildcard);
+  static bool checkGroupQuota(const TPoolConfig& pool_cfg,
+      AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
+      const string& user, string* quota_exceeded_reason, bool use_wildcard);
 
   FRIEND_TEST(AdmissionControllerTest, Simple);
   FRIEND_TEST(AdmissionControllerTest, PoolStats);

@@ -371,9 +371,6 @@ public class RequestPoolService {
     result.setMax_mem_resources(
         maxMemoryMb == Integer.MAX_VALUE ? -1 : maxMemoryMb * ByteUnits.MEGABYTE);
     Map<String, Integer> userQueryLimits = allocationConf_.get().getUserQueryLimits(pool);
-    if (userQueryLimits == null) {
-      throw new RuntimeException("XXXXXXXXXXXXXXXXXXX");
-    }
     result.setUser_query_limits(userQueryLimits);
     Map<String, Integer> groupQueryLimits = allocationConf_.get().getGroupQueryLimits(pool);
     result.setGroup_query_limits(groupQueryLimits);

@@ -215,11 +215,15 @@ public class TestRequestPoolService {
     checkPoolConfigResult("root.queueB", 5, 10, -1, 30000L, "mem_limit=1024m");
     checkPoolConfigResult("root.queueC", 5, 10, 1024 * ByteUnits.MEGABYTE, 30000L,
             "mem_limit=1024m", 1000, 10, false, 8, 8, null, null);
+
     Map<String, Integer> queueDUserQueryLimits = new HashMap<>();
     queueDUserQueryLimits.put("userA", 2);
+    queueDUserQueryLimits.put("userF", 2);
     queueDUserQueryLimits.put("*", 3);
     Map<String, Integer> queueDGroupQueryLimits = new HashMap<>();
+    queueDGroupQueryLimits.put("group1", 1);
     queueDGroupQueryLimits.put("group2", 1);
+
     checkPoolConfigResult("root.queueD", 5, 10, -1, 30000L, "mem_limit=1024m",
         queueDUserQueryLimits, queueDGroupQueryLimits);
 
@@ -297,9 +301,12 @@ public class TestRequestPoolService {
 
     Map<String, Integer> queueDUserQueryLimits = new HashMap<>();
     queueDUserQueryLimits.put("userA", 2);
+    queueDUserQueryLimits.put("userF", 2);
     queueDUserQueryLimits.put("*", 3);
     Map<String, Integer> queueDGroupQueryLimits = new HashMap<>();
+    queueDGroupQueryLimits.put("group1", 1);
     queueDGroupQueryLimits.put("group2", 1);
+
     checkPoolConfigResult("root.queueE", -1, 200, -1, null, "",
         queueDUserQueryLimits, queueDGroupQueryLimits);
   }

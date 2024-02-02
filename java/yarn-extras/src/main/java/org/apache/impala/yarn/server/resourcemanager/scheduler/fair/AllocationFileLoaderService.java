@@ -207,18 +207,23 @@ public class AllocationFileLoaderService extends AbstractService {
     Matcher matcher = pattern.matcher(text);
 
     if (matcher.find()) {
-      String name = matcher.group(1); // Group 1 contains the name
-      String numberStr = matcher.group(2); // Group 2 contains the number
-      if (limits.containsKey(name)) {
-        throw new AllocationConfigurationException("Duplicate value given for name " + name);
+      String nameListString = matcher.group(1); // Group 1 contains the name
+
+      String[] nameArray = nameListString.split(",");
+      for (String nameRaw : nameArray) {
+        String name =  nameRaw.trim();
+        String numberStr = matcher.group(2); // Group 2 contains the number
+        if (limits.containsKey(name)) {
+          throw new AllocationConfigurationException("Duplicate value given for name " + name);
+        }
+        int number = 0;
+        try {
+          number = Integer.parseInt(numberStr);
+        } catch (NumberFormatException e) {
+          throw new AllocationConfigurationException("Could not parse query limit for " + name, e);
+        }
+        limits.put(name, number);
       }
-      int number = 0;
-      try {
-        number = Integer.parseInt(numberStr);
-      } catch (NumberFormatException e) {
-        throw new AllocationConfigurationException("Could not parse query limit for " + name, e);
-      }
-      limits.put(name, number);
     } else {
       throw new AllocationConfigurationException("Cannot parse " + text + " into a name and number");
     }

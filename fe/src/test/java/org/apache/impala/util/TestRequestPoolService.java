@@ -219,6 +219,7 @@ public class TestRequestPoolService {
     Map<String, Integer> queueDUserQueryLimits = new HashMap<>();
     queueDUserQueryLimits.put("userA", 2);
     queueDUserQueryLimits.put("userF", 2);
+    queueDUserQueryLimits.put("userG", 101);
     queueDUserQueryLimits.put("*", 3);
     Map<String, Integer> queueDGroupQueryLimits = new HashMap<>();
     queueDGroupQueryLimits.put("group1", 1);

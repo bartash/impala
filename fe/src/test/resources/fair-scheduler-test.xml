@@ -16,6 +16,7 @@
       <aclSubmitApps>userA,userB </aclSubmitApps>
       <userQueryLimit>userA,userF 2</userQueryLimit>
       <userQueryLimit>* 3</userQueryLimit>
+      <userQueryLimit> userG  101</userQueryLimit>
       <groupQueryLimit>group1,group2 1</groupQueryLimit>
     </queue>
     <aclSubmitApps> </aclSubmitApps>

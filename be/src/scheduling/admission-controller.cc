@@ -1117,13 +1117,17 @@ bool AdmissionController::HasAvailableSlots(const ScheduleState& state,
 bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
     const TPoolConfig& pool_cfg, PoolStats* pool_stats, string* quota_exceeded_reason) {
   const string& user = state.request().query_ctx.session.delegated_user;
-  if (!checkQuota(pool_cfg, pool_stats, state, user, quota_exceeded_reason, false)) {
+  bool key_matched = false;
+  if (!checkQuota(
+          pool_cfg, pool_stats, state, user, quota_exceeded_reason, false, &key_matched)) {
     return false;
   }
-  if (!checkQuota(pool_cfg, pool_stats, state, user, quota_exceeded_reason, true)) {
+  if (!checkQuota(
+          pool_cfg, pool_stats, state, user, quota_exceeded_reason, true, &key_matched)) {
     return false;
   }
-  if (!checkGroupQuota(pool_cfg, pool_stats, state, user, quota_exceeded_reason, true)) {
+  if (!checkGroupQuota(
+          pool_cfg, pool_stats, state, user, quota_exceeded_reason, &key_matched)) {
     return false;
   }
   return true;
@@ -1131,7 +1135,8 @@ bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
 
 bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
     AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
-    const string& user_for_load, string* quota_exceeded_reason, bool use_wildcard) {
+    const string& user_for_load, string* quota_exceeded_reason, bool use_wildcard,
+    bool* key_matched) {
   string user_for_limits = use_wildcard ? "*" : user_for_load;
   auto it = pool_cfg.user_query_limits.find(user_for_limits);
   int64 user_limit = 0;
@@ -1151,7 +1156,7 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
 
 bool AdmissionController::checkGroupQuota(const TPoolConfig& pool_cfg,
     AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
-    const string& user, string* quota_exceeded_reason, bool use_wildcard) {
+    const string& user, string* quota_exceeded_reason, bool* key_matched) {
 
   int64 user_load = pool_stats->GetUserLoad(user);
 

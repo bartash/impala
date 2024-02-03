@@ -300,14 +300,16 @@ public class TestRequestPoolService {
     checkPoolConfigResult("root.queueB", -1, 200, -1);
     checkPoolConfigResult("root.queueC", -1, 200, 128 * ByteUnits.MEGABYTE);
 
-    Map<String, Integer> queueDUserQueryLimits = new HashMap<>();
-    queueDUserQueryLimits.put("userA", 2);
-    queueDUserQueryLimits.put("*", 3);
-    Map<String, Integer> queueDGroupQueryLimits = new HashMap<>();
-    queueDGroupQueryLimits.put("group1", 1);
+    Map<String, Integer> queueEUserQueryLimits = new HashMap<>();
+    queueEUserQueryLimits.put("userA", 3);
+    queueEUserQueryLimits.put("userG", 3);
+    queueEUserQueryLimits.put("*", 2);
+    Map<String, Integer> queueEGroupQueryLimits = new HashMap<>();
+    queueEGroupQueryLimits.put("group1", 1);
+    queueEGroupQueryLimits.put("group2", 1);
 
     checkPoolConfigResult("root.queueE", -1, 200, -1, null, "",
-        queueDUserQueryLimits, queueDGroupQueryLimits);
+        queueEUserQueryLimits, queueEGroupQueryLimits);
   }
 
   /**

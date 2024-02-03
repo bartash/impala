@@ -1122,12 +1122,20 @@ bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
           pool_cfg, pool_stats, state, user, quota_exceeded_reason, false, &key_matched)) {
     return false;
   }
-  if (!checkQuota(
-          pool_cfg, pool_stats, state, user, quota_exceeded_reason, true, &key_matched)) {
-    return false;
+  if (key_matched) {
+    VLOG_ROW << "user " << user << " passes quota check as user rule is matched";
+    return true;
   }
   if (!checkGroupQuota(
           pool_cfg, pool_stats, state, user, quota_exceeded_reason, &key_matched)) {
+    return false;
+  }
+  if (key_matched) {
+    VLOG_ROW << "user " << user << " passes quota check as group rule is matched";
+    return true;
+  }
+  if (!checkQuota(
+          pool_cfg, pool_stats, state, user, quota_exceeded_reason, true, &key_matched)) {
     return false;
   }
   return true;
@@ -1148,6 +1156,7 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
     if (user_load + 1 > user_limit) {
       string format = use_wildcard ? USER_WILDCARD_QUOTA_EXCEEDED : USER_QUOTA_EXCEEDED;
       *quota_exceeded_reason = Substitute(format, user_load, user_for_load, user_limit);
+      *key_matched = true;
       return false;
     }
   }
@@ -1171,7 +1180,7 @@ bool AdmissionController::checkGroupQuota(const TPoolConfig& pool_cfg,
   if (!status.ok()) {
     LOG(ERROR) << "Error getting Hadoop groups for user: " << user << ": "
                << status.GetDetail();
-    return false; // FIXME
+    return false;
   }
 
   // For every group see if there is a limit and enforce it.
@@ -1186,6 +1195,7 @@ bool AdmissionController::checkGroupQuota(const TPoolConfig& pool_cfg,
         *quota_exceeded_reason = Substitute(GROUP_QUOTA_EXCEEDED, user_load, user, group, group_limit);
         return false;
       }
+      *key_matched = true;
     }
   }
   return true;

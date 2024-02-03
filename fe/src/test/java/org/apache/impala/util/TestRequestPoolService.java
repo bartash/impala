@@ -303,10 +303,10 @@ public class TestRequestPoolService {
     Map<String, Integer> queueEUserQueryLimits = new HashMap<>();
     queueEUserQueryLimits.put("userA", 3);
     queueEUserQueryLimits.put("userG", 3);
-    queueEUserQueryLimits.put("*", 2);
+    queueEUserQueryLimits.put("*", 1);
     Map<String, Integer> queueEGroupQueryLimits = new HashMap<>();
-    queueEGroupQueryLimits.put("group1", 1);
-    queueEGroupQueryLimits.put("group2", 1);
+    queueEGroupQueryLimits.put("group1", 2);
+    queueEGroupQueryLimits.put("group2", 2);
 
     checkPoolConfigResult("root.queueE", -1, 200, -1, null, "",
         queueEUserQueryLimits, queueEGroupQueryLimits);

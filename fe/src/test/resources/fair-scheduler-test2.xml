@@ -18,8 +18,8 @@
     </queue>
     <queue name="queueE">
       <userQueryLimit>userA,userG 3</userQueryLimit>
-      <userQueryLimit>* 2</userQueryLimit>
-      <groupQueryLimit>group1,group2 1</groupQueryLimit>
+      <groupQueryLimit>group1,group2 2</groupQueryLimit>
+      <userQueryLimit>* 1</userQueryLimit>
     </queue>
     <aclSubmitApps> </aclSubmitApps>
   </queue>

@@ -276,7 +276,7 @@ const string HOST_SLOT_NOT_AVAILABLE = "Not enough admission control slots avail
 
 // $0 = current load for user, $1 = user name, $2 = per-user quota
 const string USER_QUOTA_EXCEEDED =
-    "current per-user load $0 for user $1 is at or above the limit $2";
+    "current per-user load $0 for user $1 is at or above the user limit $2";
 const string USER_WILDCARD_QUOTA_EXCEEDED =
     "current per-user load $0 for user $1 is at or above the wildcard limit $2";
 

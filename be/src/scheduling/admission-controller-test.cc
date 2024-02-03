@@ -632,9 +632,9 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
       &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
-      "current per-user load 3 for user user3 is at or above the wildcard limit 2");
+      "current per-user load 3 for user user3 is at or above the wildcard limit 1");
 
-  pool_stats->agg_user_loads_.insert(USER3, 1);
+  pool_stats->agg_user_loads_.insert(USER3, 0);
   ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
       &not_admitted_reason, nullptr, coordinator_resource_limited));
 

@@ -17,8 +17,8 @@
       <maxResources>400 mb, 0 vcores</maxResources>
     </queue>
     <queue name="queueE">
-      <userQueryLimit>userA 2</userQueryLimit>
-      <userQueryLimit>* 3</userQueryLimit>
+      <userQueryLimit>userA, userG 3</userQueryLimit>
+      <userQueryLimit>* 2</userQueryLimit>
       <groupQueryLimit>group1 1</groupQueryLimit>
     </queue>
     <aclSubmitApps> </aclSubmitApps>

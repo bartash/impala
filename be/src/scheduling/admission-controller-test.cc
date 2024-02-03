@@ -611,11 +611,11 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
       &not_admitted_reason, nullptr, coordinator_resource_limited));
 
   // Test with load == limit, should fail
-  pool_stats->agg_user_loads_.insert(USER_A, 2);
+  pool_stats->agg_user_loads_.insert(USER_A, 3);
   ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
       &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
-      "current per-user load 2 for user userA is at or above the limit 2");
+      "current per-user load 3 for user userA is at or above the limit 3");
 
   // Test wildcards with User3
   schedule_state = MakeScheduleState(QUEUE_E, config_e, host_count, 30L * MEGABYTE,
@@ -626,7 +626,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
       &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
-      "current per-user load 3 for user user3 is at or above the wildcard limit 3");
+      "current per-user load 3 for user user3 is at or above the wildcard limit 2");
 
   pool_stats->agg_user_loads_.insert(USER3, 1);
   ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,

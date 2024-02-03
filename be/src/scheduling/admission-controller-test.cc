@@ -617,6 +617,12 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "current per-user load 3 for user userA is at or above the user limit 3");
 
+  // If UserA's load is 2 it should be admitted because the user rule takes precedence
+  // over the wildcard rule.
+  pool_stats->agg_user_loads_.insert(USER_A, 2);
+  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
+
   // Test wildcards with User3
   schedule_state = MakeScheduleState(QUEUE_E, config_e, host_count, 30L * MEGABYTE,
       ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, USER3);

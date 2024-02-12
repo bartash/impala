@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <allocations>
   <queue name="root">
+    <userQueryLimit>userD 2</userQueryLimit>
     <queue name="queueA">
       <aclSubmitApps>*</aclSubmitApps>
       <maxResources>100000 mb, 2 vcores</maxResources>

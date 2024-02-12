@@ -209,7 +209,13 @@ public class TestRequestPoolService {
   @Test
   public void testPoolLimitConfigs() throws Exception {
     createPoolService(ALLOCATION_FILE, LLAMA_CONFIG_FILE);
-    checkPoolConfigResult("root", 15, 50, -1, 30000L, "mem_limit=1024m");
+    Map<String, Integer> rootUserQueryLimits = new HashMap<>();
+    rootUserQueryLimits.put("userB", 6);
+    rootUserQueryLimits.put("*", 10);
+    Map<String, Integer> rootGroupQueryLimits = new HashMap<>();
+    rootGroupQueryLimits.put("group3", 5);
+    checkPoolConfigResult("root", 15, 50, -1, 30000L, "mem_limit=1024m",
+        rootUserQueryLimits, rootGroupQueryLimits);
     checkPoolConfigResult("root.queueA", 10, 30, 1024 * ByteUnits.MEGABYTE,
         10000L, "mem_limit=1024m,query_timeout_s=10");
     checkPoolConfigResult("root.queueB", 5, 10, -1, 30000L, "mem_limit=1024m");

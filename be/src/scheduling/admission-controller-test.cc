@@ -479,9 +479,8 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestMemory) {
   // Check that the query can be admitted.
   string not_admitted_reason;
   bool coordinator_resource_limited = false;
-  bool b = admission_controller->CanAdmitRequest(*schedule_state, config_d, true,
-      &not_admitted_reason, nullptr, coordinator_resource_limited);
-  ASSERT_TRUE(b);
+  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_d, true,
+      &not_admitted_reason, nullptr, coordinator_resource_limited));
   ASSERT_FALSE(coordinator_resource_limited);
 
   // Tests that this query cannot be admitted.

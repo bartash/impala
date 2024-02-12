@@ -299,7 +299,7 @@ public class TestRequestPoolService {
     queueDUserQueryLimits.put("userA", 2);
     queueDUserQueryLimits.put("*", 3);
     Map<String, Integer> queueDGroupQueryLimits = new HashMap<>();
-    queueDGroupQueryLimits.put("group2", 1);
+    queueDGroupQueryLimits.put("group1", 1);
     checkPoolConfigResult("root.queueE", -1, 200, -1, null, "",
         queueDUserQueryLimits, queueDGroupQueryLimits);
   }

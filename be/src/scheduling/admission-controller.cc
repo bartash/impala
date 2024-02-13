@@ -2303,6 +2303,12 @@ void AdmissionController::DequeueLoop() {
     // be empty.
     if (membership_snapshot->executor_groups.empty()) continue;
 
+    // FIXME asherman something like
+    PoolStats* root_stats = GetPoolStats("root", /* dcheck_exists=*/true);
+    // but no, who is going to aggregate
+    // Maybe we do it here by duplicating the loop below.
+
+
     for (const PoolConfigMap::value_type& entry: pool_config_map_) {
       const string& pool_name = entry.first;
       const TPoolConfig& pool_config = entry.second;

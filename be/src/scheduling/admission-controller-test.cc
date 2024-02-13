@@ -45,6 +45,7 @@ static const string IMPALA_HOME(getenv("IMPALA_HOME"));
 
 // Queues used in the configuration files fair-scheduler-test2.xml and
 // llama-site-test2.xml.
+static const string QUEUE_ROOT = "root";
 static const string QUEUE_A = "root.queueA";
 static const string QUEUE_B = "root.queueB";
 static const string QUEUE_C = "root.queueC";
@@ -566,6 +567,10 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
 
   AdmissionController* admission_controller = MakeAdmissionController();
   RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
+
+  TPoolConfig config_root;
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
+  // FIXME asherman do something
 
   TPoolConfig config_e;
   ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_E, &config_e));

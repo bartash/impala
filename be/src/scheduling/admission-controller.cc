@@ -254,6 +254,8 @@ const string REASON_NO_EXECUTOR_GROUPS =
     "coordinator (either NUM_NODES set to 1 or when small query optimization is "
     "triggered) can currently run.";
 
+const string ROOT_POOL = "root";
+
 // Queue decision details
 // $0 = num running queries, $1 = num queries limit, $2 = staleness detail
 const string QUEUED_NUM_RUNNING =
@@ -274,15 +276,16 @@ const string HOST_SLOT_NOT_AVAILABLE = "Not enough admission control slots avail
                                        "host $0. Needed $1 slots but $2/$3 are already "
                                        "in use.";
 
-// $0 = current load for user, $1 = user name, $2 = per-user quota
+// $0 = current load for user, $1 = user name, $2 = per-user quota, $3 is pool name
 const string USER_QUOTA_EXCEEDED =
-    "current per-user load $0 for user $1 is at or above the user limit $2";
-const string USER_WILDCARD_QUOTA_EXCEEDED =
-    "current per-user load $0 for user $1 is at or above the wildcard limit $2";
+    "current per-user load $0 for user $1 is at or above the user limit $2 in pool $3";
+const string USER_WILDCARD_QUOTA_EXCEEDED = "current per-user load $0 for user $1 is at "
+                                            "or above the wildcard limit $2 in pool $3";
 
-// $0 = current load for user, $1 = user name, $2 = group name, $3 = per-user quota
-const string GROUP_QUOTA_EXCEEDED =
-    "current per-group load $0 for user $1 in group $2 is at or above the group limit $3";
+// $0 = current load for user, $1 = user name, $2 = group name, $3 = per-user quota,
+// $4 is pool name.
+const string GROUP_QUOTA_EXCEEDED = "current per-group load $0 for user $1 in group $2 "
+                                    "is at or above the group limit $3 in pool $4";
 
 // Parses the topic key to separate the prefix that helps recognize the kind of update
 // received.
@@ -365,7 +368,7 @@ string AdmissionController::PoolStats::DebugPoolStats(const TPoolStats& stats) c
   ss << "num_admitted_running=" << stats.num_admitted_running << ", ";
   ss << "num_queued=" << stats.num_queued << ", ";
   ss << "backend_mem_reserved=" << PrintBytes(stats.backend_mem_reserved) << ", ";
-  ss << "user_loads=" << DebugString(stats.user_loads) << ", ";
+  ss << "user_loads=" << AdmissionController::DebugString(stats.user_loads) << ", ";
   AppendStatsForConsumedMemory(ss, stats);
   return ss.str();
 }
@@ -737,6 +740,7 @@ void AdmissionController::PoolStats::AdmitQueryAndMemory(
   if (is_trivial) ++local_trivial_running_;
 
   if (!was_queued) {
+    // if it was queued we already adjusted user loads then, so we don't do it here.
     agg_user_loads_.increment(user);
     metrics_.agg_current_users->Add(user);
     increment_load(local_stats_.user_loads, user);
@@ -824,21 +828,25 @@ int64 AdmissionController::PoolStats::GetUserLoad(const string& user) {
   return agg_user_loads_.get(user);
 }
 
-int64 AdmissionController::PoolStats::AggregatedUserLoads::size() {
+int64 AdmissionController::AggregatedUserLoads::size() {
   return loads_.size();
 }
 
-void AdmissionController::PoolStats::AggregatedUserLoads::clear() {
+void AdmissionController::AggregatedUserLoads::clear() {
   return loads_.clear();
 }
 
-void AdmissionController::PoolStats::AggregatedUserLoads::insert(
+void AdmissionController::AggregatedUserLoads::clear_key(const std::string& key) {
+  loads_.erase(key);
+}
+
+void AdmissionController::AggregatedUserLoads::insert(
     const std::string& key, int64 value) {
   DCHECK(value > 0);
   loads_[key] = value;
 }
 
-void AdmissionController::PoolStats::AggregatedUserLoads::add_loads(
+void AdmissionController::AggregatedUserLoads::add_loads(
     const UserLoads& loads) {
   for (const auto & load : loads) {
     if (loads_.count(load.first)) {
@@ -849,19 +857,19 @@ void AdmissionController::PoolStats::AggregatedUserLoads::add_loads(
   }
 }
 
-void AdmissionController::PoolStats::AggregatedUserLoads::export_users(
+void AdmissionController::AggregatedUserLoads::export_users(
     SetMetric<std::string>* metrics) {
   for (auto & load : loads_) {
     metrics->Add(load.first);
   }
 }
 
-std::string AdmissionController::PoolStats::AggregatedUserLoads::DebugString() const {
-  return  AdmissionController::PoolStats::DebugString(loads_);
+std::string AdmissionController::AggregatedUserLoads::DebugString() const {
+  return  AdmissionController::DebugString(loads_);
 }
 
 
-int64 AdmissionController::PoolStats::AggregatedUserLoads::get(const std::string& key) {
+int64 AdmissionController::AggregatedUserLoads::get(const std::string& key) {
   // Check if key is present as dereferencing the map will insert it.
   // FIXME C++20: use contains().
   if (loads_.count(key)) {
@@ -870,12 +878,12 @@ int64 AdmissionController::PoolStats::AggregatedUserLoads::get(const std::string
   return 0;
 }
 
-void AdmissionController::PoolStats::increment_load(
+void AdmissionController::increment_load(
     UserLoads& loads, const std::string& key) {
   loads[key]++;
 }
 
-void AdmissionController::PoolStats::decrement_load(
+void AdmissionController::decrement_load(
     UserLoads& loads, const std::string& key) {
   // Check if key is present as dereferencing the map will insert it.
   // FIXME C++20: use contains().
@@ -895,7 +903,7 @@ void AdmissionController::PoolStats::decrement_load(
   loads[key]--;
 }
 
-std::string AdmissionController::PoolStats::DebugString(const UserLoads& loads) {
+std::string AdmissionController::DebugString(const UserLoads& loads) {
   std::ostringstream buffer;
   for (const auto& [key, value] : loads) {
     buffer << key << ":" << value << " ";
@@ -903,11 +911,11 @@ std::string AdmissionController::PoolStats::DebugString(const UserLoads& loads) 
   return buffer.str();
 }
 
-void AdmissionController::PoolStats::AggregatedUserLoads::increment(const std::string& key) {
+void AdmissionController::AggregatedUserLoads::increment(const std::string& key) {
   increment_load(loads_, key);
 }
 
-void AdmissionController::PoolStats::AggregatedUserLoads::decrement(const std::string& key) {
+void AdmissionController::AggregatedUserLoads::decrement(const std::string& key) {
   return decrement_load(loads_, key);
 }
 
@@ -1114,37 +1122,37 @@ bool AdmissionController::HasAvailableSlots(const ScheduleState& state,
   return true;
 }
 
-bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
-    const TPoolConfig& pool_cfg, PoolStats* pool_stats, string* quota_exceeded_reason) {
+bool AdmissionController::CheckUserAndGroupPoolQuotas(const ScheduleState& state,
+    const TPoolConfig& pool_cfg, const string& pool_level, int64 user_load,
+    string* quota_exceeded_reason) {
   const string& user = state.request().query_ctx.session.delegated_user;
   bool key_matched = false;
-  if (!checkQuota(
-          pool_cfg, pool_stats, state, user, quota_exceeded_reason, false, &key_matched)) {
+  if (!CheckUserQuota(pool_cfg, pool_level, state, user_load, user, quota_exceeded_reason,
+          false, &key_matched)) {
     return false;
   }
   if (key_matched) {
     VLOG_ROW << "user " << user << " passes quota check as user rule is matched";
     return true;
   }
-  if (!checkGroupQuota(
-          pool_cfg, pool_stats, state, user, quota_exceeded_reason, &key_matched)) {
+  if (!CheckGroupQuota(pool_cfg, pool_level, state, user_load, user,
+          quota_exceeded_reason, &key_matched)) {
     return false;
   }
   if (key_matched) {
     VLOG_ROW << "user " << user << " passes quota check as group rule is matched";
     return true;
   }
-  if (!checkQuota(
-          pool_cfg, pool_stats, state, user, quota_exceeded_reason, true, &key_matched)) {
+  if (!CheckUserQuota(pool_cfg, pool_level, state, user_load, user, quota_exceeded_reason,
+          true, &key_matched)) {
     return false;
   }
   return true;
 }
 
-bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
-    AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
-    const string& user_for_load, string* quota_exceeded_reason, bool use_wildcard,
-    bool* key_matched) {
+bool AdmissionController::CheckUserQuota(const TPoolConfig& pool_cfg, const string& pool_name,
+    const ScheduleState& state, int64 user_load, const string& user_for_load,
+    string* quota_exceeded_reason, bool use_wildcard, bool* key_matched) {
   string user_for_limits = use_wildcard ? "*" : user_for_load;
   auto it = pool_cfg.user_query_limits.find(user_for_limits);
   int64 user_limit = 0;
@@ -1152,10 +1160,10 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
     // There is a per-user limit for the delegated user.
     user_limit = it->second;
     // Find the current aggregated load for this user.
-    int64 user_load = pool_stats->GetUserLoad(user_for_load);
     if (user_load + 1 > user_limit) {
       string format = use_wildcard ? USER_WILDCARD_QUOTA_EXCEEDED : USER_QUOTA_EXCEEDED;
-      *quota_exceeded_reason = Substitute(format, user_load, user_for_load, user_limit);
+      *quota_exceeded_reason =
+          Substitute(format, user_load, user_for_load, user_limit, pool_name);
       return false;
     }
     *key_matched = true;
@@ -1163,11 +1171,9 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
   return true;
 }
 
-bool AdmissionController::checkGroupQuota(const TPoolConfig& pool_cfg,
-    AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
-    const string& user, string* quota_exceeded_reason, bool* key_matched) {
-
-  int64 user_load = pool_stats->GetUserLoad(user);
+bool AdmissionController::CheckGroupQuota(const TPoolConfig& pool_cfg, const string& pool_name,
+    const ScheduleState& state, int64 user_load, const string& user,
+    string* quota_exceeded_reason, bool* key_matched) {
 
   // Get the groups the user is in.
   TGetHadoopGroupsRequest req;
@@ -1188,11 +1194,12 @@ bool AdmissionController::checkGroupQuota(const TPoolConfig& pool_cfg,
   for (const string& group : res.groups) {
     auto it = pool_cfg.group_query_limits.find(group);
     int64 group_limit = 0;
-    if (it != pool_cfg.user_query_limits.end()) {
+    if (it != pool_cfg.group_query_limits.end()) {
       // There is a per-user limit for the delegated user.
       group_limit = it->second;
       if (user_load + 1 > group_limit) {
-        *quota_exceeded_reason = Substitute(GROUP_QUOTA_EXCEEDED, user_load, user, group, group_limit);
+        *quota_exceeded_reason = Substitute(GROUP_QUOTA_EXCEEDED, user_load, user, group,
+            group_limit, pool_name);
         return false;
       }
       *key_matched = true;
@@ -1209,14 +1216,16 @@ bool AdmissionController::CanAdmitTrivialRequest(const ScheduleState& state) {
 }
 
 bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
-    const TPoolConfig& pool_cfg, bool admit_from_queue, string* not_admitted_reason,
-    string* not_admitted_details, bool& coordinator_resource_limited) {
+    const TPoolConfig& pool_cfg, const TPoolConfig& root_cfg, bool admit_from_queue,
+    string* not_admitted_reason, string* not_admitted_details,
+    bool& coordinator_resource_limited) {
   // Can't admit if:
   //  (a) There are already queued requests (and this is not admitting from the queue).
   //  (b) The resource pool is already at the maximum number of requests.
   //  (c) One of the executors in 'schedule' is already at its maximum number of requests
   //      (when not using the default executor group).
   //  (d) There are not enough memory resources available for the query.
+  //  (e) FIXME asheman quotas
   const int64_t max_requests = GetMaxRequestsForPool(pool_cfg);
   PoolStats* pool_stats = GetPoolStats(state);
   bool default_group =
@@ -1245,8 +1254,28 @@ bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
           coordinator_resource_limited, not_admitted_details)) {
     return false;
   }
-  if (!HasUserAndGroupQuotas(state, pool_cfg, pool_stats, not_admitted_reason)) {
-    return false;
+  // FIXME asherman can we only reject if admit_from_queue=false?
+  // That was my original design.
+  // Suppose we enforce
+  // Check quotas at pool level
+  if (!admit_from_queue) {
+    // Enforce quotas before query is queued.
+    // If you don't enforce at submission time them users can queue queries only to have
+    // them rejected later, which is confusing.
+    // If you enforce at submission time then maybe you don't need ot enforce at dequeue.
+    const string& user = state.request().query_ctx.session.delegated_user;
+    int64 user_load = pool_stats->GetUserLoad(user);
+    if (!CheckUserAndGroupPoolQuotas(
+            state, pool_cfg, state.request_pool(), user_load, not_admitted_reason)) {
+      return false;
+    }
+
+    // Check quotas at root level.
+    int64 user_load_across_cluster = root_agg_user_loads_.get(user);
+    if (!CheckUserAndGroupPoolQuotas(
+            state, root_cfg, ROOT_POOL, user_load_across_cluster, not_admitted_reason)) {
+      return false;
+    }
   }
   return true;
 }
@@ -1478,8 +1507,8 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
   // Re-resolve the pool name to propagate any resolution errors now that this request is
   // known to require a valid pool. All executor groups / schedules will use the same pool
   // name.
-  RETURN_IF_ERROR(ResolvePoolAndGetConfig(
-      request.request.query_ctx, &queue_node->pool_name, &queue_node->pool_cfg));
+  RETURN_IF_ERROR(ResolvePoolAndGetConfig(request.request.query_ctx,
+      &queue_node->pool_name, &queue_node->pool_cfg, &queue_node->root_cfg));
   request.summary_profile->AddInfoString("Request Pool", queue_node->pool_name);
 
   {
@@ -1493,8 +1522,9 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
     bool unused_bool;
     bool is_trivial = false;
     bool must_reject =
-        !FindGroupToAdmitOrReject(membership_snapshot, queue_node->pool_cfg,
-            /* admit_from_queue=*/false, stats, queue_node, unused_bool, &is_trivial);
+        !FindGroupToAdmitOrReject(membership_snapshot,
+        queue_node->pool_cfg, queue_node->root_cfg,
+        /* admit_from_queue=*/false, stats, queue_node, unused_bool, &is_trivial);
     if (must_reject) {
       AdmissionOutcome outcome = admit_outcome->Set(AdmissionOutcome::REJECTED);
       if (outcome != AdmissionOutcome::REJECTED) {
@@ -1852,11 +1882,12 @@ AdmissionController::CancelQueriesOnFailedCoordinators(
   return to_clean_up;
 }
 
-Status AdmissionController::ResolvePoolAndGetConfig(
-    const TQueryCtx& query_ctx, string* pool_name, TPoolConfig* pool_config) {
+Status AdmissionController::ResolvePoolAndGetConfig(const TQueryCtx& query_ctx,
+    string* pool_name, TPoolConfig* pool_config, TPoolConfig* root_config) {
   RETURN_IF_ERROR(request_pool_service_->ResolveRequestPool(query_ctx, pool_name));
   DCHECK_EQ(query_ctx.request_pool, *pool_name);
-  return request_pool_service_->GetPoolConfig(*pool_name, pool_config);
+  RETURN_IF_ERROR(request_pool_service_->GetPoolConfig(*pool_name, pool_config));
+  return request_pool_service_->GetPoolConfig("root", root_config);
 }
 
 // Statestore subscriber callback for IMPALA_REQUEST_QUEUE_TOPIC.
@@ -2025,7 +2056,15 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
 void AdmissionController::UpdateClusterAggregates() {
   // Recompute mem_reserved for all hosts.
   PoolStats::HostMemMap updated_mem_reserved;
-  for (auto& entry : pool_stats_) entry.second.UpdateAggregates(&updated_mem_reserved);
+  for (auto& entry : pool_stats_) {
+    entry.second.UpdateAggregates(&updated_mem_reserved);
+  }
+
+  root_agg_user_loads_.clear();
+  for (auto& entry : pool_stats_) {
+    root_agg_user_loads_.add_loads(
+        entry.second.get_aggregated_user_loads().get_user_loads());
+  }
 
   stringstream ss;
   ss << "Updated mem reserved for hosts:";
@@ -2136,8 +2175,8 @@ Status AdmissionController::ComputeGroupScheduleStates(
 
 bool AdmissionController::FindGroupToAdmitOrReject(
     ClusterMembershipMgr::SnapshotPtr membership_snapshot, const TPoolConfig& pool_config,
-    bool admit_from_queue, PoolStats* pool_stats, QueueNode* queue_node,
-    bool& coordinator_resource_limited, bool* is_trivial) {
+    const TPoolConfig& root_cfg, bool admit_from_queue, PoolStats* pool_stats,
+    QueueNode* queue_node, bool& coordinator_resource_limited, bool* is_trivial) {
   // Check for rejection based on current cluster size
   const string& pool_name = pool_stats->name();
   string rejection_reason;
@@ -2213,7 +2252,7 @@ bool AdmissionController::FindGroupToAdmitOrReject(
       return false;
     }
 
-    if (CanAdmitRequest(*state, pool_config, admit_from_queue,
+    if (CanAdmitRequest(*state, pool_config, root_cfg, admit_from_queue,
             &queue_node->not_admitted_reason, &queue_node->not_admitted_details,
             coordinator_resource_limited)) {
       queue_node->admitted_schedule = std::move(group_state.state);
@@ -2318,12 +2357,6 @@ void AdmissionController::DequeueLoop() {
     // be empty.
     if (membership_snapshot->executor_groups.empty()) continue;
 
-    // FIXME asherman something like
-    PoolStats* root_stats = GetPoolStats("root", /* dcheck_exists=*/true);
-    // but no, who is going to aggregate
-    // Maybe we do it here by duplicating the loop below.
-
-
     for (const PoolConfigMap::value_type& entry: pool_config_map_) {
       const string& pool_name = entry.first;
       const TPoolConfig& pool_config = entry.second;
@@ -2351,8 +2384,9 @@ void AdmissionController::DequeueLoop() {
         bool is_trivial = false;
         bool is_rejected = !is_cancelled
             && !FindGroupToAdmitOrReject(membership_snapshot, pool_config,
-                   /* admit_from_queue=*/true, stats, queue_node,
-                   coordinator_resource_limited, &is_trivial);
+                queue_node->root_cfg,
+                /* admit_from_queue=*/true, stats, queue_node,
+                coordinator_resource_limited, &is_trivial);
 
         if (!is_cancelled && !is_rejected
             && queue_node->admitted_schedule.get() == nullptr) {

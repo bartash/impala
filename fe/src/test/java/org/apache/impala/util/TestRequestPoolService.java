@@ -301,7 +301,10 @@ public class TestRequestPoolService {
     Assert.assertTrue(poolService_.hasAccess("root.queueD", "userA"));
 
     // Test pool limits
-    checkPoolConfigResult("root", -1, 200, -1);
+    Map<String, Integer> rootQueryLimits = new HashMap<>();
+    Map<String, Integer> rootGroupLimits = new HashMap<>();
+    rootQueryLimits.put("userD", 2);
+    checkPoolConfigResult("root", -1, 200, -1, null, "", rootQueryLimits, rootGroupLimits);
     checkPoolConfigResult("root.queueA", -1, 200, 100000 * ByteUnits.MEGABYTE);
     checkPoolConfigResult("root.queueB", -1, 200, -1);
     checkPoolConfigResult("root.queueC", -1, 200, 128 * ByteUnits.MEGABYTE);
@@ -381,7 +384,10 @@ public class TestRequestPoolService {
     Assert.assertTrue(poolService_.hasAccess("root.queueC", "root"));
 
     // Test pool limit changes
-    checkPoolConfigResult("root", 15, 100, -1, 30000L, "");
+    Map<String, Integer> rootQueryLimits = new HashMap<>();
+    Map<String, Integer> rootGroupLimits = new HashMap<>();
+    rootQueryLimits.put("userD", 2);
+    checkPoolConfigResult("root", 15, 100, -1, 30000L, "", rootQueryLimits, rootGroupLimits);
     // not_a_valid_option=foo.bar gets filtered out when parsing the query options on
     // the backend, but it should be observed coming from the test file here.
     checkPoolConfigResult("root.queueA", 1, 30, 100000 * ByteUnits.MEGABYTE,

@@ -51,6 +51,8 @@ static const string QUEUE_B = "root.queueB";
 static const string QUEUE_C = "root.queueC";
 static const string QUEUE_D = "root.queueD";
 static const string QUEUE_E = "root.queueE";
+static const string QUEUE_SMALL = "root.group-set-small";
+static const string QUEUE_LARGE = "root.group-set-large";
 
 // Host names
 static const string HOST_0 = "host0:25000";
@@ -370,6 +372,51 @@ class AdmissionControllerTest : public testing::Test {
     }
     return true;
   }
+
+  // Set the per-user loads for a pool.
+  static void set_user_loads(AdmissionController* admission_controller, const char* user,
+      const string& pool_name, int64 load) {
+    AdmissionController::PoolStats* large_pool_stats =
+        admission_controller->GetPoolStats(pool_name);
+    TPoolStats stats_large;
+    stats_large.user_loads[user] = load;
+    large_pool_stats->local_stats_ = stats_large;
+  }
+
+  // Try and run a query in a 2-pool system.
+  void try_queue_query(const char* user, bool expected_admit, int64 current_queued_small,
+      int64 current_queued_large, bool use_small_queue, string* not_admitted_reason) {
+    
+    AdmissionController* admission_controller = MakeAdmissionController();
+    RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
+    
+    // Get the PoolConfig for the global "root" configuration.
+    TPoolConfig config_root;
+    ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
+    TPoolConfig config_large;
+    ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_LARGE, &config_large));
+    TPoolConfig config_small;
+    ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_SMALL, &config_small));
+
+    set_user_loads(admission_controller, user, QUEUE_LARGE, current_queued_large);
+    set_user_loads(admission_controller, user, QUEUE_SMALL, current_queued_small);
+
+    admission_controller->UpdateClusterAggregates();
+
+    TPoolConfig pool_to_submit = use_small_queue ? config_small : config_large;
+    string pool_name_to_submit = use_small_queue ? QUEUE_SMALL : QUEUE_LARGE;
+
+
+    ScheduleState* schedule_state = MakeScheduleState(pool_name_to_submit, pool_to_submit, 12,
+        30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, user);
+
+    bool coordinator_resource_limited = false;
+    bool can_admit = admission_controller->CanAdmitRequest(*schedule_state, pool_to_submit,
+        config_root, true, not_admitted_reason, nullptr, coordinator_resource_limited);
+    ASSERT_FALSE(coordinator_resource_limited);
+    ASSERT_EQ(expected_admit, can_admit);
+  }
+
 };
 
 /// Test that AdmissionController will admit a query into a pool, then simulate other
@@ -382,6 +429,10 @@ TEST_F(AdmissionControllerTest, Simple) {
 
   AdmissionController* admission_controller = MakeAdmissionController();
   RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
+
+  // Get the PoolConfig for the global "root" configuration.
+  TPoolConfig config_root;
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
 
   // Get the PoolConfig for QUEUE_C ("root.queueC").
   TPoolConfig config_c;
@@ -400,16 +451,19 @@ TEST_F(AdmissionControllerTest, Simple) {
   // Check that the query can be admitted.
   string not_admitted_reason;
   bool coordinator_resource_limited = false;
-  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_c, true,
-      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_TRUE(
+      admission_controller->CanAdmitRequest(*schedule_state, config_c, config_root,
+          true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   ASSERT_FALSE(coordinator_resource_limited);
+  ASSERT_EQ(0, admission_controller->root_agg_user_loads_.size());
 
   // Create a ScheduleState just like 'schedule_state' to run on 3 hosts which can't be
   // admitted.
   ScheduleState* schedule_state_3_hosts =
       MakeScheduleState(QUEUE_C, config_c, 3, 64L * MEGABYTE);
   ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state_3_hosts, config_c,
-      true, &not_admitted_reason, nullptr, coordinator_resource_limited));
+      config_root, true, &not_admitted_reason, nullptr,
+      coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "Not enough aggregate memory available in pool root.queueC with max mem "
       "resources 128.00 MB. Needed 192.00 MB but only 128.00 MB was available.");
@@ -418,11 +472,11 @@ TEST_F(AdmissionControllerTest, Simple) {
   // Make a TopicDeltaMap describing some activity on host1 and host2.
   TTopicDelta membership = MakeTopicDelta(false);
 
-  AdmissionController::PoolStats::UserLoads loads1{{USER1, 1}, {USER2, 4}};
+  AdmissionController::UserLoads loads1{{USER1, 1}, {USER2, 4}};
   AddStatsToTopic(&membership, HOST_1, QUEUE_B, MakePoolStats(1000, 1, 0, loads1));
-  AdmissionController::PoolStats::UserLoads loads2{{USER2, 3}, {USER3, 2}};
+  AdmissionController::UserLoads loads2{{USER2, 3}, {USER3, 2}};
   AddStatsToTopic(&membership, HOST_1, QUEUE_C, MakePoolStats(5000, 10, 0, loads2));
-  AdmissionController::PoolStats::UserLoads loads3{{USER1, 1}, {USER3, 7}};
+  AdmissionController::UserLoads loads3{{USER1, 1}, {USER3, 7}};
   AddStatsToTopic(&membership, HOST_2, QUEUE_C, MakePoolStats(5000, 1, 0, loads3));
 
   // Imitate the StateStore passing updates on query activity to the
@@ -446,9 +500,15 @@ TEST_F(AdmissionControllerTest, Simple) {
   ASSERT_EQ(3, pool_stats->agg_user_loads_.get(USER2));
   ASSERT_EQ(9, pool_stats->agg_user_loads_.get(USER3));
 
+  // Check the aggregated user loads across the pools.
+  ASSERT_EQ(2, admission_controller->root_agg_user_loads_.get(USER1));
+  ASSERT_EQ(7, admission_controller->root_agg_user_loads_.get(USER2));
+  ASSERT_EQ(9, admission_controller->root_agg_user_loads_.get(USER3));
+
   // Test that the query cannot be admitted now.
-  ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_c, true,
-      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_FALSE(
+      admission_controller->CanAdmitRequest(*schedule_state, config_c, config_root,
+          true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(
       not_admitted_reason, "number of running queries 11 is at or over limit 10.");
   ASSERT_FALSE(coordinator_resource_limited);
@@ -462,6 +522,10 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestMemory) {
 
   AdmissionController* admission_controller = MakeAdmissionController();
   RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
+
+  // Get the PoolConfig for the global "root" configuration.
+  TPoolConfig config_root;
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
 
   // Get the PoolConfig for QUEUE_D ("root.queueD").
   TPoolConfig config_d;
@@ -480,8 +544,9 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestMemory) {
   // Check that the query can be admitted.
   string not_admitted_reason;
   bool coordinator_resource_limited = false;
-  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_d, true,
-      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_TRUE(
+      admission_controller->CanAdmitRequest(*schedule_state, config_d, config_root,
+          true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   ASSERT_FALSE(coordinator_resource_limited);
 
   // Tests that this query cannot be admitted.
@@ -490,8 +555,9 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestMemory) {
   host_count = 15;
   ScheduleState* schedule_state15 =
       MakeScheduleState(QUEUE_D, config_d, host_count, 30L * MEGABYTE);
-  ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state15, config_d, true,
-      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_FALSE(
+      admission_controller->CanAdmitRequest(*schedule_state15, config_d, config_root,
+          true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "Not enough aggregate memory available in pool root.queueD with max mem resources "
       "400.00 MB. Needed 480.00 MB but only 400.00 MB was available.");
@@ -504,7 +570,8 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestMemory) {
       MakeScheduleState(QUEUE_D, config_d, host_count, 50L * MEGABYTE);
 
   ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state_10_fail, config_d,
-      true, &not_admitted_reason, nullptr, coordinator_resource_limited));
+      config_root, true, &not_admitted_reason, nullptr,
+      coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "Not enough aggregate memory available in pool root.queueD with max mem resources "
       "400.00 MB. Needed 500.00 MB but only 400.00 MB was available.");
@@ -519,6 +586,10 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestCount) {
 
   AdmissionController* admission_controller = MakeAdmissionController();
   RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
+  
+  // Get the PoolConfig for the global "root" configuration.
+  TPoolConfig config_root;
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
 
   // Get the PoolConfig for QUEUE_D ("root.queueD").
   TPoolConfig config_d;
@@ -540,20 +611,23 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestCount) {
 
   // Query can be admitted from queue...
   bool coordinator_resource_limited = false;
-  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_d, true,
-      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_TRUE(
+      admission_controller->CanAdmitRequest(*schedule_state, config_d, config_root,
+          true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   ASSERT_FALSE(coordinator_resource_limited);
   // ... but same Query cannot be admitted directly.
-  ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_d, false,
-      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_FALSE(
+      admission_controller->CanAdmitRequest(*schedule_state, config_d, config_root,
+          false, &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "queue is not empty (size 2); queued queries are executed first");
   ASSERT_FALSE(coordinator_resource_limited);
 
   // Simulate that there are 7 queries already running.
   pool_stats->agg_num_running_ = 7;
-  ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_d, true,
-      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_FALSE(
+      admission_controller->CanAdmitRequest(*schedule_state, config_d, config_root,
+          true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(
       not_admitted_reason, "number of running queries 7 is at or over limit 6");
   ASSERT_FALSE(coordinator_resource_limited);
@@ -568,9 +642,9 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   AdmissionController* admission_controller = MakeAdmissionController();
   RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
 
+  // Get the PoolConfig for the global "root" configuration.
   TPoolConfig config_root;
   ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
-  // FIXME asherman do something
 
   TPoolConfig config_e;
   ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_E, &config_e));
@@ -587,60 +661,70 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   string not_admitted_reason;
 
   // Simulate that there are 2 queries queued.
+  // FIXME asherman something ios very wrong here as we should set per user loads
   pool_stats->local_stats_.num_queued = 2;
 
   // Query can be admitted from queue...
   bool coordinator_resource_limited = false;
-  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
-      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_TRUE(
+      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+          true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   ASSERT_FALSE(coordinator_resource_limited);
   // ... but same Query cannot be admitted directly.
-  ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, false,
-      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_FALSE(
+      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+          false, &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "queue is not empty (size 2); queued queries are executed first");
   ASSERT_FALSE(coordinator_resource_limited);
 
   // Simulate that there are 7 queries already running.
   pool_stats->agg_num_running_ = 7;
-  ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
-      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_FALSE(
+      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+          true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   // Limit of requests is 5 from llama.am.throttling.maximum.placed.reservations.
   EXPECT_STR_CONTAINS(
       not_admitted_reason, "number of running queries 7 is at or over limit 5");
   ASSERT_FALSE(coordinator_resource_limited);
 
   pool_stats->agg_num_running_ = 3;
-  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
-      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_TRUE(
+      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+          true, &not_admitted_reason, nullptr, coordinator_resource_limited));
 
   // Test with load == limit, should fail
   pool_stats->agg_user_loads_.insert(USER_A, 3);
-  ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
-      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_FALSE(
+      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+          true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "current per-user load 3 for user userA is at or above the user limit 3");
 
   // If UserA's load is 2 it should be admitted because the user rule takes precedence
   // over the wildcard rule.
   pool_stats->agg_user_loads_.insert(USER_A, 2);
-  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
-      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_TRUE(
+      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+          true, &not_admitted_reason, nullptr, coordinator_resource_limited));
 
   // Test wildcards with User3
   schedule_state = MakeScheduleState(QUEUE_E, config_e, host_count, 30L * MEGABYTE,
       ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, USER3);
-  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
-      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_TRUE(
+      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+          true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   pool_stats->agg_user_loads_.insert(USER3, 3);
-  ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
-      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_FALSE(
+      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+          true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "current per-user load 3 for user user3 is at or above the wildcard limit 1");
 
-  pool_stats->agg_user_loads_.insert(USER3, 0);
-  ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
-      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  pool_stats->agg_user_loads_.clear_key(USER3);
+  ASSERT_TRUE(
+      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+          true, &not_admitted_reason, nullptr, coordinator_resource_limited));
 
   // Test group quotas
 
@@ -655,16 +739,63 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   groups.insert({"group1", group1_set});
   ASSERT_TRUE(SetHadoopGroups(groups));
 
-  ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
-      &not_admitted_reason, nullptr, coordinator_resource_limited));
+  pool_stats->agg_user_loads_.insert(USER3, 2);
+  ASSERT_FALSE(
+      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+          true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
-      "current per-group load 1 for user user3 in group group1 is at or above the group "
-      "limit 1");
+      "current per-group load 2 for user user3 in group group1 is at or above the group "
+      "limit 2");
+
+  // FIXME add test where quota is set to 0 as that might be useful
 
   // Clean up
   groups.clear();
   ASSERT_TRUE(SetHadoopGroups(groups));
 }
+
+
+/// Test CanAdmitRequest in the context of user and group quotas.
+TEST_F(AdmissionControllerTest, QuotaExamples) {
+  // Pass the paths of the configuration files as command line flags.
+  FLAGS_fair_scheduler_allocation_path = GetResourceFile("fair-scheduler-test3.xml");
+  FLAGS_llama_site_path = GetResourceFile("llama-site-test2.xml");
+
+  // Set up some groups.
+  std::map<std::string, std::set<std::string>> groups;
+  std::set<std::string> dev_group{"alice", "deborah"};
+  groups.insert({"dev", dev_group});
+  std::set<std::string> it_group{"bob", "fiona"} ;
+  groups.insert({"it", it_group});
+  std::set<std::string> support_group{"claire", "geeta", "howard"};
+  groups.insert({"support", support_group});
+  ASSERT_TRUE(SetHadoopGroups(groups));
+
+  string not_admitted_reason;
+
+  try_queue_query("bob", true, 1, 1, true, &not_admitted_reason);
+
+  // Howard has a limit of 4 at root level.
+  // FIXME message should say it is at root level
+  try_queue_query("howard", false, 3, 1, true, &not_admitted_reason);
+  ASSERT_EQ("current per-user load 4 for user howard is at or above the user limit 4 in pool " + QUEUE_ROOT,
+      not_admitted_reason);
+
+  // Iris is not in any groups and so hots wildcard limit.
+  try_queue_query("iris", false, 0, 1, false, &not_admitted_reason);
+  ASSERT_EQ("current per-user load 1 for user iris is at or above the wildcard limit 1 in pool " + QUEUE_LARGE,
+      not_admitted_reason);
+
+
+
+  // Clean up
+  groups.clear();
+  ASSERT_TRUE(SetHadoopGroups(groups));
+}
+
+
+
+
 
 /// Test CanAdmitRequest() using the slots mechanism that is enabled with non-default
 /// executor groups.
@@ -675,6 +806,10 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestSlots) {
 
   AdmissionController* admission_controller = MakeAdmissionController();
   RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
+
+  // Get the PoolConfig for the global "root" configuration.
+  TPoolConfig config_root;
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
 
   // Get the PoolConfig for QUEUE_D ("root.queueD").
   TPoolConfig config_d;
@@ -702,11 +837,13 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestSlots) {
 
   // Enough slots are available, so it can be admitted in both cases.
   ASSERT_TRUE(admission_controller->CanAdmitRequest(*default_group_schedule, config_d,
-      true, &not_admitted_reason, nullptr, coordinator_resource_limited))
+      config_root, true, &not_admitted_reason, nullptr,
+      coordinator_resource_limited))
       << not_admitted_reason;
   ASSERT_FALSE(coordinator_resource_limited);
-  ASSERT_TRUE(admission_controller->CanAdmitRequest(*other_group_schedule, config_d, true,
-      &not_admitted_reason, nullptr, coordinator_resource_limited))
+  ASSERT_TRUE(admission_controller->CanAdmitRequest(*other_group_schedule, config_d,
+      config_root, true, &not_admitted_reason, nullptr,
+      coordinator_resource_limited))
       << not_admitted_reason;
   ASSERT_FALSE(coordinator_resource_limited);
 
@@ -715,11 +852,13 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestSlots) {
   SetSlotsInUse(admission_controller, host_addrs, slots_per_host - 1);
 
   ASSERT_TRUE(admission_controller->CanAdmitRequest(*default_group_schedule, config_d,
-      true, &not_admitted_reason, nullptr, coordinator_resource_limited))
+      config_root, true, &not_admitted_reason, nullptr,
+      coordinator_resource_limited))
       << not_admitted_reason;
   ASSERT_FALSE(coordinator_resource_limited);
   ASSERT_FALSE(admission_controller->CanAdmitRequest(*other_group_schedule, config_d,
-      true, &not_admitted_reason, nullptr, coordinator_resource_limited));
+      config_root, true, &not_admitted_reason, nullptr,
+      coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "Not enough admission control slots available on host host1:25000. Needed 4 "
       "slots but 15/16 are already in use.");
@@ -1277,6 +1416,10 @@ TEST_F(AdmissionControllerTest, TopNQueryCheck) {
 
   MemTracker* pool_mem_tracker = nullptr;
 
+  // Get the PoolConfig for the global "root" configuration.
+  TPoolConfig config_root;
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
+
   // Process each of the 4 pools.
   for (int i = 0; i < 4; i++) {
     // Get the parameters of the pool.
@@ -1305,7 +1448,8 @@ TEST_F(AdmissionControllerTest, TopNQueryCheck) {
       string not_admitted_reason;
       bool coordinator_resource_limited = false;
       ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, pool_config,
-          true, &not_admitted_reason, nullptr, coordinator_resource_limited));
+          config_root, true, &not_admitted_reason, nullptr,
+          coordinator_resource_limited));
       ASSERT_FALSE(coordinator_resource_limited);
       // Create a query memory tracker for the query and set the memory consumption
       // as per_host_mem_estimate.
@@ -1401,10 +1545,10 @@ TEST_F(AdmissionControllerTest, TopNQueryCheck) {
 #endif
 }
 
-/// Unit test for AdmissionController::PoolStats::AggregatedUserLoads
+/// Unit test for AdmissionController::AggregatedUserLoads
 /// and for its associated helper methods.
 TEST_F(AdmissionControllerTest, AggregatedUserLoads) {
-  AdmissionController::PoolStats::AggregatedUserLoads user_loads;
+  AdmissionController::AggregatedUserLoads user_loads;
   // Value is zero before any inserts.
   ASSERT_EQ(0, user_loads.size());
   ASSERT_EQ(0, user_loads.get(USER1));
@@ -1431,8 +1575,8 @@ TEST_F(AdmissionControllerTest, AggregatedUserLoads) {
   ASSERT_EQ(0, user_loads.get(USER2));
   ASSERT_EQ(0, user_loads.size());
 
-  AdmissionController::PoolStats::UserLoads loads1{{USER1, 1}, {USER2, 4}};
-  ASSERT_EQ("user1:1 user2:4 ", AdmissionController::PoolStats::DebugString(loads1));
+  AdmissionController::UserLoads loads1{{USER1, 1}, {USER2, 4}};
+  ASSERT_EQ("user1:1 user2:4 ", AdmissionController::DebugString(loads1));
 
   user_loads.add_loads(loads1);
   ASSERT_EQ(2, user_loads.size());
@@ -1445,7 +1589,7 @@ TEST_F(AdmissionControllerTest, AggregatedUserLoads) {
 //  user_loads.export_users(&metrics);
 //  ASSERT_EQ( "[" + USER1 + "]", metrics->ToHumanReadable());
 
-  AdmissionController::PoolStats::UserLoads loads2{{USER1, 1}, {USER3, 6}};
+  AdmissionController::UserLoads loads2{{USER1, 1}, {USER3, 6}};
   user_loads.add_loads(loads2);
   ASSERT_EQ(3, user_loads.size());
   ASSERT_EQ(2, user_loads.get(USER1));

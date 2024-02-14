@@ -453,6 +453,7 @@ class AdmissionController {
   std::string GetStalenessDetail(const std::string& prefix,
       int64_t* ms_since_last_update = nullptr);
 
+
  private:
   class PoolStats;
   friend class PoolStats;
@@ -506,6 +507,67 @@ class AdmissionController {
   /// executor groups).
   IntCounter* total_dequeue_failed_coordinator_limited_ = nullptr;
 
+
+  /// A Holder for per-user loads.
+  /// Contains a mapping of user names to number of queries running.
+  /// This matches the generated type of user_loads in TPoolStats.
+  typedef std::map<std::string, int64> UserLoads;
+
+  /// Helper function on UserLoads that increments the value associated with the given
+  /// key by 1.
+  static void increment_load(UserLoads& loads, const std::string& key);
+
+  /// Helper function  on UserLoads that decrements the value associated with the given
+  /// key by 1.
+  static void decrement_load(UserLoads& loads, const std::string& key);
+
+  static std::string DebugString(const UserLoads& loads);
+
+  /// A Holder for aggregated per-user loads.
+  /// This is basically a wrapper around a UserLoads object.
+  class AggregatedUserLoads {
+   public:
+    AggregatedUserLoads() = default;
+
+    /// Inserts a new key-value pair into the map.
+    void insert(const std::string& key, int64 value);
+
+    /// Returns the integer value corresponding to the given key, or 0 if the key does not exist.
+    int64 get(const std::string& key);
+
+    /// Increments the value associated with the given key by 1.
+    void increment(const std::string& key);
+
+    /// Decrements the value associated with the given key by 1.
+    void decrement(const std::string& key);
+
+    /// Return the number of keys. For testing only.
+    int64 size();
+
+    /// Clear all values.
+    void clear();
+
+    /// Clear the value for a key.
+    void clear_key(const std::string& key);
+
+    /// Merge in loads from a map.
+    void add_loads(const UserLoads& loads);
+
+    /// Export keys to a metrics object.
+    void export_users(SetMetric<std::string>* metrics);
+
+    /// Print the keys and values from loads_ into a string.
+    [[nodiscard]] std::string DebugString() const;
+
+    [[nodiscard]] const UserLoads& get_user_loads() const { return loads_; }
+
+   private:
+    UserLoads loads_;
+
+    FRIEND_TEST(AdmissionControllerTest, AggregatedUserLoads);
+    friend class AdmissionControllerTest;
+  };
+
   /// Contains all per-pool statistics and metrics. Accessed via GetPoolStats().
   class PoolStats {
    public:
@@ -549,58 +611,9 @@ class AdmissionController {
       IntGauge* max_query_cpu_core_coordinator_limit;
     };
 
-    /// A Holder for per-user loads.
-    /// Contains a mapping of user names to number of queries running.
-    /// This matches the generated type of user_loads in TPoolStats.
-    typedef std::map<std::string, int64> UserLoads;
 
-    /// Helper function on UserLoads that increments the value associated with the given
-    /// key by 1.
-    static void increment_load(UserLoads& loads, const std::string& key);
 
-    /// Helper function  on UserLoads that decrements the value associated with the given
-    /// key by 1.
-    static void decrement_load(UserLoads& loads, const std::string& key);
 
-    static std::string DebugString(const UserLoads& loads);
-
-    /// A Holder for aggregated per-user loads.
-    /// This is basically a wrapper around a UserLoads object.
-    class AggregatedUserLoads {
-     public:
-      AggregatedUserLoads() = default;
-
-      /// Inserts a new key-value pair into the map.
-      void insert(const std::string& key, int64 value);
-
-      /// Returns the integer value corresponding to the given key, or 0 if the key does not exist.
-      int64 get(const std::string& key);
-
-      /// Increments the value associated with the given key by 1.
-      void increment(const std::string& key);
-
-      /// Decrements the value associated with the given key by 1.
-      void decrement(const std::string& key);
-
-      /// Return the number of keys. For testing only.
-      int64 size();
-
-      /// Clear all values
-      void clear();
-
-      /// Merge in loads from a map.
-      void add_loads(const UserLoads& loads);
-
-      /// Export keys to a metrics object.
-      void export_users(SetMetric<std::string>* metrics);
-
-      std::string DebugString() const;
-     private:
-      UserLoads loads_;
-
-      FRIEND_TEST(AdmissionControllerTest, AggregatedUserLoads);
-      friend class AdmissionControllerTest;
-    };
 
     PoolStats(AdmissionController* parent, const std::string& name)
       : name_(name),
@@ -615,10 +628,10 @@ class AdmissionController {
       InitMetrics();
     }
 
-    int64_t agg_num_running() const { return agg_num_running_; }
-    int64_t agg_num_queued() const { return agg_num_queued_; }
-    int64_t local_trivial_running() const { return local_trivial_running_; }
-    int64_t EffectiveMemReserved() const {
+    [[nodiscard]] int64_t agg_num_running() const { return agg_num_running_; }
+    [[nodiscard]] int64_t agg_num_queued() const { return agg_num_queued_; }
+    [[nodiscard]] int64_t local_trivial_running() const { return local_trivial_running_; }
+    [[nodiscard]] int64_t EffectiveMemReserved() const {
       return std::max(agg_mem_reserved_, local_mem_admitted_);
     }
 
@@ -697,6 +710,10 @@ class AdmissionController {
 
     const std::string& name() const { return name_; }
 
+    [[nodiscard]] AggregatedUserLoads& get_aggregated_user_loads()  {
+      return agg_user_loads_;
+    }
+
     /// The max number of running trivial queries that can be allowed at the same time.
     static const int MAX_NUM_TRIVIAL_QUERY_RUNNING;
 
@@ -720,7 +737,8 @@ class AdmissionController {
 
     // Aggregate  (across all coordinators) per-user loads in this pool.
     // Updated by UpdateAggregates() and also FIXME some other places that I am confused about right now
-    AggregatedUserLoads  agg_user_loads_;
+    // FIXME asherman CLARIFY and CHECK  that "load" means queries queued as well as running
+    AdmissionController::AggregatedUserLoads  agg_user_loads_;
 
     /// Number of running trivial queries in this pool that have been admitted by this
     /// local coordinator. The purpose of it is to control the concurrency of running
@@ -777,6 +795,7 @@ class AdmissionController {
     FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestMemory);
     FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestCount);
     FRIEND_TEST(AdmissionControllerTest, UserAndGroupQuotas);
+    FRIEND_TEST(AdmissionControllerTest, QuotaExamples);
     FRIEND_TEST(AdmissionControllerTest, GetMaxToDequeue);
     FRIEND_TEST(AdmissionControllerTest, QueryRejection);
     FRIEND_TEST(AdmissionControllerTest, TopNQueryCheck);
@@ -803,6 +822,10 @@ class AdmissionController {
   /// Protected by admission_ctrl_lock_.
   typedef boost::unordered_map<std::string, PoolStats> PoolStatsMap;
   PoolStatsMap pool_stats_;
+
+  /// User loads aggregated across all pools. Updated by UpdateClusterAggregates().
+  /// Protected by admission_ctrl_lock_.
+  AggregatedUserLoads  root_agg_user_loads_;
 
   /// This struct groups together a schedule and the executor group that it was scheduled
   /// on. It is used to attempt admission without rescheduling the query in case the
@@ -852,6 +875,8 @@ class AdmissionController {
     /// Config of the pool this query will be scheduled on.
     string pool_name;
     TPoolConfig pool_cfg;
+    /// FIXME add
+    TPoolConfig root_cfg;
 
     /// END: Members that are valid for new objects after initialization
     /////////////////////////////////////////
@@ -978,8 +1003,8 @@ class AdmissionController {
 
   /// Resolves the resource pool name in 'query_ctx.request_pool' and stores the resulting
   /// name in 'pool_name' and the resulting config in 'pool_config'.
-  Status ResolvePoolAndGetConfig(const TQueryCtx& query_ctx, std::string* pool_name,
-      TPoolConfig* pool_config);
+  Status ResolvePoolAndGetConfig(const TQueryCtx& query_ctx, string* pool_name,
+      TPoolConfig* pool_config, TPoolConfig* root_config);
 
   /// Statestore subscriber callback that sends outgoing topic deltas (see
   /// AddPoolAndPerHostStatsUpdates()) and processes incoming topic deltas, updating the
@@ -1025,8 +1050,8 @@ class AdmissionController {
   /// The is_trivial is set to true when is_trivial is not null if the query is admitted
   /// as a trivial query.
   bool FindGroupToAdmitOrReject(ClusterMembershipMgr::SnapshotPtr membership_snapshot,
-      const TPoolConfig& pool_config, bool admit_from_queue, PoolStats* pool_stats,
-      QueueNode* queue_node, bool& coordinator_resource_limited,
+      const TPoolConfig& pool_config, const TPoolConfig& root_cfg, bool admit_from_queue,
+      PoolStats* pool_stats, QueueNode* queue_node, bool& coordinator_resource_limited,
       bool* is_trivial = nullptr);
 
   /// Dequeues the queued queries when notified by dequeue_cv_ and admits them if they
@@ -1041,8 +1066,8 @@ class AdmissionController {
   /// enough memory resources available for the query. Caller owns not_admitted_reason and
   /// not_admitted_details. Must hold admission_ctrl_lock_.
   bool CanAdmitRequest(const ScheduleState& state, const TPoolConfig& pool_cfg,
-      bool admit_from_queue, string* not_admitted_reason, string* not_admitted_details,
-      bool& coordinator_resource_limited);
+      const TPoolConfig& root_cfg, bool admit_from_queue, string* not_admitted_reason,
+      string* not_admitted_details, bool& coordinator_resource_limited);
 
   /// Returns true if the query can be admitted as a trivial query, therefore it can
   /// bypass the admission control immediately.
@@ -1081,10 +1106,11 @@ class AdmissionController {
   bool HasAvailableSlots(const ScheduleState& state, const TPoolConfig& pool_cfg,
       string* unavailable_reason, bool& coordinator_resource_limited);
 
-  /// Returns true unless this query exceeds user or grou quotas.
+  /// Returns true unless this query exceeds user or group quotas.
   /// Must hold admission_ctrl_lock_.
-  static bool HasUserAndGroupQuotas(const ScheduleState& state, const TPoolConfig& pool_cfg,
-      PoolStats* pool_stats, string* quota_exceeded_reason);
+  static bool HasUserAndGroupPoolQuotas(const ScheduleState& state,
+      const TPoolConfig& pool_cfg, const string& pool_level, int64 user_load,
+      string* quota_exceeded_reason);
 
   /// Updates the memory admitted and the num of queries running for each backend in
   /// 'state'. Also updates the stats of its associated resource pool. Used only when
@@ -1272,19 +1298,19 @@ class AdmissionController {
 
   // FIXME asherman add description
   // In particular explain user_for_load user_for_limit
-  static bool checkQuota(const TPoolConfig& pool_cfg,
-      AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
-      const string& user_for_load, string* quota_exceeded_reason, bool use_wildcard,
-      bool* key_matched);
-  static bool checkGroupQuota(const TPoolConfig& pool_cfg,
-      AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
-      const string& user, string* quota_exceeded_reason, bool* key_matched);
+  static bool checkQuota(const TPoolConfig& pool_cfg, const string& pool_name,
+      const ScheduleState& state, int64 user_load, const string& user_for_load,
+      string* quota_exceeded_reason, bool use_wildcard, bool* key_matched);
+  static bool checkGroupQuota(const TPoolConfig& pool_cfg, const string& pool_name,
+      const ScheduleState& state, int64 user_load, const string& user,
+      string* quota_exceeded_reason, bool* key_matched);
 
   FRIEND_TEST(AdmissionControllerTest, Simple);
   FRIEND_TEST(AdmissionControllerTest, PoolStats);
   FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestMemory);
   FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestCount);
   FRIEND_TEST(AdmissionControllerTest, UserAndGroupQuotas);
+  FRIEND_TEST(AdmissionControllerTest, QuotaExamples);
   FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestSlots);
   FRIEND_TEST(AdmissionControllerTest, GetMaxToDequeue);
   FRIEND_TEST(AdmissionControllerTest, QueryRejection);

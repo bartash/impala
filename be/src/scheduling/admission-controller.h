@@ -453,6 +453,62 @@ class AdmissionController {
   std::string GetStalenessDetail(const std::string& prefix,
       int64_t* ms_since_last_update = nullptr);
 
+  /// A Holder for per-user loads.
+  /// Contains a mapping of user names to number of queries running.
+  /// This matches the generated type of user_loads in TPoolStats.
+  typedef std::map<std::string, int64> UserLoads;
+
+  /// Helper function on UserLoads that increments the value associated with the given
+  /// key by 1.
+  static void increment_load(UserLoads& loads, const std::string& key);
+
+  /// Helper function  on UserLoads that decrements the value associated with the given
+  /// key by 1.
+  static void decrement_load(UserLoads& loads, const std::string& key);
+
+  static std::string DebugString(const UserLoads& loads);
+
+  /// A Holder for aggregated per-user loads.
+  /// This is basically a wrapper around a UserLoads object.
+  class AggregatedUserLoads {
+   public:
+    AggregatedUserLoads() = default;
+
+    /// Inserts a new key-value pair into the map.
+    void insert(const std::string& key, int64 value);
+
+    /// Returns the integer value corresponding to the given key, or 0 if the key does not exist.
+    int64 get(const std::string& key);
+
+    /// Increments the value associated with the given key by 1.
+    void increment(const std::string& key);
+
+    /// Decrements the value associated with the given key by 1.
+    void decrement(const std::string& key);
+
+    /// Return the number of keys. For testing only.
+    int64 size();
+
+    /// Clear all values.
+    void clear();
+
+    /// Clear the value for a key.
+    void clear_key(const std::string& key);
+
+    /// Merge in loads from a map.
+    void add_loads(const UserLoads& loads);
+
+    /// Export keys to a metrics object.
+    void export_users(SetMetric<std::string>* metrics);
+
+    std::string DebugString() const;
+   private:
+    UserLoads loads_;
+
+    FRIEND_TEST(AdmissionControllerTest, AggregatedUserLoads);
+    friend class AdmissionControllerTest;
+  };
+
  private:
   class PoolStats;
   friend class PoolStats;
@@ -549,61 +605,9 @@ class AdmissionController {
       IntGauge* max_query_cpu_core_coordinator_limit;
     };
 
-    /// A Holder for per-user loads.
-    /// Contains a mapping of user names to number of queries running.
-    /// This matches the generated type of user_loads in TPoolStats.
-    typedef std::map<std::string, int64> UserLoads;
 
-    /// Helper function on UserLoads that increments the value associated with the given
-    /// key by 1.
-    static void increment_load(UserLoads& loads, const std::string& key);
 
-    /// Helper function  on UserLoads that decrements the value associated with the given
-    /// key by 1.
-    static void decrement_load(UserLoads& loads, const std::string& key);
 
-    static std::string DebugString(const UserLoads& loads);
-
-    /// A Holder for aggregated per-user loads.
-    /// This is basically a wrapper around a UserLoads object.
-    class AggregatedUserLoads {
-     public:
-      AggregatedUserLoads() = default;
-
-      /// Inserts a new key-value pair into the map.
-      void insert(const std::string& key, int64 value);
-
-      /// Returns the integer value corresponding to the given key, or 0 if the key does not exist.
-      int64 get(const std::string& key);
-
-      /// Increments the value associated with the given key by 1.
-      void increment(const std::string& key);
-
-      /// Decrements the value associated with the given key by 1.
-      void decrement(const std::string& key);
-
-      /// Return the number of keys. For testing only.
-      int64 size();
-
-      /// Clear all values.
-      void clear();
-
-      /// Clear the value for a key.
-      void clear_key(const std::string& key);
-
-      /// Merge in loads from a map.
-      void add_loads(const UserLoads& loads);
-
-      /// Export keys to a metrics object.
-      void export_users(SetMetric<std::string>* metrics);
-
-      std::string DebugString() const;
-     private:
-      UserLoads loads_;
-
-      FRIEND_TEST(AdmissionControllerTest, AggregatedUserLoads);
-      friend class AdmissionControllerTest;
-    };
 
     PoolStats(AdmissionController* parent, const std::string& name)
       : name_(name),
@@ -723,7 +727,7 @@ class AdmissionController {
 
     // Aggregate  (across all coordinators) per-user loads in this pool.
     // Updated by UpdateAggregates() and also FIXME some other places that I am confused about right now
-    AggregatedUserLoads  agg_user_loads_;
+    AdmissionController::AggregatedUserLoads  agg_user_loads_;
 
     /// Number of running trivial queries in this pool that have been admitted by this
     /// local coordinator. The purpose of it is to control the concurrency of running
@@ -806,6 +810,11 @@ class AdmissionController {
   /// Protected by admission_ctrl_lock_.
   typedef boost::unordered_map<std::string, PoolStats> PoolStatsMap;
   PoolStatsMap pool_stats_;
+
+
+
+
+  AggregatedUserLoads  root_agg_user_loads_;
 
   /// This struct groups together a schedule and the executor group that it was scheduled
   /// on. It is used to attempt admission without rescheduling the query in case the

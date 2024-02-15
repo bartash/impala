@@ -418,11 +418,11 @@ TEST_F(AdmissionControllerTest, Simple) {
   // Make a TopicDeltaMap describing some activity on host1 and host2.
   TTopicDelta membership = MakeTopicDelta(false);
 
-  AdmissionController::PoolStats::UserLoads loads1{{USER1, 1}, {USER2, 4}};
+  AdmissionController::UserLoads loads1{{USER1, 1}, {USER2, 4}};
   AddStatsToTopic(&membership, HOST_1, QUEUE_B, MakePoolStats(1000, 1, 0, loads1));
-  AdmissionController::PoolStats::UserLoads loads2{{USER2, 3}, {USER3, 2}};
+  AdmissionController::UserLoads loads2{{USER2, 3}, {USER3, 2}};
   AddStatsToTopic(&membership, HOST_1, QUEUE_C, MakePoolStats(5000, 10, 0, loads2));
-  AdmissionController::PoolStats::UserLoads loads3{{USER1, 1}, {USER3, 7}};
+  AdmissionController::UserLoads loads3{{USER1, 1}, {USER3, 7}};
   AddStatsToTopic(&membership, HOST_2, QUEUE_C, MakePoolStats(5000, 1, 0, loads3));
 
   // Imitate the StateStore passing updates on query activity to the
@@ -1402,10 +1402,10 @@ TEST_F(AdmissionControllerTest, TopNQueryCheck) {
 #endif
 }
 
-/// Unit test for AdmissionController::PoolStats::AggregatedUserLoads
+/// Unit test for AdmissionController::AggregatedUserLoads
 /// and for its associated helper methods.
 TEST_F(AdmissionControllerTest, AggregatedUserLoads) {
-  AdmissionController::PoolStats::AggregatedUserLoads user_loads;
+  AdmissionController::AggregatedUserLoads user_loads;
   // Value is zero before any inserts.
   ASSERT_EQ(0, user_loads.size());
   ASSERT_EQ(0, user_loads.get(USER1));
@@ -1432,8 +1432,8 @@ TEST_F(AdmissionControllerTest, AggregatedUserLoads) {
   ASSERT_EQ(0, user_loads.get(USER2));
   ASSERT_EQ(0, user_loads.size());
 
-  AdmissionController::PoolStats::UserLoads loads1{{USER1, 1}, {USER2, 4}};
-  ASSERT_EQ("user1:1 user2:4 ", AdmissionController::PoolStats::DebugString(loads1));
+  AdmissionController::UserLoads loads1{{USER1, 1}, {USER2, 4}};
+  ASSERT_EQ("user1:1 user2:4 ", AdmissionController::DebugString(loads1));
 
   user_loads.add_loads(loads1);
   ASSERT_EQ(2, user_loads.size());
@@ -1446,7 +1446,7 @@ TEST_F(AdmissionControllerTest, AggregatedUserLoads) {
 //  user_loads.export_users(&metrics);
 //  ASSERT_EQ( "[" + USER1 + "]", metrics->ToHumanReadable());
 
-  AdmissionController::PoolStats::UserLoads loads2{{USER1, 1}, {USER3, 6}};
+  AdmissionController::UserLoads loads2{{USER1, 1}, {USER3, 6}};
   user_loads.add_loads(loads2);
   ASSERT_EQ(3, user_loads.size());
   ASSERT_EQ(2, user_loads.get(USER1));

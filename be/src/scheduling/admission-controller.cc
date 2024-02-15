@@ -365,7 +365,7 @@ string AdmissionController::PoolStats::DebugPoolStats(const TPoolStats& stats) c
   ss << "num_admitted_running=" << stats.num_admitted_running << ", ";
   ss << "num_queued=" << stats.num_queued << ", ";
   ss << "backend_mem_reserved=" << PrintBytes(stats.backend_mem_reserved) << ", ";
-  ss << "user_loads=" << DebugString(stats.user_loads) << ", ";
+  ss << "user_loads=" << AdmissionController::DebugString(stats.user_loads) << ", ";
   AppendStatsForConsumedMemory(ss, stats);
   return ss.str();
 }
@@ -824,25 +824,25 @@ int64 AdmissionController::PoolStats::GetUserLoad(const string& user) {
   return agg_user_loads_.get(user);
 }
 
-int64 AdmissionController::PoolStats::AggregatedUserLoads::size() {
+int64 AdmissionController::AggregatedUserLoads::size() {
   return loads_.size();
 }
 
-void AdmissionController::PoolStats::AggregatedUserLoads::clear() {
+void AdmissionController::AggregatedUserLoads::clear() {
   return loads_.clear();
 }
 
-void AdmissionController::PoolStats::AggregatedUserLoads::clear_key(const std::string& key) {
+void AdmissionController::AggregatedUserLoads::clear_key(const std::string& key) {
   loads_.erase(key);
 }
 
-void AdmissionController::PoolStats::AggregatedUserLoads::insert(
+void AdmissionController::AggregatedUserLoads::insert(
     const std::string& key, int64 value) {
   DCHECK(value > 0);
   loads_[key] = value;
 }
 
-void AdmissionController::PoolStats::AggregatedUserLoads::add_loads(
+void AdmissionController::AggregatedUserLoads::add_loads(
     const UserLoads& loads) {
   for (const auto & load : loads) {
     if (loads_.count(load.first)) {
@@ -853,19 +853,19 @@ void AdmissionController::PoolStats::AggregatedUserLoads::add_loads(
   }
 }
 
-void AdmissionController::PoolStats::AggregatedUserLoads::export_users(
+void AdmissionController::AggregatedUserLoads::export_users(
     SetMetric<std::string>* metrics) {
   for (auto & load : loads_) {
     metrics->Add(load.first);
   }
 }
 
-std::string AdmissionController::PoolStats::AggregatedUserLoads::DebugString() const {
-  return  AdmissionController::PoolStats::DebugString(loads_);
+std::string AdmissionController::AggregatedUserLoads::DebugString() const {
+  return  AdmissionController::DebugString(loads_);
 }
 
 
-int64 AdmissionController::PoolStats::AggregatedUserLoads::get(const std::string& key) {
+int64 AdmissionController::AggregatedUserLoads::get(const std::string& key) {
   // Check if key is present as dereferencing the map will insert it.
   // FIXME C++20: use contains().
   if (loads_.count(key)) {
@@ -874,12 +874,12 @@ int64 AdmissionController::PoolStats::AggregatedUserLoads::get(const std::string
   return 0;
 }
 
-void AdmissionController::PoolStats::increment_load(
+void AdmissionController::increment_load(
     UserLoads& loads, const std::string& key) {
   loads[key]++;
 }
 
-void AdmissionController::PoolStats::decrement_load(
+void AdmissionController::decrement_load(
     UserLoads& loads, const std::string& key) {
   // Check if key is present as dereferencing the map will insert it.
   // FIXME C++20: use contains().
@@ -899,7 +899,7 @@ void AdmissionController::PoolStats::decrement_load(
   loads[key]--;
 }
 
-std::string AdmissionController::PoolStats::DebugString(const UserLoads& loads) {
+std::string AdmissionController::DebugString(const UserLoads& loads) {
   std::ostringstream buffer;
   for (const auto& [key, value] : loads) {
     buffer << key << ":" << value << " ";
@@ -907,11 +907,11 @@ std::string AdmissionController::PoolStats::DebugString(const UserLoads& loads) 
   return buffer.str();
 }
 
-void AdmissionController::PoolStats::AggregatedUserLoads::increment(const std::string& key) {
+void AdmissionController::AggregatedUserLoads::increment(const std::string& key) {
   increment_load(loads_, key);
 }
 
-void AdmissionController::PoolStats::AggregatedUserLoads::decrement(const std::string& key) {
+void AdmissionController::AggregatedUserLoads::decrement(const std::string& key) {
   return decrement_load(loads_, key);
 }
 

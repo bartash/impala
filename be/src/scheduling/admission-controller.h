@@ -453,6 +453,61 @@ class AdmissionController {
   std::string GetStalenessDetail(const std::string& prefix,
       int64_t* ms_since_last_update = nullptr);
 
+
+ private:
+  class PoolStats;
+  friend class PoolStats;
+
+  /// Pointer to the cluster membership manager. Not owned by the AdmissionController.
+  ClusterMembershipMgr* cluster_membership_mgr_;
+
+  /// Subscription manager used to handle admission control updates. This is not
+  /// owned by this class.
+  StatestoreSubscriber* subscriber_;
+
+  /// Used for user-to-pool resolution and looking up pool configurations. Not owned by
+  /// the AdmissionController.
+  RequestPoolService* request_pool_service_;
+
+  /// Metrics subsystem access
+  MetricGroup* metrics_group_;
+
+  Scheduler* scheduler_;
+
+  PoolMemTrackerRegistry* pool_mem_trackers_;
+
+  /// Maps names of executor groups to their respective query load metric.
+  std::unordered_map<std::string, IntGauge*> exec_group_query_load_map_;
+
+  /// Thread dequeuing and admitting queries.
+  std::unique_ptr<Thread> dequeue_thread_;
+
+  // The local impalad's host/port id, used to construct topic keys.
+  const std::string host_id_;
+
+  /// Serializes/deserializes TPoolStats when sending and receiving topic updates.
+  ThriftSerializer thrift_serializer_;
+
+  /// Protects all access to all variables below.
+  std::mutex admission_ctrl_lock_;
+
+  /// The last time a topic update was processed. Time is obtained from
+  /// MonotonicMillis(), or is 0 if an update was never received.
+  int64_t last_topic_update_time_ms_ = 0;
+
+  PerHostStats host_stats_;
+
+  /// A map from other coordinator's host_id (host/port id) -> their view of the
+  /// PerHostStats. Used to get a full view of the cluster state while making admission
+  /// decisions. Updated via statestore updates.
+  std::unordered_map<std::string, PerHostStats> remote_per_host_stats_;
+
+  /// Counter of the number of times dequeuing a query failed because of a resource
+  /// issue on the coordinator (which therefore cannot be resolved by adding more
+  /// executor groups).
+  IntCounter* total_dequeue_failed_coordinator_limited_ = nullptr;
+
+
   /// A Holder for per-user loads.
   /// Contains a mapping of user names to number of queries running.
   /// This matches the generated type of user_loads in TPoolStats.
@@ -508,59 +563,6 @@ class AdmissionController {
     FRIEND_TEST(AdmissionControllerTest, AggregatedUserLoads);
     friend class AdmissionControllerTest;
   };
-
- private:
-  class PoolStats;
-  friend class PoolStats;
-
-  /// Pointer to the cluster membership manager. Not owned by the AdmissionController.
-  ClusterMembershipMgr* cluster_membership_mgr_;
-
-  /// Subscription manager used to handle admission control updates. This is not
-  /// owned by this class.
-  StatestoreSubscriber* subscriber_;
-
-  /// Used for user-to-pool resolution and looking up pool configurations. Not owned by
-  /// the AdmissionController.
-  RequestPoolService* request_pool_service_;
-
-  /// Metrics subsystem access
-  MetricGroup* metrics_group_;
-
-  Scheduler* scheduler_;
-
-  PoolMemTrackerRegistry* pool_mem_trackers_;
-
-  /// Maps names of executor groups to their respective query load metric.
-  std::unordered_map<std::string, IntGauge*> exec_group_query_load_map_;
-
-  /// Thread dequeuing and admitting queries.
-  std::unique_ptr<Thread> dequeue_thread_;
-
-  // The local impalad's host/port id, used to construct topic keys.
-  const std::string host_id_;
-
-  /// Serializes/deserializes TPoolStats when sending and receiving topic updates.
-  ThriftSerializer thrift_serializer_;
-
-  /// Protects all access to all variables below.
-  std::mutex admission_ctrl_lock_;
-
-  /// The last time a topic update was processed. Time is obtained from
-  /// MonotonicMillis(), or is 0 if an update was never received.
-  int64_t last_topic_update_time_ms_ = 0;
-
-  PerHostStats host_stats_;
-
-  /// A map from other coordinator's host_id (host/port id) -> their view of the
-  /// PerHostStats. Used to get a full view of the cluster state while making admission
-  /// decisions. Updated via statestore updates.
-  std::unordered_map<std::string, PerHostStats> remote_per_host_stats_;
-
-  /// Counter of the number of times dequeuing a query failed because of a resource
-  /// issue on the coordinator (which therefore cannot be resolved by adding more
-  /// executor groups).
-  IntCounter* total_dequeue_failed_coordinator_limited_ = nullptr;
 
   /// Contains all per-pool statistics and metrics. Accessed via GetPoolStats().
   class PoolStats {

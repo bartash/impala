@@ -585,8 +585,11 @@ class AdmissionController {
       /// Return the number of keys. For testing only.
       int64 size();
 
-      /// Clear all values
+      /// Clear all values.
       void clear();
+
+      /// Clear the value for a key.
+      void clear_key(const std::string& key);
 
       /// Merge in loads from a map.
       void add_loads(const UserLoads& loads);

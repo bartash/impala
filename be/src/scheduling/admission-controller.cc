@@ -832,6 +832,10 @@ void AdmissionController::PoolStats::AggregatedUserLoads::clear() {
   return loads_.clear();
 }
 
+void AdmissionController::PoolStats::AggregatedUserLoads::clear_key(const std::string& key) {
+  loads_.erase(key);
+}
+
 void AdmissionController::PoolStats::AggregatedUserLoads::insert(
     const std::string& key, int64 value) {
   DCHECK(value > 0);

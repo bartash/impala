@@ -655,11 +655,12 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   groups.insert({"group1", group1_set});
   ASSERT_TRUE(SetHadoopGroups(groups));
 
+  pool_stats->agg_user_loads_.insert(USER3, 2);
   ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_e, true,
       &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
-      "current per-group load 1 for user user3 in group group1 is at or above the group "
-      "limit 1");
+      "current per-group load 2 for user user3 in group group1 is at or above the group "
+      "limit 2");
 
   // Clean up
   groups.clear();

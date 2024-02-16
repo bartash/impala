@@ -403,6 +403,7 @@ TEST_F(AdmissionControllerTest, Simple) {
   ASSERT_TRUE(admission_controller->CanAdmitRequest(*schedule_state, config_c, true,
       &not_admitted_reason, nullptr, coordinator_resource_limited));
   ASSERT_FALSE(coordinator_resource_limited);
+  ASSERT_EQ(0, admission_controller->root_agg_user_loads_.size());
 
   // Create a ScheduleState just like 'schedule_state' to run on 3 hosts which can't be
   // admitted.
@@ -445,6 +446,11 @@ TEST_F(AdmissionControllerTest, Simple) {
   ASSERT_EQ(1, pool_stats->agg_user_loads_.get(USER1));
   ASSERT_EQ(3, pool_stats->agg_user_loads_.get(USER2));
   ASSERT_EQ(9, pool_stats->agg_user_loads_.get(USER3));
+
+  // Check the aggregated user loads across the pools.
+  ASSERT_EQ(2, admission_controller->root_agg_user_loads_.get(USER1));
+  ASSERT_EQ(7, admission_controller->root_agg_user_loads_.get(USER2));
+  ASSERT_EQ(9, admission_controller->root_agg_user_loads_.get(USER3));
 
   // Test that the query cannot be admitted now.
   ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state, config_c, true,

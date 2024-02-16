@@ -556,7 +556,11 @@ class AdmissionController {
     /// Export keys to a metrics object.
     void export_users(SetMetric<std::string>* metrics);
 
+    /// Print the keys and values from loads_ into a string.
     std::string DebugString() const;
+
+    [[nodiscard]] const UserLoads& get_user_loads() const { return loads_; }
+
    private:
     UserLoads loads_;
 
@@ -624,10 +628,10 @@ class AdmissionController {
       InitMetrics();
     }
 
-    int64_t agg_num_running() const { return agg_num_running_; }
-    int64_t agg_num_queued() const { return agg_num_queued_; }
-    int64_t local_trivial_running() const { return local_trivial_running_; }
-    int64_t EffectiveMemReserved() const {
+    [[nodiscard]] int64_t agg_num_running() const { return agg_num_running_; }
+    [[nodiscard]] int64_t agg_num_queued() const { return agg_num_queued_; }
+    [[nodiscard]] int64_t local_trivial_running() const { return local_trivial_running_; }
+    [[nodiscard]] int64_t EffectiveMemReserved() const {
       return std::max(agg_mem_reserved_, local_mem_admitted_);
     }
 
@@ -705,6 +709,10 @@ class AdmissionController {
     int64 GetUserLoad(const string& user);
 
     const std::string& name() const { return name_; }
+
+    [[nodiscard]] const AggregatedUserLoads& get_aggregated_uer_loads() const {
+      return agg_user_loads_;
+    }
 
     /// The max number of running trivial queries that can be allowed at the same time.
     static const int MAX_NUM_TRIVIAL_QUERY_RUNNING;
@@ -813,9 +821,8 @@ class AdmissionController {
   typedef boost::unordered_map<std::string, PoolStats> PoolStatsMap;
   PoolStatsMap pool_stats_;
 
-
-
-
+  /// User loads aggregated across all pools. Updated by UpdateClusterAggregates().
+  /// Protected by admission_ctrl_lock_.
   AggregatedUserLoads  root_agg_user_loads_;
 
   /// This struct groups together a schedule and the executor group that it was scheduled

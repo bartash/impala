@@ -2031,6 +2031,12 @@ void AdmissionController::UpdateClusterAggregates() {
   PoolStats::HostMemMap updated_mem_reserved;
   for (auto& entry : pool_stats_) entry.second.UpdateAggregates(&updated_mem_reserved);
 
+  root_agg_user_loads_.clear();
+  for (auto& entry : pool_stats_) {
+    root_agg_user_loads_.add_loads(
+        entry.second.get_aggregated_uer_loads().get_user_loads());
+  }
+
   stringstream ss;
   ss << "Updated mem reserved for hosts:";
   int i = 0;

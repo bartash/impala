@@ -1118,6 +1118,7 @@ bool AdmissionController::HasAvailableSlots(const ScheduleState& state,
   return true;
 }
 
+// FIXME asherman maybe rename to HasUserAndGroupPoolQuotas
 bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
     const TPoolConfig& pool_cfg, PoolStats* pool_stats, string* quota_exceeded_reason) {
   const string& user = state.request().query_ctx.session.delegated_user;

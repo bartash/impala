@@ -873,6 +873,7 @@ class AdmissionController {
     /// Config of the pool this query will be scheduled on.
     string pool_name;
     TPoolConfig pool_cfg;
+    TPoolConfig root_cfg;
 
     /// END: Members that are valid for new objects after initialization
     /////////////////////////////////////////
@@ -999,8 +1000,8 @@ class AdmissionController {
 
   /// Resolves the resource pool name in 'query_ctx.request_pool' and stores the resulting
   /// name in 'pool_name' and the resulting config in 'pool_config'.
-  Status ResolvePoolAndGetConfig(const TQueryCtx& query_ctx, std::string* pool_name,
-      TPoolConfig* pool_config);
+  Status ResolvePoolAndGetConfig(const TQueryCtx& query_ctx, string* pool_name,
+      TPoolConfig* pool_config, TPoolConfig* root_config);
 
   /// Statestore subscriber callback that sends outgoing topic deltas (see
   /// AddPoolAndPerHostStatsUpdates()) and processes incoming topic deltas, updating the

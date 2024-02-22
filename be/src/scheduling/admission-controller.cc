@@ -1483,8 +1483,8 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
   // Re-resolve the pool name to propagate any resolution errors now that this request is
   // known to require a valid pool. All executor groups / schedules will use the same pool
   // name.
-  RETURN_IF_ERROR(ResolvePoolAndGetConfig(
-      request.request.query_ctx, &queue_node->pool_name, &queue_node->pool_cfg));
+  RETURN_IF_ERROR(ResolvePoolAndGetConfig(request.request.query_ctx,
+      &queue_node->pool_name, &queue_node->pool_cfg, &queue_node->root_cfg));
   request.summary_profile->AddInfoString("Request Pool", queue_node->pool_name);
 
   {
@@ -1857,11 +1857,12 @@ AdmissionController::CancelQueriesOnFailedCoordinators(
   return to_clean_up;
 }
 
-Status AdmissionController::ResolvePoolAndGetConfig(
-    const TQueryCtx& query_ctx, string* pool_name, TPoolConfig* pool_config) {
+Status AdmissionController::ResolvePoolAndGetConfig(const TQueryCtx& query_ctx,
+    string* pool_name, TPoolConfig* pool_config, TPoolConfig* root_config) {
   RETURN_IF_ERROR(request_pool_service_->ResolveRequestPool(query_ctx, pool_name));
   DCHECK_EQ(query_ctx.request_pool, *pool_name);
-  return request_pool_service_->GetPoolConfig(*pool_name, pool_config);
+  RETURN_IF_ERROR(request_pool_service_->GetPoolConfig(*pool_name, pool_config));
+  return request_pool_service_->GetPoolConfig("root", root_config);
 }
 
 // Statestore subscriber callback for IMPALA_REQUEST_QUEUE_TOPIC.

@@ -261,6 +261,8 @@ public class AllocationFileLoaderService extends AbstractService {
     Map<String, Map<QueueACL, AccessControlList>> queueAcls = new HashMap<>();
     Map<String, Map<String, Integer>> userQueryLimits = new HashMap<>();
     Map<String, Map<String, Integer>> groupQueryLimits = new HashMap<>();
+    Map<String, Map<String, Integer>> rootUserQueryLimits = new HashMap<>();
+    Map<String, Map<String, Integer>> rootGroupQueryLimits = new HashMap<>();
     Set<String> nonPreemptableQueues = new HashSet<>();
     int userMaxAppsDefault = Integer.MAX_VALUE;
     int queueMaxAppsDefault = Integer.MAX_VALUE;
@@ -388,8 +390,9 @@ public class AllocationFileLoaderService extends AbstractService {
       loadQueue(parent, element, minQueueResources, maxQueueResources,
           maxChildQueueResources, queueMaxApps, userMaxApps, queueMaxAMShares,
           queueWeights, queuePolicies, minSharePreemptionTimeouts,
-          fairSharePreemptionTimeouts, fairSharePreemptionThresholds,
-          queueAcls, userQueryLimits, groupQueryLimits, configuredQueues, nonPreemptableQueues);
+          fairSharePreemptionTimeouts, fairSharePreemptionThresholds, queueAcls,
+          userQueryLimits, groupQueryLimits, rootUserQueryLimits, rootGroupQueryLimits,
+          configuredQueues, nonPreemptableQueues);
     }
 
     // Load placement policy and pass it configured queues
@@ -450,6 +453,8 @@ public class AllocationFileLoaderService extends AbstractService {
       Map<String, Map<QueueACL, AccessControlList>> queueAcls,
       Map<String, Map<String, Integer>> userQueryLimits,
       Map<String, Map<String, Integer>> groupQueryLimits,
+      Map<String, Map<String, Integer>> rootUserQueryLimits,
+      Map<String, Map<String, Integer>> rootGroupQueryLimits,
       Map<FSQueueType, Set<String>> configuredQueues,
       Set<String> nonPreemptableQueues)
       throws AllocationConfigurationException {

@@ -374,6 +374,13 @@ public class RequestPoolService {
     result.setUser_query_limits(userQueryLimits);
     Map<String, Integer> groupQueryLimits = allocationConf_.get().getGroupQueryLimits(pool);
     result.setGroup_query_limits(groupQueryLimits);
+
+
+    Map<String, Integer> userQueryLimits = allocationConf_.get().get(pool);
+    result.setUser_query_limits(userQueryLimits);
+    Map<String, Integer> groupQueryLimits = allocationConf_.get().getGroupQueryLimits(pool);
+    result.setGroup_query_limits(groupQueryLimits);
+
     if (conf_ == null) {
       result.setMax_requests(MAX_PLACED_RESERVATIONS_DEFAULT);
       result.setMax_queued(MAX_QUEUED_RESERVATIONS_DEFAULT);

@@ -36,6 +36,16 @@ import org.apache.impala.yarn.server.resourcemanager.resource.ResourceWeights;
 
 import com.google.common.annotations.VisibleForTesting;
 
+  public Map<String, Integer> getRootUserQueryLimits(String queueName) {
+    Map<String, Integer> limits = rootUserQueryLimits.get(queueName);
+    return limits != null ? limits : Collections.emptyMap();
+  }
+
+  public Map<String, Integer> getRootGroupQueryLimits(String queueName) {
+    Map<String, Integer> limits = rootGroupQueryLimits.get(queueName);
+    return limits != null ? limits : Collections.emptyMap();
+  }
+
 public class AllocationConfiguration {
   private static final AccessControlList EVERYBODY_ACL = new AccessControlList("*");
   private static final AccessControlList NOBODY_ACL = new AccessControlList(" ");
@@ -54,11 +64,13 @@ public class AllocationConfiguration {
 
   private final Map<String, Map<String, Integer>> userQueryLimits;
   private final Map<String, Map<String, Integer>> groupQueryLimits;
+  private final Map<String, Map<String, Integer>> rootUserQueryLimits;
+  private final Map<String, Map<String, Integer>> rootGroupQueryLimits;
 
   // Policy for mapping apps to queues
   @VisibleForTesting
   QueuePlacementPolicy placementPolicy;
-  
+
   //Configured queues in the alloc xml
   @VisibleForTesting
   Map<FSQueueType, Set<String>> configuredQueues;
@@ -88,10 +100,12 @@ public class AllocationConfiguration {
     this.queueAcls = queueAcls;
     this.userQueryLimits = userQueryLimits;
     this.groupQueryLimits = groupQueryLimits;
+    this.rootUserQueryLimits = rootUserQueryLimits;
+    this.rootGroupQueryLimits = rootGroupQueryLimits;
     this.placementPolicy = placementPolicy;
     this.configuredQueues = configuredQueues;
   }
-  
+
   public AllocationConfiguration(Configuration conf) {
     minQueueResources = new HashMap<>();
     maxQueueResources = new HashMap<>();
@@ -99,6 +113,8 @@ public class AllocationConfiguration {
     queueAcls = new HashMap<>();
     userQueryLimits = new HashMap<>();
     groupQueryLimits = new HashMap<>();
+    rootUserQueryLimits = new HashMap<>();
+    rootGroupQueryLimits = new HashMap<>();
     configuredQueues = new HashMap<>();
     for (FSQueueType queueType : FSQueueType.values()) {
       configuredQueues.put(queueType, new HashSet<String>());
@@ -106,7 +122,7 @@ public class AllocationConfiguration {
     placementPolicy =
         QueuePlacementPolicy.fromConfiguration(conf, configuredQueues);
   }
-  
+
   /**
    * Get the ACLs associated with this queue. If a given ACL is not explicitly
    * configured, include the default value for that ACL.  The default for the
@@ -180,14 +196,14 @@ public class AllocationConfiguration {
 
       lastPeriodIndex = queueName.lastIndexOf('.', lastPeriodIndex - 1);
     }
-    
+
     return false;
   }
 
   public Map<FSQueueType, Set<String>> getConfiguredQueues() {
     return configuredQueues;
   }
-  
+
   public QueuePlacementPolicy getPlacementPolicy() {
     return placementPolicy;
   }
@@ -201,4 +217,5 @@ public class AllocationConfiguration {
     Map<String, Integer> limits = groupQueryLimits.get(queueName);
     return limits != null ? limits : Collections.emptyMap();
   }
+}
 }

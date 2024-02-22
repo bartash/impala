@@ -229,8 +229,12 @@ struct TPoolConfig {
   12: required map<string, i32> user_query_limits
 
   // The map is from group name to limit.
-  // FIXME explain semantics when I knwo what they are.
+  // FIXME explain semantics when I know what they are.
   13: required map<string, i32> group_query_limits
+  // FIXME explain semantics when I know what they are.
+  14: required map<string, i32> root_user_query_limits
+  // FIXME explain semantics when I know what they are.
+  15: required map<string, i32> root_group_query_limits
 }
 
 struct TParseDateStringResult {

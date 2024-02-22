@@ -1118,8 +1118,34 @@ bool AdmissionController::HasAvailableSlots(const ScheduleState& state,
   return true;
 }
 
-// FIXME asherman maybe rename to HasUserAndGroupPoolQuotas
-bool AdmissionController::HasUserAndGroupQuotas(const ScheduleState& state,
+bool AdmissionController::HasUserAndGroupPoolQuotas(const ScheduleState& state,
+    const TPoolConfig& pool_cfg, PoolStats* pool_stats, string* quota_exceeded_reason) {
+  const string& user = state.request().query_ctx.session.delegated_user;
+  bool key_matched = false;
+  if (!checkQuota(
+          pool_cfg, pool_stats, state, user, quota_exceeded_reason, false, &key_matched)) {
+    return false;
+  }
+  if (key_matched) {
+    VLOG_ROW << "user " << user << " passes quota check as user rule is matched";
+    return true;
+  }
+  if (!checkGroupQuota(
+          pool_cfg, pool_stats, state, user, quota_exceeded_reason, &key_matched)) {
+    return false;
+  }
+  if (key_matched) {
+    VLOG_ROW << "user " << user << " passes quota check as group rule is matched";
+    return true;
+  }
+  if (!checkQuota(
+          pool_cfg, pool_stats, state, user, quota_exceeded_reason, true, &key_matched)) {
+    return false;
+  }
+  return true;
+}
+
+bool AdmissionController::HasUserAndGroupRootQuotas(const ScheduleState& state,
     const TPoolConfig& pool_cfg, PoolStats* pool_stats, string* quota_exceeded_reason) {
   const string& user = state.request().query_ctx.session.delegated_user;
   bool key_matched = false;
@@ -1250,7 +1276,7 @@ bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
           coordinator_resource_limited, not_admitted_details)) {
     return false;
   }
-  if (!HasUserAndGroupQuotas(state, pool_cfg, pool_stats, not_admitted_reason)) {
+  if (!HasUserAndGroupPoolQuotas(state, pool_cfg, pool_stats, not_admitted_reason)) {
     return false;
   }
   return true;

@@ -669,6 +669,8 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
       "current per-group load 2 for user user3 in group group1 is at or above the group "
       "limit 2");
 
+  // FIXME add test where quota is set to 0 as that might be useful
+
   // Clean up
   groups.clear();
   ASSERT_TRUE(SetHadoopGroups(groups));

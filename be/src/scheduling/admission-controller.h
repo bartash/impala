@@ -873,6 +873,7 @@ class AdmissionController {
     /// Config of the pool this query will be scheduled on.
     string pool_name;
     TPoolConfig pool_cfg;
+    /// FIXME add
     TPoolConfig root_cfg;
 
     /// END: Members that are valid for new objects after initialization
@@ -1103,9 +1104,13 @@ class AdmissionController {
   bool HasAvailableSlots(const ScheduleState& state, const TPoolConfig& pool_cfg,
       string* unavailable_reason, bool& coordinator_resource_limited);
 
-  /// Returns true unless this query exceeds user or grou quotas.
+  /// Returns true unless this query exceeds user or group quotas.
   /// Must hold admission_ctrl_lock_.
-  static bool HasUserAndGroupQuotas(const ScheduleState& state, const TPoolConfig& pool_cfg,
+  static bool HasUserAndGroupPoolQuotas(const ScheduleState& state, const TPoolConfig& pool_cfg,
+      PoolStats* pool_stats, string* quota_exceeded_reason);
+
+  // FIXME describe
+  static bool HasUserAndGroupRootQuotas(const ScheduleState& state, const TPoolConfig& pool_cfg,
       PoolStats* pool_stats, string* quota_exceeded_reason);
 
   /// Updates the memory admitted and the num of queries running for each backend in

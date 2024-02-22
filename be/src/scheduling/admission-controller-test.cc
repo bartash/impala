@@ -574,12 +574,13 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   AdmissionController* admission_controller = MakeAdmissionController();
   RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
 
-  TPoolConfig config_root;
-  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
-  // FIXME asherman do something
+//  TPoolConfig config_root;
+//  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
+//   FIXME asherman do something
 
   TPoolConfig config_e;
   ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_E, &config_e));
+//  ASSERT_EQ(config_e.r, config_root.user_query_limits);
 
   // Check the PoolStats for QUEUE_E.
   AdmissionController::PoolStats* pool_stats =

@@ -1119,9 +1119,9 @@ bool AdmissionController::HasAvailableSlots(const ScheduleState& state,
 }
 
 bool AdmissionController::HasUserAndGroupPoolQuotas(const ScheduleState& state,
-    const TPoolConfig& pool_cfg, PoolStats* pool_stats, string* quota_exceeded_reason) {
+    const TPoolConfig& pool_cfg, PoolStats* pool_stats, string* quota_exceeded_reason,
+    bool& key_matched) {
   const string& user = state.request().query_ctx.session.delegated_user;
-  bool key_matched = false;
   if (!checkQuota(
           pool_cfg, pool_stats, state, user, quota_exceeded_reason, false, &key_matched)) {
     return false;
@@ -1276,7 +1276,9 @@ bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
           coordinator_resource_limited, not_admitted_details)) {
     return false;
   }
-  if (!HasUserAndGroupPoolQuotas(state, pool_cfg, pool_stats, not_admitted_reason)) {
+  bool key_matched = false;
+  if (!HasUserAndGroupPoolQuotas(
+          state, pool_cfg, pool_stats, not_admitted_reason, key_matched)) {
     return false;
   }
   return true;

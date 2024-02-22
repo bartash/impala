@@ -1106,8 +1106,9 @@ class AdmissionController {
 
   /// Returns true unless this query exceeds user or group quotas.
   /// Must hold admission_ctrl_lock_.
-  static bool HasUserAndGroupPoolQuotas(const ScheduleState& state, const TPoolConfig& pool_cfg,
-      PoolStats* pool_stats, string* quota_exceeded_reason);
+  static bool HasUserAndGroupPoolQuotas(const ScheduleState& state,
+      const TPoolConfig& pool_cfg, PoolStats* pool_stats, string* quota_exceeded_reason,
+      bool& key_matched);
 
   // FIXME describe
   static bool HasUserAndGroupRootQuotas(const ScheduleState& state, const TPoolConfig& pool_cfg,

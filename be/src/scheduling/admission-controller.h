@@ -1111,8 +1111,9 @@ class AdmissionController {
       bool& key_matched);
 
   // FIXME describe
-  static bool HasUserAndGroupRootQuotas(const ScheduleState& state, const TPoolConfig& pool_cfg,
-      PoolStats* pool_stats, string* quota_exceeded_reason);
+  static bool HasUserAndGroupRootQuotas(const ScheduleState& state,
+      const TPoolConfig& pool_cfg, PoolStats* pool_stats, string* quota_exceeded_reason,
+      bool& key_matched);
 
   /// Updates the memory admitted and the num of queries running for each backend in
   /// 'state'. Also updates the stats of its associated resource pool. Used only when

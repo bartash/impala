@@ -383,6 +383,10 @@ TEST_F(AdmissionControllerTest, Simple) {
   AdmissionController* admission_controller = MakeAdmissionController();
   RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
 
+  // Get the PoolConfig for the global "root" configuration.
+  TPoolConfig config_root;
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
+
   // Get the PoolConfig for QUEUE_C ("root.queueC").
   TPoolConfig config_c;
   ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_C, &config_c));
@@ -401,7 +405,7 @@ TEST_F(AdmissionControllerTest, Simple) {
   string not_admitted_reason;
   bool coordinator_resource_limited = false;
   ASSERT_TRUE(
-      admission_controller->CanAdmitRequest(*schedule_state, config_c, <#initializer #>,
+      admission_controller->CanAdmitRequest(*schedule_state, config_c, config_root,
           true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   ASSERT_FALSE(coordinator_resource_limited);
   ASSERT_EQ(0, admission_controller->root_agg_user_loads_.size());
@@ -411,7 +415,7 @@ TEST_F(AdmissionControllerTest, Simple) {
   ScheduleState* schedule_state_3_hosts =
       MakeScheduleState(QUEUE_C, config_c, 3, 64L * MEGABYTE);
   ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state_3_hosts, config_c,
-      <#initializer #>, true, &not_admitted_reason, nullptr,
+      config_root, true, &not_admitted_reason, nullptr,
       coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "Not enough aggregate memory available in pool root.queueC with max mem "
@@ -456,7 +460,7 @@ TEST_F(AdmissionControllerTest, Simple) {
 
   // Test that the query cannot be admitted now.
   ASSERT_FALSE(
-      admission_controller->CanAdmitRequest(*schedule_state, config_c, <#initializer #>,
+      admission_controller->CanAdmitRequest(*schedule_state, config_c, config_root,
           true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(
       not_admitted_reason, "number of running queries 11 is at or over limit 10.");
@@ -490,7 +494,7 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestMemory) {
   string not_admitted_reason;
   bool coordinator_resource_limited = false;
   ASSERT_TRUE(
-      admission_controller->CanAdmitRequest(*schedule_state, config_d, <#initializer #>,
+      admission_controller->CanAdmitRequest(*schedule_state, config_d, config_root,
           true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   ASSERT_FALSE(coordinator_resource_limited);
 
@@ -501,7 +505,7 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestMemory) {
   ScheduleState* schedule_state15 =
       MakeScheduleState(QUEUE_D, config_d, host_count, 30L * MEGABYTE);
   ASSERT_FALSE(
-      admission_controller->CanAdmitRequest(*schedule_state15, config_d, <#initializer #>,
+      admission_controller->CanAdmitRequest(*schedule_state15, config_d, config_root,
           true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "Not enough aggregate memory available in pool root.queueD with max mem resources "
@@ -583,13 +587,12 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   AdmissionController* admission_controller = MakeAdmissionController();
   RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
 
-//  TPoolConfig config_root;
-//  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
-//   FIXME asherman do something
+  // Get the PoolConfig for the global "root" configuration.
+  TPoolConfig config_root;
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
 
   TPoolConfig config_e;
   ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_E, &config_e));
-//  ASSERT_EQ(config_e.r, config_root.user_query_limits);
 
   // Check the PoolStats for QUEUE_E.
   AdmissionController::PoolStats* pool_stats =
@@ -704,13 +707,12 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   AdmissionController* admission_controller = MakeAdmissionController();
   RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
 
-//  TPoolConfig config_root;
-//  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
-//   FIXME asherman do something
+  // Get the PoolConfig for the global "root" configuration.
+  TPoolConfig config_root;
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
 
   TPoolConfig config_e;
   ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_E, &config_e));
-//  ASSERT_EQ(config_e.r, config_root.user_query_limits);
 
   // Check the PoolStats for QUEUE_E.
   AdmissionController::PoolStats* pool_stats =

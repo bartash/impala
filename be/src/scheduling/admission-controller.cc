@@ -1123,24 +1123,24 @@ bool AdmissionController::HasUserAndGroupPoolQuotas(const ScheduleState& state,
   const string& user = state.request().query_ctx.session.delegated_user;
   int64 user_load = pool_stats->GetUserLoad(user);
   bool key_matched = false;
-  if (!checkQuota(pool_cfg, pool_stats, state, user_load, user, quota_exceeded_reason,
-          false, &key_matched)) {
+  if (!checkQuota(
+          pool_cfg, state, user_load, user, quota_exceeded_reason, false, &key_matched)) {
     return false;
   }
   if (key_matched) {
     VLOG_ROW << "user " << user << " passes quota check as user rule is matched";
     return true;
   }
-  if (!checkGroupQuota(pool_cfg, pool_stats, state, user_load, user,
-          quota_exceeded_reason, &key_matched)) {
+  if (!checkGroupQuota(
+          pool_cfg, state, user_load, user, quota_exceeded_reason, &key_matched)) {
     return false;
   }
   if (key_matched) {
     VLOG_ROW << "user " << user << " passes quota check as group rule is matched";
     return true;
   }
-  if (!checkQuota(pool_cfg, pool_stats, state, user_load, user, quota_exceeded_reason,
-          true, &key_matched)) {
+  if (!checkQuota(
+          pool_cfg, state, user_load, user, quota_exceeded_reason, true, &key_matched)) {
     return false;
   }
   return true;
@@ -1149,34 +1149,34 @@ bool AdmissionController::HasUserAndGroupPoolQuotas(const ScheduleState& state,
 bool AdmissionController::HasUserAndGroupRootQuotas(const ScheduleState& state,
     const TPoolConfig& pool_cfg, AggregatedUserLoads& aggregated_user_loads, string* quota_exceeded_reason) {
   const string& user = state.request().query_ctx.session.delegated_user;
+  int64 user_load = aggregated_user_loads.get(user);
   bool key_matched = false;
-  if (!checkQuota(pool_cfg, aggregated_user_loads, state, user_load, user,
-          quota_exceeded_reason, false, &key_matched)) {
+  if (!checkQuota(
+          pool_cfg, state, user_load, user, quota_exceeded_reason, false, &key_matched)) {
     return false;
   }
   if (key_matched) {
     VLOG_ROW << "user " << user << " passes quota check as user rule is matched";
     return true;
   }
-  if (!checkGroupQuota(pool_cfg, aggregated_user_loads, state, user_load, user,
-          quota_exceeded_reason, &key_matched)) {
+  if (!checkGroupQuota(
+          pool_cfg, state, user_load, user, quota_exceeded_reason, &key_matched)) {
     return false;
   }
   if (key_matched) {
     VLOG_ROW << "user " << user << " passes quota check as group rule is matched";
     return true;
   }
-  if (!checkQuota(pool_cfg, aggregated_user_loads, state, user_load, user,
-          quota_exceeded_reason, true, &key_matched)) {
+  if (!checkQuota(
+          pool_cfg, state, user_load, user, quota_exceeded_reason, true, &key_matched)) {
     return false;
   }
   return true;
 }
 
 bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
-    AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
-    int64 user_load, const string& user_for_load, string* quota_exceeded_reason,
-    bool use_wildcard, bool* key_matched) {
+    const ScheduleState& state, int64 user_load, const string& user_for_load,
+    string* quota_exceeded_reason, bool use_wildcard, bool* key_matched) {
   string user_for_limits = use_wildcard ? "*" : user_for_load;
   auto it = pool_cfg.user_query_limits.find(user_for_limits);
   int64 user_limit = 0;
@@ -1195,9 +1195,8 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
 }
 
 bool AdmissionController::checkGroupQuota(const TPoolConfig& pool_cfg,
-    AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
-    int64 user_load, const string& user, string* quota_exceeded_reason,
-    bool* key_matched) {
+    const ScheduleState& state, int64 user_load, const string& user,
+    string* quota_exceeded_reason, bool* key_matched) {
 
   // Get the groups the user is in.
   TGetHadoopGroupsRequest req;

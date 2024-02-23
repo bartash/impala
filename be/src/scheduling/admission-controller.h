@@ -1300,12 +1300,10 @@ class AdmissionController {
 
   // FIXME asherman add description
   // In particular explain user_for_load user_for_limit
-  static bool checkQuota(const TPoolConfig& pool_cfg,
-      AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
+  static bool checkQuota(const TPoolConfig& pool_cfg, const ScheduleState& state,
       int64 user_load, const string& user_for_load, string* quota_exceeded_reason,
       bool use_wildcard, bool* key_matched);
-  static bool checkGroupQuota(const TPoolConfig& pool_cfg,
-      AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
+  static bool checkGroupQuota(const TPoolConfig& pool_cfg, const ScheduleState& state,
       int64 user_load, const string& user, string* quota_exceeded_reason,
       bool* key_matched);
 

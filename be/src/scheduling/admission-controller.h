@@ -1049,8 +1049,8 @@ class AdmissionController {
   /// The is_trivial is set to true when is_trivial is not null if the query is admitted
   /// as a trivial query.
   bool FindGroupToAdmitOrReject(ClusterMembershipMgr::SnapshotPtr membership_snapshot,
-      const TPoolConfig& pool_config, bool admit_from_queue, PoolStats* pool_stats,
-      QueueNode* queue_node, bool& coordinator_resource_limited,
+      const TPoolConfig& pool_config, const TPoolConfig& root_cfg, bool admit_from_queue,
+      PoolStats* pool_stats, QueueNode* queue_node, bool& coordinator_resource_limited,
       bool* is_trivial = nullptr);
 
   /// Dequeues the queued queries when notified by dequeue_cv_ and admits them if they

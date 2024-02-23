@@ -1281,7 +1281,7 @@ bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
   if (!HasUserAndGroupPoolQuotas(state, pool_cfg, pool_stats, not_admitted_reason)) {
     return false;
   }
-  if (!HasUserAndGroupRootQuotas(state, pool_cfg, pool_stats, not_admitted_reason)) {
+  if (!HasUserAndGroupRootQuotas(state, root_cfg, pool_stats, not_admitted_reason)) {
     return false;
   }
   return true;
@@ -1529,8 +1529,9 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
     bool unused_bool;
     bool is_trivial = false;
     bool must_reject =
-        !FindGroupToAdmitOrReject(membership_snapshot, queue_node->pool_cfg,
-            /* admit_from_queue=*/false, stats, queue_node, unused_bool, &is_trivial);
+        !FindGroupToAdmitOrReject(membership_snapshot,
+        queue_node->pool_cfg, queue_node->root_cfg,
+        /* admit_from_queue=*/false, stats, queue_node, unused_bool, &is_trivial);
     if (must_reject) {
       AdmissionOutcome outcome = admit_outcome->Set(AdmissionOutcome::REJECTED);
       if (outcome != AdmissionOutcome::REJECTED) {
@@ -2179,8 +2180,8 @@ Status AdmissionController::ComputeGroupScheduleStates(
 
 bool AdmissionController::FindGroupToAdmitOrReject(
     ClusterMembershipMgr::SnapshotPtr membership_snapshot, const TPoolConfig& pool_config,
-    bool admit_from_queue, PoolStats* pool_stats, QueueNode* queue_node,
-    bool& coordinator_resource_limited, bool* is_trivial) {
+    const TPoolConfig& root_cfg, bool admit_from_queue, PoolStats* pool_stats,
+    QueueNode* queue_node, bool& coordinator_resource_limited, bool* is_trivial) {
   // Check for rejection based on current cluster size
   const string& pool_name = pool_stats->name();
   string rejection_reason;
@@ -2256,7 +2257,7 @@ bool AdmissionController::FindGroupToAdmitOrReject(
       return false;
     }
 
-    if (CanAdmitRequest(*state, pool_config, <#initializer #>, admit_from_queue,
+    if (CanAdmitRequest(*state, pool_config, root_cfg, admit_from_queue,
             &queue_node->not_admitted_reason, &queue_node->not_admitted_details,
             coordinator_resource_limited)) {
       queue_node->admitted_schedule = std::move(group_state.state);
@@ -2398,8 +2399,9 @@ true);
         bool is_trivial = false;
         bool is_rejected = !is_cancelled
             && !FindGroupToAdmitOrReject(membership_snapshot, pool_config,
-                   /* admit_from_queue=*/true, stats, queue_node,
-                   coordinator_resource_limited, &is_trivial);
+                queue_node->root_cfg,
+                /* admit_from_queue=*/true, stats, queue_node,
+                coordinator_resource_limited, &is_trivial);
 
         if (!is_cancelled && !is_rejected
             && queue_node->admitted_schedule.get() == nullptr) {

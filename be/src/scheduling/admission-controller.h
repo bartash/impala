@@ -1065,8 +1065,8 @@ class AdmissionController {
   /// enough memory resources available for the query. Caller owns not_admitted_reason and
   /// not_admitted_details. Must hold admission_ctrl_lock_.
   bool CanAdmitRequest(const ScheduleState& state, const TPoolConfig& pool_cfg,
-      bool admit_from_queue, string* not_admitted_reason, string* not_admitted_details,
-      bool& coordinator_resource_limited);
+      const TPoolConfig& root_cfg, bool admit_from_queue, string* not_admitted_reason,
+      string* not_admitted_details, bool& coordinator_resource_limited);
 
   /// Returns true if the query can be admitted as a trivial query, therefore it can
   /// bypass the admission control immediately.

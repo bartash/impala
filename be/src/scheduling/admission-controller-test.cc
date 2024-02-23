@@ -51,6 +51,8 @@ static const string QUEUE_B = "root.queueB";
 static const string QUEUE_C = "root.queueC";
 static const string QUEUE_D = "root.queueD";
 static const string QUEUE_E = "root.queueE";
+static const string QUEUE_SMALL = "root.group-set-small";
+static const string QUEUE_LARGE = "root.group-set-large";
 
 // Host names
 static const string HOST_0 = "host0:25000";
@@ -709,7 +711,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
 /// Test CanAdmitRequest in the context of user and group quotas.
 TEST_F(AdmissionControllerTest, QuotaExamples) {
   // Pass the paths of the configuration files as command line flags.
-  FLAGS_fair_scheduler_allocation_path = GetResourceFile("fair-scheduler-test2.xml");
+  FLAGS_fair_scheduler_allocation_path = GetResourceFile("fair-scheduler-test3.xml");
   FLAGS_llama_site_path = GetResourceFile("llama-site-test2.xml");
 
   AdmissionController* admission_controller = MakeAdmissionController();
@@ -719,19 +721,49 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   TPoolConfig config_root;
   ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
 
-  TPoolConfig config_e;
-  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_E, &config_e));
+  TPoolConfig config_large;
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_LARGE, &config_large));
+  TPoolConfig config_small;
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_SMALL, &config_small));
 
-  // Check the PoolStats for QUEUE_E.
-  AdmissionController::PoolStats* pool_stats =
-      admission_controller->GetPoolStats(QUEUE_E);
-  CheckPoolStatsEmpty(pool_stats);
+  
+  AdmissionController::PoolStats* large_pool_stats =
+      admission_controller->GetPoolStats(QUEUE_LARGE);
+  CheckPoolStatsEmpty(large_pool_stats);  
+  AdmissionController::PoolStats* small_pool_stats =
+      admission_controller->GetPoolStats(QUEUE_SMALL);
+  CheckPoolStatsEmpty(small_pool_stats);
+
 
   // Create a ScheduleState to run on QUEUE_E on 12 hosts.
   int64_t host_count = 12;
-  ScheduleState* schedule_state = MakeScheduleState(QUEUE_E, config_e, host_count,
+    FIXME do I need 1 schedule_state for each pool?
+  ScheduleState* schedule_state = MakeScheduleState(QUEUE_E, config_small, host_count,
       30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, USER_A);
   string not_admitted_reason;
+
+  // Set up some groups. 
+  std::map<std::string, std::set<std::string>> groups;
+  
+  std::set<std::string> dev_set;
+  dev_set.insert("alice");
+  dev_set.insert("deborah");
+  groups.insert({"dev", dev_set});
+  
+  std::set<std::string> it_set;
+  it_set.insert("bob");
+  it_set.insert("fiona");
+  groups.insert({"it", it_set});
+  
+  std::set<std::string> support_set;
+  support_set.insert("claire");
+  support_set.insert("geeta");
+  groups.insert({"support", support_set});
+
+  ASSERT_TRUE(SetHadoopGroups(groups));
+  
+  
+  
 
   // Simulate that there are 2 queries queued.
   pool_stats->local_stats_.num_queued = 2;
@@ -800,16 +832,7 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
 
   // Test group quotas
 
-  // Set up some groups. Note that USER3 is in a group with a quota.
-  std::map<std::string, std::set<std::string>> groups;
-  std::set<std::string> group0_set;
-  group0_set.insert(USER_A);
-  groups.insert({"group0", group0_set});
-  std::set<std::string> group1_set;
-  group1_set.insert(USER1);
-  group1_set.insert(USER3);
-  groups.insert({"group1", group1_set});
-  ASSERT_TRUE(SetHadoopGroups(groups));
+
 
   pool_stats->agg_user_loads_.insert(USER3, 2);
   ASSERT_FALSE(

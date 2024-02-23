@@ -1108,11 +1108,12 @@ class AdmissionController {
   /// Returns true unless this query exceeds user or group quotas.
   /// Must hold admission_ctrl_lock_.
   static bool HasUserAndGroupPoolQuotas(const ScheduleState& state,
-      const TPoolConfig& pool_cfg, PoolStats* pool_stats, string* quota_exceeded_reason);
+      const TPoolConfig& pool_cfg, int64 user_load, string* quota_exceeded_reason);
 
-  // FIXME describe
+  // FIXME asherman DELETE
   static bool HasUserAndGroupRootQuotas(const ScheduleState& state,
-      const TPoolConfig& pool_cfg, AggregatedUserLoads& aggregated_user_loads, string* quota_exceeded_reason);
+      const TPoolConfig& pool_cfg, AggregatedUserLoads& aggregated_user_loads,
+      string* quota_exceeded_reason, int64 user_load_across_cluster);
 
   /// Updates the memory admitted and the num of queries running for each backend in
   /// 'state'. Also updates the stats of its associated resource pool. Used only when

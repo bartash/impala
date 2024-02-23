@@ -1119,9 +1119,8 @@ bool AdmissionController::HasAvailableSlots(const ScheduleState& state,
 }
 
 bool AdmissionController::HasUserAndGroupPoolQuotas(const ScheduleState& state,
-    const TPoolConfig& pool_cfg, PoolStats* pool_stats, string* quota_exceeded_reason) {
+    const TPoolConfig& pool_cfg, int64 user_load, string* quota_exceeded_reason) {
   const string& user = state.request().query_ctx.session.delegated_user;
-  int64 user_load = pool_stats->GetUserLoad(user);
   bool key_matched = false;
   if (!checkQuota(
           pool_cfg, state, user_load, user, quota_exceeded_reason, false, &key_matched)) {
@@ -1147,9 +1146,9 @@ bool AdmissionController::HasUserAndGroupPoolQuotas(const ScheduleState& state,
 }
 
 bool AdmissionController::HasUserAndGroupRootQuotas(const ScheduleState& state,
-    const TPoolConfig& pool_cfg, AggregatedUserLoads& aggregated_user_loads, string* quota_exceeded_reason) {
+    const TPoolConfig& pool_cfg, AggregatedUserLoads& aggregated_user_loads,
+    string* quota_exceeded_reason, int64 user_load) {
   const string& user = state.request().query_ctx.session.delegated_user;
-  int64 user_load = aggregated_user_loads.get(user);
   bool key_matched = false;
   if (!checkQuota(
           pool_cfg, state, user_load, user, quota_exceeded_reason, false, &key_matched)) {
@@ -1275,12 +1274,19 @@ bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
           coordinator_resource_limited, not_admitted_details)) {
     return false;
   }
-  if (!HasUserAndGroupPoolQuotas(state, pool_cfg, pool_stats, not_admitted_reason)) {
+  const string& user = state.request().query_ctx.session.delegated_user;
+  int64 user_load = pool_stats->GetUserLoad(user);
+  if (!HasUserAndGroupPoolQuotas(state, pool_cfg, user_load, not_admitted_reason)) {
     return false;
   }
-  if (!HasUserAndGroupRootQuotas(state, root_cfg, root_agg_user_loads_, not_admitted_reason)) {
+  int64 user_load_across_cluster = root_agg_user_loads_.get(user);
+  if (!HasUserAndGroupPoolQuotas(state, root_cfg, user_load_across_cluster, not_admitted_reason)) {
     return false;
   }
+//  if (!HasUserAndGroupRootQuotas(state, root_cfg, root_agg_user_loads_,
+//          not_admitted_reason, user_load_across_cluster)) {
+//    return false;
+//  }
   return true;
 }
 

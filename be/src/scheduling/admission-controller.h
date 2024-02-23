@@ -1112,7 +1112,7 @@ class AdmissionController {
 
   // FIXME describe
   static bool HasUserAndGroupRootQuotas(const ScheduleState& state,
-      const TPoolConfig& pool_cfg, PoolStats* pool_stats, string* quota_exceeded_reason);
+      const TPoolConfig& pool_cfg, AggregatedUserLoads& aggregated_user_loads, string* quota_exceeded_reason);
 
   /// Updates the memory admitted and the num of queries running for each backend in
   /// 'state'. Also updates the stats of its associated resource pool. Used only when
@@ -1302,11 +1302,12 @@ class AdmissionController {
   // In particular explain user_for_load user_for_limit
   static bool checkQuota(const TPoolConfig& pool_cfg,
       AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
-      const string& user_for_load, string* quota_exceeded_reason, bool use_wildcard,
-      bool* key_matched);
+      int64 user_load, const string& user_for_load, string* quota_exceeded_reason,
+      bool use_wildcard, bool* key_matched);
   static bool checkGroupQuota(const TPoolConfig& pool_cfg,
       AdmissionController::PoolStats* pool_stats, const ScheduleState& state,
-      const string& user, string* quota_exceeded_reason, bool* key_matched);
+      int64 user_load, const string& user, string* quota_exceeded_reason,
+      bool* key_matched);
 
   FRIEND_TEST(AdmissionControllerTest, Simple);
   FRIEND_TEST(AdmissionControllerTest, PoolStats);

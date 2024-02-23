@@ -794,6 +794,7 @@ class AdmissionController {
     FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestMemory);
     FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestCount);
     FRIEND_TEST(AdmissionControllerTest, UserAndGroupQuotas);
+    FRIEND_TEST(AdmissionControllerTest, QuotaExamples);
     FRIEND_TEST(AdmissionControllerTest, GetMaxToDequeue);
     FRIEND_TEST(AdmissionControllerTest, QueryRejection);
     FRIEND_TEST(AdmissionControllerTest, TopNQueryCheck);
@@ -1314,6 +1315,7 @@ class AdmissionController {
   FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestMemory);
   FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestCount);
   FRIEND_TEST(AdmissionControllerTest, UserAndGroupQuotas);
+  FRIEND_TEST(AdmissionControllerTest, QuotaExamples);
   FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestSlots);
   FRIEND_TEST(AdmissionControllerTest, GetMaxToDequeue);
   FRIEND_TEST(AdmissionControllerTest, QueryRejection);

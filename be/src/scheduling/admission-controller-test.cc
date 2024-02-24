@@ -735,37 +735,26 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   CheckPoolStatsEmpty(small_pool_stats);
 
 
-  // Create a ScheduleState to run on QUEUE_E on 12 hosts.
-  int64_t host_count = 12;
-    // FIXME do I need 1 schedule_state for each pool?
-  ScheduleState* schedule_state = MakeScheduleState(QUEUE_E, config_small, host_count,
-      30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, USER_A);
-  string not_admitted_reason;
 
   // Set up some groups. 
   std::map<std::string, std::set<std::string>> groups;
-  
   std::set<std::string> dev_set {"alice", "deborah"};
-//  dev_set.insert("alice");
-//  dev_set.insert("deborah");
   groups.insert({"dev", dev_set});
-  
   std::set<std::string> it_set {"bob", "fiona"} ;
-//  it_set.insert("bob");
-//  it_set.insert("fiona");
   groups.insert({"it", it_set});
-  
   std::set<std::string> support_set {"claire", "geeta"};
-//  support_set.insert("claire");
-//  support_set.insert("geeta");
   groups.insert({"support", support_set});
-
   ASSERT_TRUE(SetHadoopGroups(groups));
-  
-  
-  // Simulate that there are 2 queries queued.
+
+
+  string not_admitted_reason;
+
   small_pool_stats->local_stats_.num_queued = 1;
   large_pool_stats->local_stats_.num_queued = 1;
+
+  ScheduleState* schedule_state = MakeScheduleState(QUEUE_E, config_small, 12,
+      30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, "bob");
+
 
   // Query can be admitted from queue...
   bool coordinator_resource_limited = false;

@@ -372,6 +372,30 @@ class AdmissionControllerTest : public testing::Test {
     }
     return true;
   }
+
+  void try_queue_query(AdmissionController* admission_controller,
+      int64 current_queued_little, int64 current_queued_large,
+      string* not_admitted_reason) {
+    AdmissionController::PoolStats* large_pool_stats =
+        admission_controller->GetPoolStats(QUEUE_LARGE);
+    AdmissionController::PoolStats* small_pool_stats =
+        admission_controller->GetPoolStats(QUEUE_SMALL);
+    small_pool_stats->local_stats_.num_queued = 1;
+    large_pool_stats->local_stats_.num_queued = 1;
+
+    ScheduleState* schedule_state = MakeScheduleState(QUEUE_E, config_small, 12,
+        30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, "bob");
+
+
+    // Query can be admitted from queue...
+    bool coordinator_resource_limited = false;
+    ASSERT_TRUE(
+        admission_controller->CanAdmitRequest(*schedule_state, config_small, config_root,
+            true, &not_admitted_reason, nullptr, coordinator_resource_limited));
+    ASSERT_FALSE(coordinator_resource_limited);
+
+  }
+
 };
 
 /// Test that AdmissionController will admit a query into a pool, then simulate other
@@ -708,6 +732,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   ASSERT_TRUE(SetHadoopGroups(groups));
 }
 
+
 /// Test CanAdmitRequest in the context of user and group quotas.
 TEST_F(AdmissionControllerTest, QuotaExamples) {
   // Pass the paths of the configuration files as command line flags.
@@ -727,12 +752,6 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_SMALL, &config_small));
 
   
-  AdmissionController::PoolStats* large_pool_stats =
-      admission_controller->GetPoolStats(QUEUE_LARGE);
-  CheckPoolStatsEmpty(large_pool_stats);  
-  AdmissionController::PoolStats* small_pool_stats =
-      admission_controller->GetPoolStats(QUEUE_SMALL);
-  CheckPoolStatsEmpty(small_pool_stats);
 
 
 
@@ -749,19 +768,9 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
 
   string not_admitted_reason;
 
-  small_pool_stats->local_stats_.num_queued = 1;
-  large_pool_stats->local_stats_.num_queued = 1;
+//  void AdmissionControllerTest_QuotaExamples_Test::try_queue_query(nullptr, 1, 1);
+  try_queue_query(nullptr, 1, 1, nullptr);
 
-  ScheduleState* schedule_state = MakeScheduleState(QUEUE_E, config_small, 12,
-      30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, "bob");
-
-
-  // Query can be admitted from queue...
-  bool coordinator_resource_limited = false;
-  ASSERT_TRUE(
-      admission_controller->CanAdmitRequest(*schedule_state, config_small, config_root,
-          true, &not_admitted_reason, nullptr, coordinator_resource_limited));
-  ASSERT_FALSE(coordinator_resource_limited);
 
 
 
@@ -769,6 +778,10 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   groups.clear();
   ASSERT_TRUE(SetHadoopGroups(groups));
 }
+
+
+
+
 
 /// Test CanAdmitRequest() using the slots mechanism that is enabled with non-default
 /// executor groups.

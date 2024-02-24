@@ -768,7 +768,7 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   string not_admitted_reason;
 
 //  void AdmissionControllerTest_QuotaExamples_Test::try_queue_query(nullptr, 1, 1);
-  try_queue_query(1, 1, nullptr, false);
+  try_queue_query(1, 1, nullptr, true);
 
 
 

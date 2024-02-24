@@ -2066,7 +2066,9 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
 void AdmissionController::UpdateClusterAggregates() {
   // Recompute mem_reserved for all hosts.
   PoolStats::HostMemMap updated_mem_reserved;
-  for (auto& entry : pool_stats_) entry.second.UpdateAggregates(&updated_mem_reserved);
+  for (auto& entry : pool_stats_) {
+    entry.second.UpdateAggregates(&updated_mem_reserved);
+  }
 
   root_agg_user_loads_.clear();
   for (auto& entry : pool_stats_) {

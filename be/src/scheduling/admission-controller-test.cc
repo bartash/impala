@@ -373,9 +373,21 @@ class AdmissionControllerTest : public testing::Test {
     return true;
   }
 
-  void try_queue_query(AdmissionController* admission_controller,
-      int64 current_queued_little, int64 current_queued_large,
-      string* not_admitted_reason) {
+  void try_queue_query(int64 current_queued_little, int64 current_queued_large,
+      string* not_admitted_reason, bool expected_admit) {
+    
+    AdmissionController* admission_controller = MakeAdmissionController();
+    RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
+    
+    // Get the PoolConfig for the global "root" configuration.
+    TPoolConfig config_root;
+    ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
+
+    TPoolConfig config_large;
+    ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_LARGE, &config_large));
+    TPoolConfig config_small;
+    ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_SMALL, &config_small));
+    
     AdmissionController::PoolStats* large_pool_stats =
         admission_controller->GetPoolStats(QUEUE_LARGE);
     AdmissionController::PoolStats* small_pool_stats =
@@ -386,14 +398,11 @@ class AdmissionControllerTest : public testing::Test {
     ScheduleState* schedule_state = MakeScheduleState(QUEUE_E, config_small, 12,
         30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, "bob");
 
-
-    // Query can be admitted from queue...
     bool coordinator_resource_limited = false;
-    ASSERT_TRUE(
-        admission_controller->CanAdmitRequest(*schedule_state, config_small, config_root,
-            true, &not_admitted_reason, nullptr, coordinator_resource_limited));
+    bool can_admit = admission_controller->CanAdmitRequest(*schedule_state, config_small,
+        config_root, true, not_admitted_reason, nullptr, coordinator_resource_limited);
     ASSERT_FALSE(coordinator_resource_limited);
-
+    ASSERT_EQ(expected_admit, can_admit);
   }
 
 };
@@ -739,17 +748,7 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   FLAGS_fair_scheduler_allocation_path = GetResourceFile("fair-scheduler-test3.xml");
   FLAGS_llama_site_path = GetResourceFile("llama-site-test2.xml");
 
-  AdmissionController* admission_controller = MakeAdmissionController();
-  RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
 
-  // Get the PoolConfig for the global "root" configuration.
-  TPoolConfig config_root;
-  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
-
-  TPoolConfig config_large;
-  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_LARGE, &config_large));
-  TPoolConfig config_small;
-  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_SMALL, &config_small));
 
   
 
@@ -769,7 +768,7 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   string not_admitted_reason;
 
 //  void AdmissionControllerTest_QuotaExamples_Test::try_queue_query(nullptr, 1, 1);
-  try_queue_query(nullptr, 1, 1, nullptr);
+  try_queue_query(1, 1, nullptr, false);
 
 
 

@@ -373,8 +373,8 @@ class AdmissionControllerTest : public testing::Test {
     return true;
   }
 
-  void try_queue_query(int64 current_queued_little, int64 current_queued_large,
-      string* not_admitted_reason, bool expected_admit) {
+  void try_queue_query(const char* user, bool expected_admit, int64 current_queued_little,
+      int64 current_queued_large, string* not_admitted_reason) {
     
     AdmissionController* admission_controller = MakeAdmissionController();
     RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
@@ -396,7 +396,7 @@ class AdmissionControllerTest : public testing::Test {
     large_pool_stats->local_stats_.num_queued = 1;
 
     ScheduleState* schedule_state = MakeScheduleState(QUEUE_E, config_small, 12,
-        30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, "bob");
+        30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, user);
 
     bool coordinator_resource_limited = false;
     bool can_admit = admission_controller->CanAdmitRequest(*schedule_state, config_small,
@@ -748,13 +748,7 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   FLAGS_fair_scheduler_allocation_path = GetResourceFile("fair-scheduler-test3.xml");
   FLAGS_llama_site_path = GetResourceFile("llama-site-test2.xml");
 
-
-
-  
-
-
-
-  // Set up some groups. 
+  // Set up some groups.
   std::map<std::string, std::set<std::string>> groups;
   std::set<std::string> dev_set {"alice", "deborah"};
   groups.insert({"dev", dev_set});
@@ -764,14 +758,9 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   groups.insert({"support", support_set});
   ASSERT_TRUE(SetHadoopGroups(groups));
 
-
   string not_admitted_reason;
 
-//  void AdmissionControllerTest_QuotaExamples_Test::try_queue_query(nullptr, 1, 1);
-  try_queue_query(1, 1, nullptr, true);
-
-
-
+  try_queue_query("bob", true, 1, 1, &not_admitted_reason);
 
   // Clean up
   groups.clear();

@@ -2071,7 +2071,7 @@ void AdmissionController::UpdateClusterAggregates() {
   root_agg_user_loads_.clear();
   for (auto& entry : pool_stats_) {
     root_agg_user_loads_.add_loads(
-        entry.second.get_aggregated_uer_loads().get_user_loads());
+        entry.second.get_aggregated_user_loads().get_user_loads());
   }
 
   stringstream ss;

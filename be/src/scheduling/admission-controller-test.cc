@@ -761,6 +761,8 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   string not_admitted_reason;
 
   try_queue_query("bob", true, 1, 1, &not_admitted_reason);
+  // Should fail to admit because howard has a limit of 4 at root level.
+  try_queue_query("howard", false, 3, 1, &not_admitted_reason);
 
   // Clean up
   groups.clear();

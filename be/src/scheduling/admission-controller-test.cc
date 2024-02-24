@@ -392,8 +392,33 @@ class AdmissionControllerTest : public testing::Test {
         admission_controller->GetPoolStats(QUEUE_LARGE);
     AdmissionController::PoolStats* small_pool_stats =
         admission_controller->GetPoolStats(QUEUE_SMALL);
-    small_pool_stats->local_stats_.num_queued = 1;
-    large_pool_stats->local_stats_.num_queued = 1;
+
+//    const AdmissionController::PoolStats::RemoteStatsMap& remoteStatsMap =
+//        small_pool_stats->remote_stats();
+//    small_pool_stats->FindTPoolStatsForRemoteHost()
+
+    // Trying to set num runnign in local_stat so that UpdateClusterAggregates
+    // uses it
+
+//    small_pool_stats->local_stats()->__set_num_running(current_queued_little);
+//    large_pool_stats->local_stats().num_running  =  current_queued_large;
+
+    TPoolStats x;
+    x.num_running = current_queued_large;
+    large_pool_stats->local_stats_ = x;
+    TPoolStats y;
+    y.num_running = current_queued_large;
+    small_pool_stats->local_stats_ = y;
+
+    // FIXME asherman don't say little AND small
+
+//    remoteStatsMap[QUEUE_LARGE]
+//    admission_controller->remote_stats();
+    
+    admission_controller->UpdateClusterAggregates();
+
+//    small_pool_stats->local_stats_.num_queued = 1;
+//    large_pool_stats->local_stats_.num_queued = 1;
 
     ScheduleState* schedule_state = MakeScheduleState(QUEUE_E, config_small, 12,
         30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, user);

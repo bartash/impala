@@ -682,6 +682,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   string not_admitted_reason;
 
   // Simulate that there are 2 queries queued.
+  // FIXME asherman something ios very wrong here as we should set per user loads
   pool_stats->local_stats_.num_queued = 2;
 
   // Query can be admitted from queue...

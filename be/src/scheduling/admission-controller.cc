@@ -274,15 +274,16 @@ const string HOST_SLOT_NOT_AVAILABLE = "Not enough admission control slots avail
                                        "host $0. Needed $1 slots but $2/$3 are already "
                                        "in use.";
 
-// $0 = current load for user, $1 = user name, $2 = per-user quota
+// $0 = current load for user, $1 = user name, $2 = per-user quota, $3 is pool name
 const string USER_QUOTA_EXCEEDED =
-    "current per-user load $0 for user $1 is at or above the user limit $2";
-const string USER_WILDCARD_QUOTA_EXCEEDED =
-    "current per-user load $0 for user $1 is at or above the wildcard limit $2";
+    "current per-user load $0 for user $1 is at or above the user limit $2 in pool $3";
+const string USER_WILDCARD_QUOTA_EXCEEDED = "current per-user load $0 for user $1 is at "
+                                            "or above the wildcard limit $2 in pool $3";
 
-// $0 = current load for user, $1 = user name, $2 = group name, $3 = per-user quota
-const string GROUP_QUOTA_EXCEEDED =
-    "current per-group load $0 for user $1 in group $2 is at or above the group limit $3";
+// $0 = current load for user, $1 = user name, $2 = group name, $3 = per-user quota,
+// $4 is pool name.
+const string GROUP_QUOTA_EXCEEDED = "current per-group load $0 for user $1 in group $2 "
+                                    "is at or above the group limit $3 in pool $4";
 
 // Parses the topic key to separate the prefix that helps recognize the kind of update
 // received.
@@ -1185,7 +1186,8 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
     // Find the current aggregated load for this user.
     if (user_load + 1 > user_limit) {
       string format = use_wildcard ? USER_WILDCARD_QUOTA_EXCEEDED : USER_QUOTA_EXCEEDED;
-      *quota_exceeded_reason = Substitute(format, user_load, user_for_load, user_limit);
+      *quota_exceeded_reason =
+          Substitute(format, user_load, user_for_load, user_limit, state.request_pool());
       return false;
     }
     *key_matched = true;
@@ -1220,7 +1222,8 @@ bool AdmissionController::checkGroupQuota(const TPoolConfig& pool_cfg,
       // There is a per-user limit for the delegated user.
       group_limit = it->second;
       if (user_load + 1 > group_limit) {
-        *quota_exceeded_reason = Substitute(GROUP_QUOTA_EXCEEDED, user_load, user, group, group_limit);
+        *quota_exceeded_reason = Substitute(GROUP_QUOTA_EXCEEDED, user_load, user, group,
+            group_limit, state.request_pool());
         return false;
       }
       *key_matched = true;

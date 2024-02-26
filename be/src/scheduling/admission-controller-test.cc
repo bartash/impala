@@ -779,12 +779,12 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   // Howard has a limit of 4 at root level.
   // FIXME message should say it is at root level
   try_queue_query("howard", false, 3, 1, true, &not_admitted_reason);
-  ASSERT_EQ("current per-user load 4 for user howard is at or above the user limit 4",
+  ASSERT_EQ("current per-user load 4 for user howard is at or above the user limit 4 in pool " + QUEUE_ROOT,
       not_admitted_reason);
 
   // Iris is not in any groups and so hots wildcard limit.
   try_queue_query("iris", false, 0, 1, false, &not_admitted_reason);
-  ASSERT_EQ("current per-user load 1 for user iris is at or above the wildcard limit 1",
+  ASSERT_EQ("current per-user load 1 for user iris is at or above the wildcard limit 1 in pool " + QUEUE_LARGE,
       not_admitted_reason);
 
 

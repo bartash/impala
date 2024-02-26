@@ -390,19 +390,17 @@ class AdmissionControllerTest : public testing::Test {
     
     AdmissionController::PoolStats* large_pool_stats =
         admission_controller->GetPoolStats(QUEUE_LARGE);
+    TPoolStats stats_large;
+    stats_large.user_loads[user] = current_queued_large;
+    large_pool_stats->local_stats_ = stats_large;
+
     AdmissionController::PoolStats* small_pool_stats =
         admission_controller->GetPoolStats(QUEUE_SMALL);
-
-    TPoolStats y;
-    y.user_loads[user] = current_queued_small;
-    small_pool_stats->local_stats_ = y;
-    TPoolStats x;
-    x.user_loads[user] = current_queued_small;
-    large_pool_stats->local_stats_ = x;
-
+    TPoolStats stats_small;
+    stats_small.user_loads[user] = current_queued_small;
+    small_pool_stats->local_stats_ = stats_small;
 
     admission_controller->UpdateClusterAggregates();
-
 
     ScheduleState* schedule_state = MakeScheduleState(QUEUE_E, config_small, 12,
         30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, user);

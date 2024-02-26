@@ -772,11 +772,18 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
 
   string not_admitted_reason;
 
-  try_queue_query("bob", true, 1, 1, false, &not_admitted_reason);
+  try_queue_query("bob", true, 1, 1, true, &not_admitted_reason);
 
   // Should fail to admit because howard has a limit of 4 at root level.
-  try_queue_query("howard", false, 3, 1, false, &not_admitted_reason);
-  ASSERT_EQ("current per-user load 4 for user howard is at or above the user limit 4", not_admitted_reason);
+  try_queue_query("howard", false, 3, 1, true, &not_admitted_reason);
+  ASSERT_EQ("current per-user load 4 for user howard is at or above the user limit 4",
+      not_admitted_reason);
+
+  try_queue_query("howard", false, 1, 0, false, &not_admitted_reason);
+  ASSERT_EQ("current per-user load 4 for user howard is at or above the user limit 4",
+      not_admitted_reason);
+
+
 
   // Clean up
   groups.clear();

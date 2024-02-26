@@ -407,15 +407,15 @@ class AdmissionControllerTest : public testing::Test {
 //    x.num_running = current_queued_large;
 //    x.user_load;s
 //    large_pool_stats->local_stats_ = x;
-//    TPoolStats y;
-//    y.num_running = current_queued_large;
-//    small_pool_stats->local_stats_ = y;
-//    AdmissionController::AggregatedUserLoads& loads =
-//        small_pool_stats->get_aggregated_user_loads();
-//    loads.insert(user, current_queued_little);
+    TPoolStats y;
+    y.user_loads[user] = current_queued_little;
+    small_pool_stats->local_stats_ = y;
+    TPoolStats x;
+    x.user_loads[user] = current_queued_little;
+    large_pool_stats->local_stats_ = x;
 
-    large_pool_stats->get_aggregated_user_loads().insert(user, current_queued_large);
-    small_pool_stats->get_aggregated_user_loads().insert(user, current_queued_little);
+//    large_pool_stats->get_aggregated_user_loads().insert(user, current_queued_large);
+//    small_pool_stats->get_aggregated_user_loads().insert(user, current_queued_little);
 
     // FIXME asherman don't say little AND small
 

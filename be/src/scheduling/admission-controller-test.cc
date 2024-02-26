@@ -373,6 +373,15 @@ class AdmissionControllerTest : public testing::Test {
     return true;
   }
 
+  static void set_user_loads(AdmissionController* admission_controller, const char* user,
+      const string& pool_name, int64 load) {
+    AdmissionController::PoolStats* large_pool_stats =
+        admission_controller->GetPoolStats(pool_name);
+    TPoolStats stats_large;
+    stats_large.user_loads[user] = load;
+    large_pool_stats->local_stats_ = stats_large;
+  }
+  
   void try_queue_query(const char* user, bool expected_admit, int64 current_queued_small,
       int64 current_queued_large, string* not_admitted_reason) {
     
@@ -382,23 +391,13 @@ class AdmissionControllerTest : public testing::Test {
     // Get the PoolConfig for the global "root" configuration.
     TPoolConfig config_root;
     ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
-
     TPoolConfig config_large;
     ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_LARGE, &config_large));
     TPoolConfig config_small;
     ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_SMALL, &config_small));
-    
-    AdmissionController::PoolStats* large_pool_stats =
-        admission_controller->GetPoolStats(QUEUE_LARGE);
-    TPoolStats stats_large;
-    stats_large.user_loads[user] = current_queued_large;
-    large_pool_stats->local_stats_ = stats_large;
 
-    AdmissionController::PoolStats* small_pool_stats =
-        admission_controller->GetPoolStats(QUEUE_SMALL);
-    TPoolStats stats_small;
-    stats_small.user_loads[user] = current_queued_small;
-    small_pool_stats->local_stats_ = stats_small;
+    set_user_loads(admission_controller, user, QUEUE_LARGE, current_queued_large);
+    set_user_loads(admission_controller, user, QUEUE_SMALL, current_queued_small);
 
     admission_controller->UpdateClusterAggregates();
 

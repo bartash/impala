@@ -710,7 +710,7 @@ class AdmissionController {
 
     const std::string& name() const { return name_; }
 
-    [[nodiscard]] const AggregatedUserLoads& get_aggregated_user_loads() const {
+    [[nodiscard]] AggregatedUserLoads& get_aggregated_user_loads()  {
       return agg_user_loads_;
     }
 

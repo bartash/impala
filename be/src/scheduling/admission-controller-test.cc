@@ -776,12 +776,13 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   // FIXME restore old tests
   try_queue_query("bob", true, 1, 1, true, &not_admitted_reason);
 
-  // Should fail to admit because howard has a limit of 4 at root level.
-  // FIXME message shoudl asy it is at root level
+  // Howard has a limit of 4 at root level.
+  // FIXME message should say it is at root level
   try_queue_query("howard", false, 3, 1, true, &not_admitted_reason);
   ASSERT_EQ("current per-user load 4 for user howard is at or above the user limit 4",
       not_admitted_reason);
 
+  // Iris is not in any groups and so hots wildcard limit.
   try_queue_query("iris", false, 0, 1, false, &not_admitted_reason);
   ASSERT_EQ("current per-user load 1 for user iris is at or above the wildcard limit 1",
       not_admitted_reason);

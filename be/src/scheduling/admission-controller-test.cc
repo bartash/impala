@@ -403,10 +403,11 @@ class AdmissionControllerTest : public testing::Test {
 
     admission_controller->UpdateClusterAggregates();
 
-    TPoolConfig pool_to_submit;
-    pool_to_submit = use_small_queue ? config_small : config_large;
+    TPoolConfig pool_to_submit = use_small_queue ? config_small : config_large;
+    string pool_name_to_submit = use_small_queue ? QUEUE_SMALL : QUEUE_LARGE;
 
-    ScheduleState* schedule_state = MakeScheduleState(QUEUE_E, pool_to_submit, 12,
+
+    ScheduleState* schedule_state = MakeScheduleState(pool_name_to_submit, pool_to_submit, 12,
         30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, user);
 
     bool coordinator_resource_limited = false;
@@ -773,17 +774,16 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   string not_admitted_reason;
 
   // FIXME restore old tests
-/*  try_queue_query("bob", true, 1, 1, true, &not_admitted_reason);
+  try_queue_query("bob", true, 1, 1, true, &not_admitted_reason);
 
   // Should fail to admit because howard has a limit of 4 at root level.
+  // FIXME message shoudl asy it is at root level
   try_queue_query("howard", false, 3, 1, true, &not_admitted_reason);
   ASSERT_EQ("current per-user load 4 for user howard is at or above the user limit 4",
-      not_admitted_reason);*/
+      not_admitted_reason);
 
-
-
-  try_queue_query("howard", false, 1, 0, false, &not_admitted_reason);
-  ASSERT_EQ("current per-user load 4 for user howard is at or above the user limit 4",
+  try_queue_query("iris", false, 0, 1, false, &not_admitted_reason);
+  ASSERT_EQ("current per-user load 1 for user iris is at or above the wildcard limit 1",
       not_admitted_reason);
 
 

@@ -373,7 +373,7 @@ class AdmissionControllerTest : public testing::Test {
     return true;
   }
 
-  void try_queue_query(const char* user, bool expected_admit, int64 current_queued_little,
+  void try_queue_query(const char* user, bool expected_admit, int64 current_queued_small,
       int64 current_queued_large, string* not_admitted_reason) {
     
     AdmissionController* admission_controller = MakeAdmissionController();
@@ -394,13 +394,12 @@ class AdmissionControllerTest : public testing::Test {
         admission_controller->GetPoolStats(QUEUE_SMALL);
 
     TPoolStats y;
-    y.user_loads[user] = current_queued_little;
+    y.user_loads[user] = current_queued_small;
     small_pool_stats->local_stats_ = y;
     TPoolStats x;
-    x.user_loads[user] = current_queued_little;
+    x.user_loads[user] = current_queued_small;
     large_pool_stats->local_stats_ = x;
 
-    // FIXME asherman don't say little AND small
 
     admission_controller->UpdateClusterAggregates();
 

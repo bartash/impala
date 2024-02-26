@@ -760,17 +760,18 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
 
   // Set up some groups.
   std::map<std::string, std::set<std::string>> groups;
-  std::set<std::string> dev_set {"alice", "deborah"};
-  groups.insert({"dev", dev_set});
-  std::set<std::string> it_set {"bob", "fiona"} ;
-  groups.insert({"it", it_set});
-  std::set<std::string> support_set {"claire", "geeta"};
-  groups.insert({"support", support_set});
+  std::set<std::string> dev_group{"alice", "deborah"};
+  groups.insert({"dev", dev_group});
+  std::set<std::string> it_group{"bob", "fiona"} ;
+  groups.insert({"it", it_group});
+  std::set<std::string> support_group{"claire", "geeta"};
+  groups.insert({"support", support_group});
   ASSERT_TRUE(SetHadoopGroups(groups));
 
   string not_admitted_reason;
 
   try_queue_query("bob", true, 1, 1, &not_admitted_reason);
+
   // Should fail to admit because howard has a limit of 4 at root level.
   try_queue_query("howard", false, 3, 1, &not_admitted_reason);
 

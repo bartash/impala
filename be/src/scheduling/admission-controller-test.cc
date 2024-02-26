@@ -393,20 +393,6 @@ class AdmissionControllerTest : public testing::Test {
     AdmissionController::PoolStats* small_pool_stats =
         admission_controller->GetPoolStats(QUEUE_SMALL);
 
-//    const AdmissionController::PoolStats::RemoteStatsMap& remoteStatsMap =
-//        small_pool_stats->remote_stats();
-//    small_pool_stats->FindTPoolStatsForRemoteHost()
-
-    // Trying to set num runnign in local_stat so that UpdateClusterAggregates
-    // uses it
-
-//    small_pool_stats->local_stats()->__set_num_running(current_queued_little);
-//    large_pool_stats->local_stats().num_running  =  current_queued_large;
-
-//    TPoolStats x;
-//    x.num_running = current_queued_large;
-//    x.user_load;s
-//    large_pool_stats->local_stats_ = x;
     TPoolStats y;
     y.user_loads[user] = current_queued_little;
     small_pool_stats->local_stats_ = y;
@@ -414,17 +400,8 @@ class AdmissionControllerTest : public testing::Test {
     x.user_loads[user] = current_queued_little;
     large_pool_stats->local_stats_ = x;
 
-//    large_pool_stats->get_aggregated_user_loads().insert(user, current_queued_large);
-//    small_pool_stats->get_aggregated_user_loads().insert(user, current_queued_little);
-
     // FIXME asherman don't say little AND small
 
-//    remoteStatsMap[QUEUE_LARGE]
-//    admission_controller->remote_stats();
-    
-    //    small_pool_stats->local_stats_.num_queued = 1;
-    //    large_pool_stats->local_stats_.num_queued = 1;
-    
     admission_controller->UpdateClusterAggregates();
 
 

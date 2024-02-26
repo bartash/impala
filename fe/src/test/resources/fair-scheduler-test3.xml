@@ -14,8 +14,8 @@
       <!-- A user not matched by any other rule can run 1 query in the small pool -->
       <userQueryLimit>* 1</userQueryLimit>
 
-      <!-- Members of groups 'dev' and 'support' can run 3 queries in the small pool-->
-      <groupQueryLimit>dev,support 3</groupQueryLimit>
+      <!-- Members of groups 'dev' and 'support' can run 5 queries in the small pool-->
+      <groupQueryLimit>dev,support 5</groupQueryLimit>
 
       <!-- Members of the group 'it' can run 2 queries in the small pool-->
       <groupQueryLimit>it 2</groupQueryLimit>

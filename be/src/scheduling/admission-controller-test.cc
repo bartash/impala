@@ -767,7 +767,7 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   groups.insert({"dev", dev_group});
   std::set<std::string> it_group{"bob", "fiona"} ;
   groups.insert({"it", it_group});
-  std::set<std::string> support_group{"claire", "geeta"};
+  std::set<std::string> support_group{"claire", "geeta", "howard"};
   groups.insert({"support", support_group});
   ASSERT_TRUE(SetHadoopGroups(groups));
 

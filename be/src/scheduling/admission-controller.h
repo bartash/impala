@@ -737,6 +737,7 @@ class AdmissionController {
 
     // Aggregate  (across all coordinators) per-user loads in this pool.
     // Updated by UpdateAggregates() and also FIXME some other places that I am confused about right now
+    // FIXME asherman CLARIFY and CHECK  that "load" means queries queued as well as running
     AdmissionController::AggregatedUserLoads  agg_user_loads_;
 
     /// Number of running trivial queries in this pool that have been admitted by this

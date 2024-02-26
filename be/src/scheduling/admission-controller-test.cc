@@ -373,6 +373,7 @@ class AdmissionControllerTest : public testing::Test {
     return true;
   }
 
+  // Set the per-user loads for a pool.
   static void set_user_loads(AdmissionController* admission_controller, const char* user,
       const string& pool_name, int64 load) {
     AdmissionController::PoolStats* large_pool_stats =
@@ -381,9 +382,10 @@ class AdmissionControllerTest : public testing::Test {
     stats_large.user_loads[user] = load;
     large_pool_stats->local_stats_ = stats_large;
   }
-  
+
+  // Try and run a query in a 2-pool system.
   void try_queue_query(const char* user, bool expected_admit, int64 current_queued_small,
-      int64 current_queued_large, string* not_admitted_reason) {
+      int64 current_queued_large, bool use_small_queue, string* not_admitted_reason) {
     
     AdmissionController* admission_controller = MakeAdmissionController();
     RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
@@ -401,11 +403,14 @@ class AdmissionControllerTest : public testing::Test {
 
     admission_controller->UpdateClusterAggregates();
 
-    ScheduleState* schedule_state = MakeScheduleState(QUEUE_E, config_small, 12,
+    TPoolConfig pool_to_submit;
+    pool_to_submit = use_small_queue ? config_small : config_large;
+
+    ScheduleState* schedule_state = MakeScheduleState(QUEUE_E, pool_to_submit, 12,
         30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, user);
 
     bool coordinator_resource_limited = false;
-    bool can_admit = admission_controller->CanAdmitRequest(*schedule_state, config_small,
+    bool can_admit = admission_controller->CanAdmitRequest(*schedule_state, pool_to_submit,
         config_root, true, not_admitted_reason, nullptr, coordinator_resource_limited);
     ASSERT_FALSE(coordinator_resource_limited);
     ASSERT_EQ(expected_admit, can_admit);
@@ -767,10 +772,10 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
 
   string not_admitted_reason;
 
-  try_queue_query("bob", true, 1, 1, &not_admitted_reason);
+  try_queue_query("bob", true, 1, 1, false, &not_admitted_reason);
 
   // Should fail to admit because howard has a limit of 4 at root level.
-  try_queue_query("howard", false, 3, 1, &not_admitted_reason);
+  try_queue_query("howard", false, 3, 1, false, &not_admitted_reason);
 
   // Clean up
   groups.clear();

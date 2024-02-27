@@ -1122,11 +1122,11 @@ bool AdmissionController::HasAvailableSlots(const ScheduleState& state,
 }
 
 bool AdmissionController::HasUserAndGroupPoolQuotas(const ScheduleState& state,
-    const TPoolConfig& pool_cfg, int64 user_load, string* quota_exceeded_reason) {
+    const TPoolConfig& pool_cfg, const string& pool_level, int64 user_load,
+    string* quota_exceeded_reason) {
   const string& user = state.request().query_ctx.session.delegated_user;
   bool key_matched = false;
-  const string& pool = state.request_pool();
-  if (!checkQuota(pool_cfg, pool, state, user_load, user,
+  if (!checkQuota(pool_cfg, pool_level, state, user_load, user,
           quota_exceeded_reason, false, &key_matched)) {
     return false;
   }
@@ -1134,7 +1134,7 @@ bool AdmissionController::HasUserAndGroupPoolQuotas(const ScheduleState& state,
     VLOG_ROW << "user " << user << " passes quota check as user rule is matched";
     return true;
   }
-  if (!checkGroupQuota(pool_cfg, pool, state, user_load, user,
+  if (!checkGroupQuota(pool_cfg, pool_level, state, user_load, user,
           quota_exceeded_reason, &key_matched)) {
     return false;
   }
@@ -1142,7 +1142,7 @@ bool AdmissionController::HasUserAndGroupPoolQuotas(const ScheduleState& state,
     VLOG_ROW << "user " << user << " passes quota check as group rule is matched";
     return true;
   }
-  if (!checkQuota(pool_cfg, pool, state, user_load, user,
+  if (!checkQuota(pool_cfg, pool_level, state, user_load, user,
           quota_exceeded_reason, true, &key_matched)) {
     return false;
   }
@@ -1252,13 +1252,18 @@ bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
           coordinator_resource_limited, not_admitted_details)) {
     return false;
   }
+  // Check quotas at pool level
   const string& user = state.request().query_ctx.session.delegated_user;
   int64 user_load = pool_stats->GetUserLoad(user);
-  if (!HasUserAndGroupPoolQuotas(state, pool_cfg, user_load, not_admitted_reason)) {
+  if (!HasUserAndGroupPoolQuotas(
+          state, pool_cfg, state.request_pool(), user_load, not_admitted_reason)) {
     return false;
   }
+
+  // Check quotas at root level.
   int64 user_load_across_cluster = root_agg_user_loads_.get(user);
-  if (!HasUserAndGroupPoolQuotas(state, root_cfg, user_load_across_cluster, not_admitted_reason)) {
+  if (!HasUserAndGroupPoolQuotas(
+          state, root_cfg, ROOT_POOL, user_load_across_cluster, not_admitted_reason)) {
     return false;
   }
   return true;

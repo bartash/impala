@@ -773,7 +773,6 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
 
   string not_admitted_reason;
 
-  // FIXME restore old tests
   try_queue_query("bob", true, 1, 1, true, &not_admitted_reason);
 
   // Howard has a limit of 4 at root level.

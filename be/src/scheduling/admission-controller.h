@@ -1111,11 +1111,6 @@ class AdmissionController {
   static bool HasUserAndGroupPoolQuotas(const ScheduleState& state,
       const TPoolConfig& pool_cfg, int64 user_load, string* quota_exceeded_reason);
 
-  // FIXME asherman DELETE
-  static bool HasUserAndGroupRootQuotas(const ScheduleState& state,
-      const TPoolConfig& pool_cfg, AggregatedUserLoads& aggregated_user_loads,
-      string* quota_exceeded_reason, int64 user_load_across_cluster);
-
   /// Updates the memory admitted and the num of queries running for each backend in
   /// 'state'. Also updates the stats of its associated resource pool. Used only when
   /// the 'state' is admitted.

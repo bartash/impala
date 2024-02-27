@@ -1149,34 +1149,6 @@ bool AdmissionController::HasUserAndGroupPoolQuotas(const ScheduleState& state,
   return true;
 }
 
-bool AdmissionController::HasUserAndGroupRootQuotas(const ScheduleState& state,
-    const TPoolConfig& pool_cfg, AggregatedUserLoads& aggregated_user_loads,
-    string* quota_exceeded_reason, int64 user_load) {
-  const string& user = state.request().query_ctx.session.delegated_user;
-  bool key_matched = false;
-  if (!checkQuota(pool_cfg, ROOT_POOL, state, user_load, user,
-          quota_exceeded_reason, false, &key_matched)) {
-    return false;
-  }
-  if (key_matched) {
-    VLOG_ROW << "user " << user << " passes quota check as user rule is matched";
-    return true;
-  }
-  if (!checkGroupQuota(pool_cfg, ROOT_POOL, state, user_load, user,
-          quota_exceeded_reason, &key_matched)) {
-    return false;
-  }
-  if (key_matched) {
-    VLOG_ROW << "user " << user << " passes quota check as group rule is matched";
-    return true;
-  }
-  if (!checkQuota(pool_cfg, ROOT_POOL, state, user_load, user,
-          quota_exceeded_reason, true, &key_matched)) {
-    return false;
-  }
-  return true;
-}
-
 bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg, const string& pool_name,
     const ScheduleState& state, int64 user_load, const string& user_for_load,
     string* quota_exceeded_reason, bool use_wildcard, bool* key_matched) {
@@ -1289,10 +1261,6 @@ bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
   if (!HasUserAndGroupPoolQuotas(state, root_cfg, user_load_across_cluster, not_admitted_reason)) {
     return false;
   }
-//  if (!HasUserAndGroupRootQuotas(state, root_cfg, root_agg_user_loads_,
-//          not_admitted_reason, user_load_across_cluster)) {
-//    return false;
-//  }
   return true;
 }
 

@@ -254,6 +254,8 @@ const string REASON_NO_EXECUTOR_GROUPS =
     "coordinator (either NUM_NODES set to 1 or when small query optimization is "
     "triggered) can currently run.";
 
+const string ROOT_POOL = "root";
+
 // Queue decision details
 // $0 = num running queries, $1 = num queries limit, $2 = staleness detail
 const string QUEUED_NUM_RUNNING =
@@ -1123,24 +1125,25 @@ bool AdmissionController::HasUserAndGroupPoolQuotas(const ScheduleState& state,
     const TPoolConfig& pool_cfg, int64 user_load, string* quota_exceeded_reason) {
   const string& user = state.request().query_ctx.session.delegated_user;
   bool key_matched = false;
-  if (!checkQuota(
-          pool_cfg, state, user_load, user, quota_exceeded_reason, false, &key_matched)) {
+  string& pool = state.request_pool();
+  if (!checkQuota(pool_cfg, pool, state, user_load, user,
+          quota_exceeded_reason, false, &key_matched)) {
     return false;
   }
   if (key_matched) {
     VLOG_ROW << "user " << user << " passes quota check as user rule is matched";
     return true;
   }
-  if (!checkGroupQuota(
-          pool_cfg, state, user_load, user, quota_exceeded_reason, &key_matched)) {
+  if (!checkGroupQuota(pool_cfg, pool, state, user_load, user,
+          quota_exceeded_reason, &key_matched)) {
     return false;
   }
   if (key_matched) {
     VLOG_ROW << "user " << user << " passes quota check as group rule is matched";
     return true;
   }
-  if (!checkQuota(
-          pool_cfg, state, user_load, user, quota_exceeded_reason, true, &key_matched)) {
+  if (!checkQuota(pool_cfg, pool, state, user_load, user,
+          quota_exceeded_reason, true, &key_matched)) {
     return false;
   }
   return true;
@@ -1151,30 +1154,30 @@ bool AdmissionController::HasUserAndGroupRootQuotas(const ScheduleState& state,
     string* quota_exceeded_reason, int64 user_load) {
   const string& user = state.request().query_ctx.session.delegated_user;
   bool key_matched = false;
-  if (!checkQuota(
-          pool_cfg, state, user_load, user, quota_exceeded_reason, false, &key_matched)) {
+  if (!checkQuota(pool_cfg, ROOT_POOL, state, user_load, user,
+          quota_exceeded_reason, false, &key_matched)) {
     return false;
   }
   if (key_matched) {
     VLOG_ROW << "user " << user << " passes quota check as user rule is matched";
     return true;
   }
-  if (!checkGroupQuota(
-          pool_cfg, state, user_load, user, quota_exceeded_reason, &key_matched)) {
+  if (!checkGroupQuota(pool_cfg, ROOT_POOL, state, user_load, user,
+          quota_exceeded_reason, &key_matched)) {
     return false;
   }
   if (key_matched) {
     VLOG_ROW << "user " << user << " passes quota check as group rule is matched";
     return true;
   }
-  if (!checkQuota(
-          pool_cfg, state, user_load, user, quota_exceeded_reason, true, &key_matched)) {
+  if (!checkQuota(pool_cfg, ROOT_POOL, state, user_load, user,
+          quota_exceeded_reason, true, &key_matched)) {
     return false;
   }
   return true;
 }
 
-bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
+bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg, string& pool_name,
     const ScheduleState& state, int64 user_load, const string& user_for_load,
     string* quota_exceeded_reason, bool use_wildcard, bool* key_matched) {
   string user_for_limits = use_wildcard ? "*" : user_for_load;
@@ -1187,7 +1190,7 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
     if (user_load + 1 > user_limit) {
       string format = use_wildcard ? USER_WILDCARD_QUOTA_EXCEEDED : USER_QUOTA_EXCEEDED;
       *quota_exceeded_reason =
-          Substitute(format, user_load, user_for_load, user_limit, state.request_pool());
+          Substitute(format, user_load, user_for_load, user_limit, pool_name);
       return false;
     }
     *key_matched = true;
@@ -1195,7 +1198,7 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg,
   return true;
 }
 
-bool AdmissionController::checkGroupQuota(const TPoolConfig& pool_cfg,
+bool AdmissionController::checkGroupQuota(const TPoolConfig& pool_cfg, string& pool_name,
     const ScheduleState& state, int64 user_load, const string& user,
     string* quota_exceeded_reason, bool* key_matched) {
 
@@ -1223,7 +1226,7 @@ bool AdmissionController::checkGroupQuota(const TPoolConfig& pool_cfg,
       group_limit = it->second;
       if (user_load + 1 > group_limit) {
         *quota_exceeded_reason = Substitute(GROUP_QUOTA_EXCEEDED, user_load, user, group,
-            group_limit, state.request_pool());
+            group_limit, pool_name);
         return false;
       }
       *key_matched = true;

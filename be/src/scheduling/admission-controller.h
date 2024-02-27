@@ -339,6 +339,8 @@ class AdmissionController {
   static const std::string PROFILE_INFO_KEY_STALENESS_WARNING;
   static const std::string PROFILE_TIME_SINCE_LAST_UPDATE_COUNTER_NAME;
 
+  static const std::string ROOT_POOL;
+
   AdmissionController(ClusterMembershipMgr* cluster_membership_mgr,
       StatestoreSubscriber* subscriber, RequestPoolService* request_pool_service,
       MetricGroup* metrics, Scheduler* scheduler,
@@ -557,7 +559,7 @@ class AdmissionController {
     void export_users(SetMetric<std::string>* metrics);
 
     /// Print the keys and values from loads_ into a string.
-    std::string DebugString() const;
+    [[nodiscard]] std::string DebugString() const;
 
     [[nodiscard]] const UserLoads& get_user_loads() const { return loads_; }
 
@@ -1302,12 +1304,12 @@ class AdmissionController {
 
   // FIXME asherman add description
   // In particular explain user_for_load user_for_limit
-  static bool checkQuota(const TPoolConfig& pool_cfg, const ScheduleState& state,
-      int64 user_load, const string& user_for_load, string* quota_exceeded_reason,
-      bool use_wildcard, bool* key_matched);
-  static bool checkGroupQuota(const TPoolConfig& pool_cfg, const ScheduleState& state,
-      int64 user_load, const string& user, string* quota_exceeded_reason,
-      bool* key_matched);
+  static bool checkQuota(const TPoolConfig& pool_cfg, string& pool_name,
+      const ScheduleState& state, int64 user_load, const string& user_for_load,
+      string* quota_exceeded_reason, bool use_wildcard, bool* key_matched);
+  static bool checkGroupQuota(const TPoolConfig& pool_cfg, string& pool_name,
+      const ScheduleState& state, int64 user_load, const string& user,
+      string* quota_exceeded_reason, bool* key_matched);
 
   FRIEND_TEST(AdmissionControllerTest, Simple);
   FRIEND_TEST(AdmissionControllerTest, PoolStats);

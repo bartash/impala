@@ -384,7 +384,7 @@ class AdmissionControllerTest : public testing::Test {
   }
 
   // Try and run a query in a 2-pool system.
-  bool try_queue_query(const char* user, bool expected_admit, int64 current_queued_small,
+  bool can_queue(const char* user, bool expected_admit, int64 current_queued_small,
       int64 current_queued_large, bool use_small_queue, string* not_admitted_reason) {
     
     AdmissionController* admission_controller = MakeAdmissionController();
@@ -774,16 +774,16 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
 
   string not_admitted_reason;
 
-  try_queue_query("bob", true, 1, 1, true, &not_admitted_reason);
+  ASSERT_TRUE(can_queue("bob", true, 1, 1, true, &not_admitted_reason));
 
   // Howard has a limit of 4 at root level.
   // FIXME message should say it is at root level
-  try_queue_query("howard", false, 3, 1, true, &not_admitted_reason);
+  ASSERT_FALSE(can_queue("howard", false, 3, 1, true, &not_admitted_reason));
   ASSERT_EQ("current per-user load 4 for user howard is at or above the user limit 4 in pool " + QUEUE_ROOT,
       not_admitted_reason);
 
-  // Iris is not in any groups and so hots wildcard limit.
-  try_queue_query("iris", false, 0, 1, false, &not_admitted_reason);
+  // Iris is not in any groups and so hits the large pool wildcard limit.
+  ASSERT_FALSE(can_queue("iris", false, 0, 1, false, &not_admitted_reason));
   ASSERT_EQ("current per-user load 1 for user iris is at or above the wildcard limit 1 in pool " + QUEUE_LARGE,
       not_admitted_reason);
 

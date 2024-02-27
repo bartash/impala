@@ -339,8 +339,6 @@ class AdmissionController {
   static const std::string PROFILE_INFO_KEY_STALENESS_WARNING;
   static const std::string PROFILE_TIME_SINCE_LAST_UPDATE_COUNTER_NAME;
 
-  static const std::string ROOT_POOL;
-
   AdmissionController(ClusterMembershipMgr* cluster_membership_mgr,
       StatestoreSubscriber* subscriber, RequestPoolService* request_pool_service,
       MetricGroup* metrics, Scheduler* scheduler,
@@ -1304,10 +1302,10 @@ class AdmissionController {
 
   // FIXME asherman add description
   // In particular explain user_for_load user_for_limit
-  static bool checkQuota(const TPoolConfig& pool_cfg, string& pool_name,
+  static bool checkQuota(const TPoolConfig& pool_cfg, const string& pool_name,
       const ScheduleState& state, int64 user_load, const string& user_for_load,
       string* quota_exceeded_reason, bool use_wildcard, bool* key_matched);
-  static bool checkGroupQuota(const TPoolConfig& pool_cfg, string& pool_name,
+  static bool checkGroupQuota(const TPoolConfig& pool_cfg, const string& pool_name,
       const ScheduleState& state, int64 user_load, const string& user,
       string* quota_exceeded_reason, bool* key_matched);
 

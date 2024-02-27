@@ -45,6 +45,7 @@ static const string IMPALA_HOME(getenv("IMPALA_HOME"));
 
 // Queues used in the configuration files fair-scheduler-test2.xml and
 // llama-site-test2.xml.
+static const string QUEUE_ROOT = "root";
 static const string QUEUE_A = "root.queueA";
 static const string QUEUE_B = "root.queueB";
 static const string QUEUE_C = "root.queueC";
@@ -391,7 +392,7 @@ class AdmissionControllerTest : public testing::Test {
     
     // Get the PoolConfig for the global "root" configuration.
     TPoolConfig config_root;
-    ASSERT_OK(request_pool_service->GetPoolConfig(AdmissionController::ROOT_POOL, &config_root));
+    ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
     TPoolConfig config_large;
     ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_LARGE, &config_large));
     TPoolConfig config_small;
@@ -431,7 +432,7 @@ TEST_F(AdmissionControllerTest, Simple) {
 
   // Get the PoolConfig for the global "root" configuration.
   TPoolConfig config_root;
-  ASSERT_OK(request_pool_service->GetPoolConfig(ROOT_POOL, &config_root));
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
 
   // Get the PoolConfig for QUEUE_C ("root.queueC").
   TPoolConfig config_c;
@@ -524,7 +525,7 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestMemory) {
 
   // Get the PoolConfig for the global "root" configuration.
   TPoolConfig config_root;
-  ASSERT_OK(request_pool_service->GetPoolConfig(ROOT_POOL, &config_root));
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
 
   // Get the PoolConfig for QUEUE_D ("root.queueD").
   TPoolConfig config_d;
@@ -588,7 +589,7 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestCount) {
   
   // Get the PoolConfig for the global "root" configuration.
   TPoolConfig config_root;
-  ASSERT_OK(request_pool_service->GetPoolConfig(ROOT_POOL, &config_root));
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
 
   // Get the PoolConfig for QUEUE_D ("root.queueD").
   TPoolConfig config_d;
@@ -643,7 +644,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
 
   // Get the PoolConfig for the global "root" configuration.
   TPoolConfig config_root;
-  ASSERT_OK(request_pool_service->GetPoolConfig(ROOT_POOL, &config_root));
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
 
   TPoolConfig config_e;
   ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_E, &config_e));
@@ -778,7 +779,7 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   // Howard has a limit of 4 at root level.
   // FIXME message should say it is at root level
   try_queue_query("howard", false, 3, 1, true, &not_admitted_reason);
-  ASSERT_EQ("current per-user load 4 for user howard is at or above the user limit 4 in pool " + AdmissionController::ROOT_POOL,
+  ASSERT_EQ("current per-user load 4 for user howard is at or above the user limit 4 in pool " + QUEUE_ROOT,
       not_admitted_reason);
 
   // Iris is not in any groups and so hots wildcard limit.
@@ -809,7 +810,7 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestSlots) {
 
   // Get the PoolConfig for the global "root" configuration.
   TPoolConfig config_root;
-  ASSERT_OK(request_pool_service->GetPoolConfig(AdmissionController::ROOT_POOL, &config_root));
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
 
   // Get the PoolConfig for QUEUE_D ("root.queueD").
   TPoolConfig config_d;
@@ -1418,7 +1419,7 @@ TEST_F(AdmissionControllerTest, TopNQueryCheck) {
 
   // Get the PoolConfig for the global "root" configuration.
   TPoolConfig config_root;
-  ASSERT_OK(request_pool_service->GetPoolConfig(AdmissionController::ROOT_POOL, &config_root));
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
 
   // Process each of the 4 pools.
   for (int i = 0; i < 4; i++) {

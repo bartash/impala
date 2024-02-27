@@ -1125,7 +1125,7 @@ bool AdmissionController::HasUserAndGroupPoolQuotas(const ScheduleState& state,
     const TPoolConfig& pool_cfg, int64 user_load, string* quota_exceeded_reason) {
   const string& user = state.request().query_ctx.session.delegated_user;
   bool key_matched = false;
-  string& pool = state.request_pool();
+  const string& pool = state.request_pool();
   if (!checkQuota(pool_cfg, pool, state, user_load, user,
           quota_exceeded_reason, false, &key_matched)) {
     return false;
@@ -1177,7 +1177,7 @@ bool AdmissionController::HasUserAndGroupRootQuotas(const ScheduleState& state,
   return true;
 }
 
-bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg, string& pool_name,
+bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg, const string& pool_name,
     const ScheduleState& state, int64 user_load, const string& user_for_load,
     string* quota_exceeded_reason, bool use_wildcard, bool* key_matched) {
   string user_for_limits = use_wildcard ? "*" : user_for_load;
@@ -1198,7 +1198,7 @@ bool AdmissionController::checkQuota(const TPoolConfig& pool_cfg, string& pool_n
   return true;
 }
 
-bool AdmissionController::checkGroupQuota(const TPoolConfig& pool_cfg, string& pool_name,
+bool AdmissionController::checkGroupQuota(const TPoolConfig& pool_cfg, const string& pool_name,
     const ScheduleState& state, int64 user_load, const string& user,
     string* quota_exceeded_reason, bool* key_matched) {
 

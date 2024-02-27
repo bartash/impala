@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <allocations>
   <queue name="root">
-    <!-- A user not matched by any other rule can run 10 queries across the cluster -->
-    <userQueryLimit>* 10</userQueryLimit>
+    <!-- A user not matched by any other rule can run 8 queries across the cluster -->
+    <userQueryLimit>* 8</userQueryLimit>
 
     <!-- Members of group 'support' are limited to run 6 queries across the cluster -->
     <groupQueryLimit>support 6</groupQueryLimit>

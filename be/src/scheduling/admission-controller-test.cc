@@ -384,7 +384,7 @@ class AdmissionControllerTest : public testing::Test {
   }
 
   // Try and run a query in a 2-pool system.
-  void try_queue_query(const char* user, bool expected_admit, int64 current_queued_small,
+  bool try_queue_query(const char* user, bool expected_admit, int64 current_queued_small,
       int64 current_queued_large, bool use_small_queue, string* not_admitted_reason) {
     
     AdmissionController* admission_controller = MakeAdmissionController();
@@ -392,11 +392,11 @@ class AdmissionControllerTest : public testing::Test {
     
     // Get the PoolConfig for the global "root" configuration.
     TPoolConfig config_root;
-    ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
+    EXPECT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
     TPoolConfig config_large;
-    ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_LARGE, &config_large));
+    EXPECT_OK(request_pool_service->GetPoolConfig(QUEUE_LARGE, &config_large));
     TPoolConfig config_small;
-    ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_SMALL, &config_small));
+    EXPECT_OK(request_pool_service->GetPoolConfig(QUEUE_SMALL, &config_small));
 
     set_user_loads(admission_controller, user, QUEUE_LARGE, current_queued_large);
     set_user_loads(admission_controller, user, QUEUE_SMALL, current_queued_small);
@@ -413,8 +413,9 @@ class AdmissionControllerTest : public testing::Test {
     bool coordinator_resource_limited = false;
     bool can_admit = admission_controller->CanAdmitRequest(*schedule_state, pool_to_submit,
         config_root, true, not_admitted_reason, nullptr, coordinator_resource_limited);
-    ASSERT_FALSE(coordinator_resource_limited);
-    ASSERT_EQ(expected_admit, can_admit);
+    EXPECT_FALSE(coordinator_resource_limited);
+    EXPECT_EQ(expected_admit, can_admit);
+    return can_admit;
   }
 
 };

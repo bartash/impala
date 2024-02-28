@@ -1257,18 +1257,24 @@ bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
   // That was my original design.
   // Suppose we enforce
   // Check quotas at pool level
-  const string& user = state.request().query_ctx.session.delegated_user;
-  int64 user_load = pool_stats->GetUserLoad(user);
-  if (!HasUserAndGroupPoolQuotas(
-          state, pool_cfg, state.request_pool(), user_load, not_admitted_reason)) {
-    return false;
-  }
+  if (!admit_from_queue) {
+    // Enforce quotas before query is queued.
+    // If you don't enforce at submission time them users can queue queries only to have
+    // them rejected later, which is confusing.
+    // If you enforce at submission time then maybe you don't need ot enforce at dequeue.
+    const string& user = state.request().query_ctx.session.delegated_user;
+    int64 user_load = pool_stats->GetUserLoad(user);
+    if (!HasUserAndGroupPoolQuotas(
+            state, pool_cfg, state.request_pool(), user_load, not_admitted_reason)) {
+      return false;
+    }
 
-  // Check quotas at root level.
-  int64 user_load_across_cluster = root_agg_user_loads_.get(user);
-  if (!HasUserAndGroupPoolQuotas(
-          state, root_cfg, ROOT_POOL, user_load_across_cluster, not_admitted_reason)) {
-    return false;
+    // Check quotas at root level.
+    int64 user_load_across_cluster = root_agg_user_loads_.get(user);
+    if (!HasUserAndGroupPoolQuotas(
+            state, root_cfg, ROOT_POOL, user_load_across_cluster, not_admitted_reason)) {
+      return false;
+    }
   }
   return true;
 }
@@ -2349,16 +2355,6 @@ void AdmissionController::DequeueLoop() {
     // services have already started to accept connections, the whole membership can still
     // be empty.
     if (membership_snapshot->executor_groups.empty()) continue;
-
-/*
-    // FIXME asherman something like
-    PoolStats* root_stats = GetPoolStats("root", */
-/* dcheck_exists=*//*
-true);
-    // but no, who is going to aggregate
-    // Maybe we do it here by duplicating the loop below.
-
-*/
 
     for (const PoolConfigMap::value_type& entry: pool_config_map_) {
       const string& pool_name = entry.first;

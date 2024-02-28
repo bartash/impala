@@ -1224,6 +1224,7 @@ bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
   //  (c) One of the executors in 'schedule' is already at its maximum number of requests
   //      (when not using the default executor group).
   //  (d) There are not enough memory resources available for the query.
+  //  (e) FIXME asheman quotas
   const int64_t max_requests = GetMaxRequestsForPool(pool_cfg);
   PoolStats* pool_stats = GetPoolStats(state);
   bool default_group =
@@ -1252,6 +1253,9 @@ bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
           coordinator_resource_limited, not_admitted_details)) {
     return false;
   }
+  // FIXME asherman can we only reject if admit_from_queue=false?
+  // That was my original design.
+  // Suppose we enforce
   // Check quotas at pool level
   const string& user = state.request().query_ctx.session.delegated_user;
   int64 user_load = pool_stats->GetUserLoad(user);

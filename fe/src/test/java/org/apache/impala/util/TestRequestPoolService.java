@@ -68,6 +68,7 @@ public class TestRequestPoolService {
 
   // A second allocation file which overwrites the temporary file to check for changes.
   private static final String ALLOCATION_FILE_MODIFIED = "fair-scheduler-test2.xml";
+  private static final String ALLOCATION_FILE_EXTRA = "fair-scheduler-test3.xml";
   private static final String ALLOCATION_FILE_EMPTY = "fair-scheduler-empty.xml";
   private static final String ALLOCATION_FILE_GROUP_RULE = "fair-scheduler-group-rule.xml";
 
@@ -283,6 +284,17 @@ public class TestRequestPoolService {
     checkModifiedConfigResults();
   }
 
+  @Test
+  public void testExtra() throws Exception {
+    createPoolService(ALLOCATION_FILE_EXTRA, null);
+    TPoolConfig rootConfig = poolService_.getPoolConfig("root");
+    Assert.assertEquals(2, rootConfig.user_query_limits.size());
+    Assert.assertEquals(1, rootConfig.group_query_limits.size());
+    TPoolConfig smallConfig = poolService_.getPoolConfig("root.group-set-small");
+    TPoolConfig largeConfig = poolService_.getPoolConfig("root.group-set-large");
+  }
+
+    // Test pool resolution
   @Test
   public void testNullLlamaSite() throws Exception {
     createPoolService(ALLOCATION_FILE_MODIFIED, null);

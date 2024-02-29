@@ -23,6 +23,7 @@ import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import com.ibm.icu.impl.coll.Collation;
@@ -284,21 +285,52 @@ public class TestRequestPoolService {
     checkModifiedConfigResults();
   }
 
+  /**
+   * Validate reading user and group quotas
+   */
   @Test
-  public void testExtra() throws Exception {
+  public void testReadUserGroupQuotas() throws Exception {
     createPoolService(ALLOCATION_FILE_EXTRA, null);
     TPoolConfig rootConfig = poolService_.getPoolConfig("root");
-    Assert.assertEquals(2, rootConfig.user_query_limits.size());
-    Assert.assertEquals(1, rootConfig.group_query_limits.size());
+    Map<String, Integer> rootUserExpected = new HashMap<String, Integer>() {{
+      put("*", 8);
+      put("howard", 4);
+    }};
+    Assert.assertEquals(rootUserExpected, rootConfig.user_query_limits);
+    Map<String, Integer> rootGroupExpected = new HashMap<String, Integer>() {{
+      put("support", 6);
+    }};
+    Assert.assertEquals(rootGroupExpected, rootConfig.group_query_limits);
+
     TPoolConfig smallConfig = poolService_.getPoolConfig("root.group-set-small");
-    Assert.assertEquals(2, smallConfig.user_query_limits.size());
-    Assert.assertEquals(3, smallConfig.group_query_limits.size());
+    Map<String, Integer> smallUserExpected = new HashMap<String, Integer>() {{
+      put("*", 1);
+      put("alice", 4);
+    }};
+    Assert.assertEquals(smallUserExpected, smallConfig.user_query_limits);
+    Map<String, Integer> smallGroupExpected = new HashMap<String, Integer>() {{
+      put("support", 5);
+      put("dev", 5);
+      put("it", 2);
+    }};
+    Assert.assertEquals(smallGroupExpected, smallConfig.group_query_limits);
+    
     TPoolConfig largeConfig = poolService_.getPoolConfig("root.group-set-large");
-    Assert.assertEquals(3, largeConfig.user_query_limits.size());
-    Assert.assertEquals(2, largeConfig.group_query_limits.size());
+    Map<String, Integer> largeUserExpected = new HashMap<String, Integer>() {{
+      put("*", 1);
+      put("alice", 4);
+      put("claire", 3);
+    }};
+    Assert.assertEquals(largeUserExpected, largeConfig.user_query_limits);
+    Map<String, Integer> largeGroupExpected = new HashMap<String, Integer>() {{
+      put("support", 1);
+      put("dev", 2);
+    }};
+    Assert.assertEquals(largeGroupExpected, largeConfig.group_query_limits);
   }
 
-    // Test pool resolution
+
+  // Test pool resolution
   @Test
   public void testNullLlamaSite() throws Exception {
     createPoolService(ALLOCATION_FILE_MODIFIED, null);

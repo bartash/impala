@@ -740,6 +740,7 @@ void AdmissionController::PoolStats::AdmitQueryAndMemory(
   if (is_trivial) ++local_trivial_running_;
 
   if (!was_queued) {
+    // if it was queued we already adjusted user loads then, so we don't do it here.
     agg_user_loads_.increment(user);
     metrics_.agg_current_users->Add(user);
     increment_load(local_stats_.user_loads, user);

@@ -291,7 +291,11 @@ public class TestRequestPoolService {
     Assert.assertEquals(2, rootConfig.user_query_limits.size());
     Assert.assertEquals(1, rootConfig.group_query_limits.size());
     TPoolConfig smallConfig = poolService_.getPoolConfig("root.group-set-small");
+    Assert.assertEquals(2, smallConfig.user_query_limits.size());
+    Assert.assertEquals(3, smallConfig.group_query_limits.size());
     TPoolConfig largeConfig = poolService_.getPoolConfig("root.group-set-large");
+    Assert.assertEquals(3, largeConfig.user_query_limits.size());
+    Assert.assertEquals(2, largeConfig.group_query_limits.size());
   }
 
     // Test pool resolution

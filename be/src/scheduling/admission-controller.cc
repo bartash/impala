@@ -1194,7 +1194,7 @@ bool AdmissionController::CheckGroupQuota(const TPoolConfig& pool_cfg, const str
   for (const string& group : res.groups) {
     auto it = pool_cfg.group_query_limits.find(group);
     int64 group_limit = 0;
-    if (it != pool_cfg.user_query_limits.end()) {
+    if (it != pool_cfg.group_query_limits.end()) {
       // There is a per-user limit for the delegated user.
       group_limit = it->second;
       if (user_load + 1 > group_limit) {

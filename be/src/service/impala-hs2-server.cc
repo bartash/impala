@@ -365,7 +365,6 @@ void ImpalaServer::OpenSession(TOpenSessionResp& return_val,
     per_user_session_count_map_[state->connected_user]++;
   }
 
-
   // Process the supplied configuration map.
   state->database = "default";
   state->server_default_query_options = &default_query_options_;
@@ -463,6 +462,10 @@ void ImpalaServer::OpenSession(TOpenSessionResp& return_val,
              << ", effective username: " << GetEffectiveUser(*state)
              << ", client address: "
              << "<" << TNetworkAddressToString(state->network_address) << ">.";
+}
+
+void ImpalaServer::DecrementSessionCount(string& user_name) {
+
 }
 
 void ImpalaServer::CloseSession(TCloseSessionResp& return_val,

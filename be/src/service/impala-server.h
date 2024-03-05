@@ -1529,7 +1529,10 @@ class ImpalaServer : public ImpalaServiceIf,
   /// acquisition order.
   std::mutex per_user_session_count_lock_;
 
-  /// Map from a connection ID to the associated list of sessions so that all can be
+  /// Decrement the count of sessions used by the user.
+  void DecrementSessionCount(string& user_name);
+
+      /// Map from a connection ID to the associated list of sessions so that all can be
   /// closed when the connection ends. HS2 allows for multiplexing several sessions across
   /// a single connection. If a session has already been closed (only possible via HS2) it
   /// is not removed from this map to avoid the cost of looking it up.

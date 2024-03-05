@@ -1820,6 +1820,7 @@ Status ImpalaServer::CloseSessionInternal(const TUniqueId& session_id,
     ImpaladMetrics::IMPALA_SERVER_NUM_OPEN_BEESWAX_SESSIONS->Increment(-1L);
   } else {
     ImpaladMetrics::IMPALA_SERVER_NUM_OPEN_HS2_SESSIONS->Increment(-1L);
+    DecrementSessionCount(session_state->connected_user);
   }
   unordered_set<TUniqueId> inflight_queries;
   {
@@ -2838,6 +2839,7 @@ void ImpalaServer::UnregisterSessionTimeout(int32_t session_timeout) {
           inflight_queries.insert(session_state->inflight_queries.begin(),
               session_state->inflight_queries.end());
         }
+        DecrementSessionCount(session_state->connected_user);
         // Unregister all open queries from this session.
         for (const TUniqueId& query_id : inflight_queries) {
           cancellation_thread_pool_->Offer(

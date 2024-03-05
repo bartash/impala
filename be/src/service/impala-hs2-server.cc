@@ -357,10 +357,12 @@ void ImpalaServer::OpenSession(TOpenSessionResp& return_val,
 
   {
     lock_guard<mutex> l(per_user_session_count_lock_);
-    int64 load = per_user_session_count_map_.count(state->connected_user);
-    if (load > 3) { //  FIXME use flag
-      HS2_RETURN_ERROR(return_val, "Number of sessions for user exceeds server limit",
-          SQLSTATE_GENERAL_ERROR);
+    if (per_user_session_count_map_.count(state->connected_user)) {
+      int64 load = per_user_session_count_map_[state->connected_user];
+      if (load > 3) { //  FIXME use flag
+        HS2_RETURN_ERROR(return_val, "Number of sessions for user exceeds server limit",
+            SQLSTATE_GENERAL_ERROR);
+      }
     }
     per_user_session_count_map_[state->connected_user]++;
   }

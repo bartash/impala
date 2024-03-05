@@ -464,8 +464,25 @@ void ImpalaServer::OpenSession(TOpenSessionResp& return_val,
              << "<" << TNetworkAddressToString(state->network_address) << ">.";
 }
 
+// FIXME asherman this is just AdmissionController::decrement_load
 void ImpalaServer::DecrementSessionCount(string& user_name) {
-
+  lock_guard<mutex> l(per_user_session_count_lock_);
+  // Check if key is present as dereferencing the map will insert it.
+  // FIXME C++20: use contains().
+  if (!per_user_session_count_map_.count(user_name)) {
+    return;
+  }
+  int64& current_value = per_user_session_count_map_[user_name];
+  if (current_value == 1) {
+    // Remove the entry from the map if the current_value will go to zero.
+    per_user_session_count_map_.erase(user_name);
+    return;
+  }
+  if (current_value < 1) {
+    // Don't allow decrement below zero.
+    return;
+  }
+  per_user_session_count_map_[user_name]--;
 }
 
 void ImpalaServer::CloseSession(TCloseSessionResp& return_val,

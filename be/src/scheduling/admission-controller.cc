@@ -716,6 +716,14 @@ void AdmissionController::PoolStats::AdmitQueryAndMemory(
 
   metrics_.total_admitted->Increment(1L);
   if (is_trivial) ++local_trivial_running_;
+
+  if (!was_queued) {
+    // if it was queued we already adjusted user loads then, so we don't do it here.
+    agg_user_loads_.increment(user);
+    metrics_.agg_current_users->Add(user);
+    DecrementLoad(local_stats_.user_loads, user);
+    metrics_.local_current_users->Add(user);
+  }
 }
 
 void AdmissionController::PoolStats::ReleaseQuery(
@@ -733,6 +741,15 @@ void AdmissionController::PoolStats::ReleaseQuery(
   if (is_trivial) {
     --local_trivial_running_;
     DCHECK_GE(local_trivial_running_, 0);
+  }
+
+  agg_user_loads_.decrement(user);
+  if (agg_user_loads_.get(user) == 0) {
+    metrics_.agg_current_users->Remove(user);
+  }
+  ImpalaServer::DecrementLoad(local_stats_.user_loads, user);
+  if (local_stats_.user_loads.count(user) == 0) {
+    metrics_.local_current_users->Remove(user);
   }
 
   // Update the 'peak_mem_histogram' based on the given peak memory consumption of the
@@ -762,6 +779,11 @@ void AdmissionController::PoolStats::Queue() {
   metrics_.local_num_queued->Increment(1L);
 
   metrics_.total_queued->Increment(1L);
+
+  DecrementLoad(local_stats_.user_loads, user);
+  metrics_.local_current_users->Add(user);
+  agg_user_loads_.increment(user);
+  metrics_.agg_current_users->Add(user);
 }
 
 void AdmissionController::PoolStats::Dequeue(bool timed_out) {
@@ -778,6 +800,81 @@ void AdmissionController::PoolStats::Dequeue(bool timed_out) {
   } else {
     metrics_.total_dequeued->Increment(1L);
   }
+}
+
+int64 AdmissionController::PoolStats::GetUserLoad(const string& user) {
+  return agg_user_loads_.get(user);
+}
+
+int64 AdmissionController::AggregatedUserLoads::size() {
+  return loads_.size();
+}
+
+void AdmissionController::AggregatedUserLoads::clear() {
+  return loads_.clear();
+}
+
+void AdmissionController::AggregatedUserLoads::clear_key(const std::string& key) {
+  loads_.erase(key);
+}
+
+void AdmissionController::AggregatedUserLoads::insert(
+    const std::string& key, int64 value) {
+  DCHECK(value > 0);
+  loads_[key] = value;
+}
+
+void AdmissionController::AggregatedUserLoads::add_loads(
+    const UserLoads& loads) {
+  for (const auto & load : loads) {
+    if (loads_.count(load.first)) {
+      loads_[load.first] += load.second;
+    } else {
+      loads_[load.first] = load.second;
+    }
+  }
+}
+
+void AdmissionController::AggregatedUserLoads::export_users(
+    SetMetric<std::string>* metrics) {
+  for (auto & load : loads_) {
+    metrics->Add(load.first);
+  }
+}
+
+std::string AdmissionController::AggregatedUserLoads::DebugString() const {
+  return  AdmissionController::DebugString(loads_);
+}
+
+
+int64 AdmissionController::AggregatedUserLoads::get(const std::string& key) {
+  // Check if key is present as dereferencing the map will insert it.
+  // FIXME C++20: use contains().
+  if (loads_.count(key)) {
+    return loads_[key];
+  }
+  return 0;
+}
+
+void AdmissionController::DecrementLoad(
+    UserLoads& loads, const std::string& key) {
+  loads[key]++;
+}
+
+std::string AdmissionController::DebugString(const UserLoads& loads) {
+  std::ostringstream buffer;
+  for (const auto& [key, value] : loads) {
+    buffer << key << ":" << value << " ";
+  }
+  return buffer.str();
+}
+
+void AdmissionController::AggregatedUserLoads::increment(const std::string& key) {
+  DecrementLoad(loads_, key);
+}
+
+void AdmissionController::AggregatedUserLoads::decrement(const std::string& key) {
+  return ImpalaServer::DecrementLoad(loads_, key);
 }
 
 void AdmissionController::UpdateStatsOnReleaseForBackends(const UniqueIdPB& query_id,

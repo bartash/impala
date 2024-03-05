@@ -355,18 +355,7 @@ void ImpalaServer::OpenSession(TOpenSessionResp& return_val,
     state->connected_user = FLAGS_anonymous_user_name;
   }
 
-  {
-    lock_guard<mutex> l(per_user_session_count_lock_);
-    if (per_user_session_count_map_.count(state->connected_user)) {
-      int64 load = per_user_session_count_map_[state->connected_user];
-      if (load > 3) { //  FIXME use flag
-        HS2_RETURN_ERROR(return_val,
-            "Number of sessions for user exceeds coordinator limit",
-            SQLSTATE_GENERAL_ERROR);
-      }
-    }
-    per_user_session_count_map_[state->connected_user]++;
-  }
+  IncrementSessionCount(state->connected_user);
 
   // Process the supplied configuration map.
   state->database = "default";
@@ -465,6 +454,19 @@ void ImpalaServer::OpenSession(TOpenSessionResp& return_val,
              << ", effective username: " << GetEffectiveUser(*state)
              << ", client address: "
              << "<" << TNetworkAddressToString(state->network_address) << ">.";
+}
+
+void ImpalaServer::IncrementSessionCount(string& user_name) {
+    lock_guard<mutex> l(per_user_session_count_lock_);
+    if (per_user_session_count_map_.count(user_name)) {
+      int64 load = per_user_session_count_map_[user_name];
+      if (load > 3) { //  FIXME use flag
+        HS2_RETURN_ERROR(return_val,
+            "Number of sessions for user exceeds coordinator limit",
+            SQLSTATE_GENERAL_ERROR);
+      }
+    }
+    per_user_session_count_map_[user_name]++;
 }
 
 // FIXME asherman this is just AdmissionController::decrement_load

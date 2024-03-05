@@ -2636,11 +2636,6 @@ void ImpalaServer::ConnectionStart(
     if (!connection_context.username.empty()) {
       session_state->connected_user = connection_context.username;
     }
-
-
-    // FIXME asherman check sessions here? But how to return error
-
-
     RegisterSessionTimeout(session_state->session_timeout);
 
     {

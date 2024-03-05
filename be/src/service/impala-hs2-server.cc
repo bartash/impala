@@ -360,7 +360,8 @@ void ImpalaServer::OpenSession(TOpenSessionResp& return_val,
     if (per_user_session_count_map_.count(state->connected_user)) {
       int64 load = per_user_session_count_map_[state->connected_user];
       if (load > 3) { //  FIXME use flag
-        HS2_RETURN_ERROR(return_val, "Number of sessions for user exceeds server limit",
+        HS2_RETURN_ERROR(return_val,
+            "Number of sessions for user exceeds coordinator limit",
             SQLSTATE_GENERAL_ERROR);
       }
     }

@@ -95,6 +95,7 @@ DECLARE_bool(enable_ldap_auth);
 DECLARE_string(hostname);
 DECLARE_int32(webserver_port);
 DECLARE_int32(idle_session_timeout);
+DECLARE_int32(max_hs2_sessions_per_user);
 DECLARE_int32(disconnected_session_timeout);
 DECLARE_bool(ping_expose_webserver_url);
 DECLARE_string(anonymous_user_name);
@@ -355,11 +356,11 @@ void ImpalaServer::OpenSession(TOpenSessionResp& return_val,
     state->connected_user = FLAGS_anonymous_user_name;
   }
 
-  {
+  if (FLAGS_max_hs2_sessions_per_user > 0) {
     lock_guard<mutex> l(per_user_session_count_lock_);
     if (per_user_session_count_map_.count(state->connected_user)) {
       int64 load = per_user_session_count_map_[state->connected_user];
-      if (load > 3) { //  FIXME use flag
+      if (load + 1 > FLAGS_max_hs2_sessions_per_user) {
         HS2_RETURN_ERROR(return_val,
             "Number of sessions for user exceeds coordinator limit",
             SQLSTATE_GENERAL_ERROR);
@@ -469,23 +470,25 @@ void ImpalaServer::OpenSession(TOpenSessionResp& return_val,
 
 // FIXME asherman this is just AdmissionController::decrement_load
 void ImpalaServer::DecrementSessionCount(string& user_name) {
-  lock_guard<mutex> l(per_user_session_count_lock_);
-  // Check if key is present as dereferencing the map will insert it.
-  // FIXME C++20: use contains().
-  if (!per_user_session_count_map_.count(user_name)) {
-    return;
+  if (FLAGS_max_hs2_sessions_per_user > 0) {
+    lock_guard<mutex> l(per_user_session_count_lock_);
+    // Check if key is present as dereferencing the map will insert it.
+    // FIXME C++20: use contains().
+    if (!per_user_session_count_map_.count(user_name)) {
+      return;
+    }
+    int64& current_value = per_user_session_count_map_[user_name];
+    if (current_value == 1) {
+      // Remove the entry from the map if the current_value will go to zero.
+      per_user_session_count_map_.erase(user_name);
+      return;
+    }
+    if (current_value < 1) {
+      // Don't allow decrement below zero.
+      return;
+    }
+    per_user_session_count_map_[user_name]--;
   }
-  int64& current_value = per_user_session_count_map_[user_name];
-  if (current_value == 1) {
-    // Remove the entry from the map if the current_value will go to zero.
-    per_user_session_count_map_.erase(user_name);
-    return;
-  }
-  if (current_value < 1) {
-    // Don't allow decrement below zero.
-    return;
-  }
-  per_user_session_count_map_[user_name]--;
 }
 
 void ImpalaServer::CloseSession(TCloseSessionResp& return_val,

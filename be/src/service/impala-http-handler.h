@@ -284,6 +284,7 @@ class ImpalaHttpHandler {
 
   /// Fill the sessions information into the document.
   void FillSessionsInfo(rapidjson::Document* document);
+  void FillUsersInfo(rapidjson::Document* document);
 
   /// Fill the client hosts information into the document.
   void FillClientHostsInfo(rapidjson::Document* document,

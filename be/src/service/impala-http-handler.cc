@@ -708,6 +708,9 @@ void ImpalaHttpHandler::SessionsHandler(const Webserver::WebRequest& req,
 
   VLOG(1) << "Step3: Fill the connections information into the document.";
   FillConnectionsInfo(document, connection_contexts);
+
+  VLOG(1) << "Step4: Fill the hs2 users information into the document.";
+  FillUsersInfo(document);
 }
 
 void ImpalaHttpHandler::FillSessionsInfo(Document* document) {
@@ -771,6 +774,27 @@ void ImpalaHttpHandler::FillSessionsInfo(Document* document) {
   document->AddMember("num_active", num_active, document->GetAllocator());
   document->AddMember("num_inactive", server_->session_state_map_.size() - num_active,
       document->GetAllocator());
+}
+
+// Sort the users array by the session_count field.
+bool SessionCountComparer(const Value& a, const Value& b) {
+  return a["session_count"].GetInt64() < b["session_count"].GetInt64();
+}
+
+void ImpalaHttpHandler::FillUsersInfo(Document* document) {
+  lock_guard<mutex> l(server_->per_user_session_count_lock_);
+  Value users(kArrayType);
+  for (auto const& it : server_->per_user_session_count_map_) {
+    const string& name = it.first;
+    const int64& session_count = it.second;
+    Value users_json(kObjectType);
+    Value user_name(name.c_str(), document->GetAllocator());
+    users_json.AddMember("user", user_name, document->GetAllocator());
+    users_json.AddMember("session_count", session_count, document->GetAllocator());
+    users.PushBack(users_json, document->GetAllocator());
+  }
+  sort(users.Begin(), users.End(), SessionCountComparer);
+  document->AddMember("users", users, document->GetAllocator());
 }
 
 void ImpalaHttpHandler::FillClientHostsInfo(

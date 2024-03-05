@@ -191,6 +191,7 @@ class TQueryExecRequest;
 /// * uuid_lock_
 /// * catalog_version_lock_
 /// * connection_to_sessions_map_lock_
+/// * per_user_session_count_map_
 ///
 /// TODO: The same doesn't apply to the execution state of an individual plan
 /// fragment: the originating coordinator might die, but we can get notified of
@@ -1518,6 +1519,15 @@ class ImpalaServer : public ImpalaServiceIf,
   /// Protects connection_to_sessions_map_. See "Locking" in the class comment for lock
   /// acquisition order.
   std::mutex connection_to_sessions_map_lock_;
+
+  /// A map from user to a count of sessions created by the user.
+  // FIXME asherman could we reuse UserLoads from AC changes
+  typedef std::map<std::string, int64> SessionCounts;
+  SessionCounts per_user_session_count_map_;
+
+  /// Protects per_user_session_count_map_. See "Locking" in the class comment for lock
+  /// acquisition order.
+  std::mutex user_to_sessions_count_lock_;
 
   /// Map from a connection ID to the associated list of sessions so that all can be
   /// closed when the connection ends. HS2 allows for multiplexing several sessions across

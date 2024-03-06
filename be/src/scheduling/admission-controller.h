@@ -517,10 +517,6 @@ class AdmissionController {
   /// key by 1.
   static void increment_load(UserLoads& loads, const std::string& key);
 
-  /// Helper function  on UserLoads that decrements the value associated with the given
-  /// key by 1.
-  static void decrement_load(UserLoads& loads, const std::string& key);
-
   static std::string DebugString(const UserLoads& loads);
 
   /// A Holder for aggregated per-user loads.

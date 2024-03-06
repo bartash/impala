@@ -769,7 +769,7 @@ void AdmissionController::PoolStats::ReleaseQuery(
   if (agg_user_loads_.get(user) == 0) {
     metrics_.agg_current_users->Remove(user);
   }
-  decrement_load(local_stats_.user_loads, user);
+  ImpalaServer::DecrementLoad(local_stats_.user_loads, user);
   if (local_stats_.user_loads.count(user) == 0) {
     metrics_.local_current_users->Remove(user);
   }
@@ -883,26 +883,6 @@ void AdmissionController::increment_load(
   loads[key]++;
 }
 
-void AdmissionController::decrement_load(
-    UserLoads& loads, const std::string& key) {
-  // Check if key is present as dereferencing the map will insert it.
-  // FIXME C++20: use contains().
-  if (!loads.count(key)) {
-    return;
-  }
-  int64& current_value = loads[key];
-  if (current_value == 1) {
-    // Remove the entry from the map if the current_value will go to zero.
-    loads.erase(key);
-    return;
-  }
-  if (current_value < 1) {
-    // Don't allow decrement below zero.
-    return;
-  }
-  loads[key]--;
-}
-
 std::string AdmissionController::DebugString(const UserLoads& loads) {
   std::ostringstream buffer;
   for (const auto& [key, value] : loads) {
@@ -916,7 +896,7 @@ void AdmissionController::AggregatedUserLoads::increment(const std::string& key)
 }
 
 void AdmissionController::AggregatedUserLoads::decrement(const std::string& key) {
-  return decrement_load(loads_, key);
+  return ImpalaServer::DecrementLoad(loads_, key);
 }
 
 void AdmissionController::UpdateStatsOnReleaseForBackends(const UniqueIdPB& query_id,

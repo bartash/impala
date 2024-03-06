@@ -685,6 +685,10 @@ class ImpalaServer : public ImpalaServiceIf,
     TQueryOptions QueryOptions();
   };
 
+  /// Helper function  on UserLoads that decrements the value associated with the given
+  /// key by 1.
+  static void DecrementLoad(std::map<std::string, int64>& loads, const std::string& key);
+
  private:
   struct ExpirationEvent;
   class SecretArg;

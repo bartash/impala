@@ -693,6 +693,7 @@ void ImpalaHttpHandler::SessionsHandler(const Webserver::WebRequest& req,
     Document* document) {
   VLOG(1) << "Step1: Fill the sessions information into the document.";
   FillSessionsInfo(document);
+  FillUsersInfo(document);
 
   ThriftServer::ConnectionContextList connection_contexts;
   server_->GetAllConnectionContexts(&connection_contexts);
@@ -764,6 +765,26 @@ void ImpalaHttpHandler::FillSessionsInfo(Document* document) {
   document->AddMember("num_active", num_active, document->GetAllocator());
   document->AddMember("num_inactive", server_->session_state_map_.size() - num_active,
       document->GetAllocator());
+}
+
+void ImpalaHttpHandler::FillUsersInfo(Document* document) {
+  lock_guard<mutex> l(server_->per_user_session_count_lock_);
+  Value users(kArrayType);
+  for (auto const& user :  server_->per_user_session_count_map_) {
+    const string& name = user.first;
+    const int64& count = user.second;
+    Value users_json(kObjectType);
+    Value user_name(name.c_str(), document->GetAllocator());
+    users_json.AddMember("user",
+        user_name,
+        document->GetAllocator());
+    users_json.AddMember("session_count",
+        count,
+        document->GetAllocator());
+    users.PushBack(users_json, document->GetAllocator());
+  }
+
+  document->AddMember("users", users, document->GetAllocator());
 }
 
 void ImpalaHttpHandler::FillClientHostsInfo(

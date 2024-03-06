@@ -1531,6 +1531,7 @@ class ImpalaServer : public ImpalaServiceIf,
 
   /// Decrement the count of sessions used by the user.
   void DecrementSessionCount(string& user_name);
+  Status IncrementSessionCount(string& user_name);
 
       /// Map from a connection ID to the associated list of sessions so that all can be
   /// closed when the connection ends. HS2 allows for multiplexing several sessions across

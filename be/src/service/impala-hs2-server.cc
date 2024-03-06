@@ -356,18 +356,8 @@ void ImpalaServer::OpenSession(TOpenSessionResp& return_val,
     state->connected_user = FLAGS_anonymous_user_name;
   }
 
-  if (FLAGS_max_hs2_sessions_per_user > 0) {
-    lock_guard<mutex> l(per_user_session_count_lock_);
-    if (per_user_session_count_map_.count(state->connected_user)) {
-      int64 load = per_user_session_count_map_[state->connected_user];
-      if (load + 1 > FLAGS_max_hs2_sessions_per_user) {
-        HS2_RETURN_ERROR(return_val,
-            "Number of sessions for user exceeds coordinator limit",
-            SQLSTATE_GENERAL_ERROR);
-      }
-    }
-    per_user_session_count_map_[state->connected_user]++;
-  }
+  Status status =  IncrementSessionCount(state->connected_user);
+  HS2_RETURN_IF_ERROR(return_val, status, SQLSTATE_GENERAL_ERROR);
 
   // Process the supplied configuration map.
   state->database = "default";
@@ -489,6 +479,21 @@ void ImpalaServer::DecrementSessionCount(string& user_name) {
     }
     per_user_session_count_map_[user_name]--;
   }
+}
+
+Status ImpalaServer::IncrementSessionCount(string& user_name) {
+  if (FLAGS_max_hs2_sessions_per_user > 0) {
+    lock_guard<mutex> l(per_user_session_count_lock_);
+    if (per_user_session_count_map_.count(user_name)) {
+      int64 load = per_user_session_count_map_[user_name];
+      if (load + 1 > FLAGS_max_hs2_sessions_per_user) {
+        Status err = Status::Expected("Number of sessions for user exceeds coordinator limit");
+        return err;
+      }
+    }
+    per_user_session_count_map_[user_name]++;
+  }
+  return Status::OK();
 }
 
 void ImpalaServer::CloseSession(TCloseSessionResp& return_val,

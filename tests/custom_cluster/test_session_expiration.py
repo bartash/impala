@@ -19,6 +19,8 @@
 
 from __future__ import absolute_import, division, print_function
 import pytest
+from impala.error import HiveServer2Error
+
 import socket
 from time import sleep
 
@@ -174,7 +176,13 @@ class TestSessionExpiration(CustomClusterTestSuite):
 
     impalad = self.cluster.get_first_impalad()
     self.close_impala_clients()
-    client = impalad.service.create_hs2_client()
-    handle = client.execute("select sleep(30000)")
-
+    client1 = impalad.service.create_hs2_client()
+    client1.execute_async("select sleep(10000)")
+    client2 = impalad.service.create_hs2_client()
+    client2.execute_async("select sleep(10000)")
+    try:
+      impalad.service.create_hs2_client()
+    except Exception as e:
+      assert "Number of sessions for user exceeds coordinator limit" in str(e), \
+      "Unexpected exception: " + str(e)
 

@@ -693,7 +693,6 @@ void ImpalaHttpHandler::SessionsHandler(const Webserver::WebRequest& req,
     Document* document) {
   VLOG(1) << "Step1: Fill the sessions information into the document.";
   FillSessionsInfo(document);
-  FillUsersInfo(document);
 
   ThriftServer::ConnectionContextList connection_contexts;
   server_->GetAllConnectionContexts(&connection_contexts);
@@ -702,6 +701,9 @@ void ImpalaHttpHandler::SessionsHandler(const Webserver::WebRequest& req,
 
   VLOG(1) << "Step3: Fill the connections information into the document.";
   FillConnectionsInfo(document, connection_contexts);
+
+  VLOG(1) << "Step4: Fill the hs2 users information into the document.";
+  FillUsersInfo(document);
 }
 
 void ImpalaHttpHandler::FillSessionsInfo(Document* document) {

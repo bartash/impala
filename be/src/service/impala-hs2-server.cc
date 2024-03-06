@@ -460,7 +460,7 @@ void ImpalaServer::OpenSession(TOpenSessionResp& return_val,
 
 // FIXME asherman this is just AdmissionController::decrement_load
 void ImpalaServer::DecrementSessionCount(string& user_name) {
-  if (FLAGS_max_hs2_sessions_per_user > 0) {
+
     lock_guard<mutex> l(per_user_session_count_lock_);
     // Check if key is present as dereferencing the map will insert it.
     // FIXME C++20: use contains().
@@ -478,7 +478,6 @@ void ImpalaServer::DecrementSessionCount(string& user_name) {
       return;
     }
     per_user_session_count_map_[user_name]--;
-  }
 }
 
 Status ImpalaServer::IncrementSessionCount(string& user_name) {
@@ -486,9 +485,12 @@ Status ImpalaServer::IncrementSessionCount(string& user_name) {
     lock_guard<mutex> l(per_user_session_count_lock_);
     if (per_user_session_count_map_.count(user_name)) {
       int64 load = per_user_session_count_map_[user_name];
-      if (load + 1 > FLAGS_max_hs2_sessions_per_user) {
-        Status err = Status::Expected("Number of sessions for user exceeds coordinator limit");
-        return err;
+      if (FLAGS_max_hs2_sessions_per_user > 0) {
+        if (load + 1 > FLAGS_max_hs2_sessions_per_user) {
+          Status err =
+              Status::Expected("Number of sessions for user exceeds coordinator limit");
+          return err;
+        }
       }
     }
     per_user_session_count_map_[user_name]++;

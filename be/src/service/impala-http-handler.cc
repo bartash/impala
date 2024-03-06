@@ -769,6 +769,11 @@ void ImpalaHttpHandler::FillSessionsInfo(Document* document) {
       document->GetAllocator());
 }
 
+/// Sort by the session_count field of the users array.
+bool ValueIntComparer(const Value& a, const Value& b) {
+  return a["session_count"].GetInt64() < b["session_count"].GetInt64();
+}
+
 void ImpalaHttpHandler::FillUsersInfo(Document* document) {
   lock_guard<mutex> l(server_->per_user_session_count_lock_);
   Value users(kArrayType);
@@ -785,7 +790,7 @@ void ImpalaHttpHandler::FillUsersInfo(Document* document) {
         document->GetAllocator());
     users.PushBack(users_json, document->GetAllocator());
   }
-
+  sort(users.Begin(), users.End(), ValueIntComparer);
   document->AddMember("users", users, document->GetAllocator());
 }
 

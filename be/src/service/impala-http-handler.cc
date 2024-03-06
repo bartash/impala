@@ -769,28 +769,24 @@ void ImpalaHttpHandler::FillSessionsInfo(Document* document) {
       document->GetAllocator());
 }
 
-/// Sort by the session_count field of the users array.
-bool ValueIntComparer(const Value& a, const Value& b) {
+// Sort the users array by the session_count field.
+bool SessionCountComparer(const Value& a, const Value& b) {
   return a["session_count"].GetInt64() < b["session_count"].GetInt64();
 }
 
 void ImpalaHttpHandler::FillUsersInfo(Document* document) {
   lock_guard<mutex> l(server_->per_user_session_count_lock_);
   Value users(kArrayType);
-  for (auto const& user :  server_->per_user_session_count_map_) {
+  for (auto const& user : server_->per_user_session_count_map_) {
     const string& name = user.first;
     const int64& count = user.second;
     Value users_json(kObjectType);
     Value user_name(name.c_str(), document->GetAllocator());
-    users_json.AddMember("user",
-        user_name,
-        document->GetAllocator());
-    users_json.AddMember("session_count",
-        count,
-        document->GetAllocator());
+    users_json.AddMember("user", user_name, document->GetAllocator());
+    users_json.AddMember("session_count", count, document->GetAllocator());
     users.PushBack(users_json, document->GetAllocator());
   }
-  sort(users.Begin(), users.End(), ValueIntComparer);
+  sort(users.Begin(), users.End(), SessionCountComparer);
   document->AddMember("users", users, document->GetAllocator());
 }
 

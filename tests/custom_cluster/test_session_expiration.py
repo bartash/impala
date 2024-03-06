@@ -172,9 +172,9 @@ class TestSessionExpiration(CustomClusterTestSuite):
     """Test that the --max_hs2_sessions_per_user flag restricts the total number of
     sessions per user"""
 
-    impalad = self.cluster.get_any_impalad()
+    impalad = self.cluster.get_first_impalad()
     self.close_impala_clients()
     client = impalad.service.create_hs2_client()
-    client.execute("select 1")
+    handle = client.execute("select sleep(30000)")
 
 

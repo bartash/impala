@@ -743,7 +743,7 @@ void AdmissionController::PoolStats::AdmitQueryAndMemory(
     // if it was queued we already adjusted user loads then, so we don't do it here.
     agg_user_loads_.increment(user);
     metrics_.agg_current_users->Add(user);
-    increment_load(local_stats_.user_loads, user);
+    DecrementLoad(local_stats_.user_loads, user);
     metrics_.local_current_users->Add(user);
   }
 }
@@ -802,7 +802,7 @@ void AdmissionController::PoolStats::Queue(const std::string& user) {
 
   metrics_.total_queued->Increment(1L);
 
-  increment_load(local_stats_.user_loads, user);
+  DecrementLoad(local_stats_.user_loads, user);
   metrics_.local_current_users->Add(user);
   agg_user_loads_.increment(user);
   metrics_.agg_current_users->Add(user);
@@ -878,7 +878,7 @@ int64 AdmissionController::AggregatedUserLoads::get(const std::string& key) {
   return 0;
 }
 
-void AdmissionController::increment_load(
+void AdmissionController::DecrementLoad(
     UserLoads& loads, const std::string& key) {
   loads[key]++;
 }
@@ -892,7 +892,7 @@ std::string AdmissionController::DebugString(const UserLoads& loads) {
 }
 
 void AdmissionController::AggregatedUserLoads::increment(const std::string& key) {
-  increment_load(loads_, key);
+  DecrementLoad(loads_, key);
 }
 
 void AdmissionController::AggregatedUserLoads::decrement(const std::string& key) {

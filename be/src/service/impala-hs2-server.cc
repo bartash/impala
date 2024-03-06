@@ -481,17 +481,16 @@ void ImpalaServer::DecrementSessionCount(string& user_name) {
 }
 
 Status ImpalaServer::IncrementSessionCount(string& user_name) {
-  if (FLAGS_max_hs2_sessions_per_user > 0) {
-    lock_guard<mutex> l(per_user_session_count_lock_);
-    if (per_user_session_count_map_.count(user_name)) {
-      int64 load = per_user_session_count_map_[user_name];
-      if (FLAGS_max_hs2_sessions_per_user > 0
-          && load + 1 > FLAGS_max_hs2_sessions_per_user) {
-        return Status::Expected("Number of sessions for user exceeds coordinator limit");
-      }
+  lock_guard<mutex> l(per_user_session_count_lock_);
+  // Only check user limit if there is already a session for the user.
+  if (per_user_session_count_map_.count(user_name)) {
+    int64 load = per_user_session_count_map_[user_name];
+    if (FLAGS_max_hs2_sessions_per_user > 0
+        && load + 1 > FLAGS_max_hs2_sessions_per_user) {
+      return Status::Expected("Number of sessions for user exceeds coordinator limit");
     }
-    per_user_session_count_map_[user_name]++;
   }
+  per_user_session_count_map_[user_name]++;
   return Status::OK();
 }
 

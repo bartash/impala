@@ -166,3 +166,15 @@ class TestSessionExpiration(CustomClusterTestSuite):
     assert num_hs2_connections + 1 == impalad.service.get_metric_value(
         "impala.thrift-server.hiveserver2-frontend.connections-in-use")
     sock.close()
+  @pytest.mark.execute_serially
+  @CustomClusterTestSuite.with_args("--max_hs2_sessions_per_user=2")
+  def test_max_sessions(self):
+    """Test that the --max_hs2_sessions_per_user flag restricts the total number of
+    sessions per user"""
+
+    impalad = self.cluster.get_any_impalad()
+    self.close_impala_clients()
+    client = impalad.service.create_hs2_client()
+    client.execute("select 1")
+
+

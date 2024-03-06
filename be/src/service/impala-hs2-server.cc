@@ -487,9 +487,7 @@ Status ImpalaServer::IncrementSessionCount(string& user_name) {
       int64 load = per_user_session_count_map_[user_name];
       if (FLAGS_max_hs2_sessions_per_user > 0
           && load + 1 > FLAGS_max_hs2_sessions_per_user) {
-        Status err =
-            Status::Expected("Number of sessions for user exceeds coordinator limit");
-        return err;
+        return Status::Expected("Number of sessions for user exceeds coordinator limit");
       }
     }
     per_user_session_count_map_[user_name]++;

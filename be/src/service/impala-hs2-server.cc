@@ -459,23 +459,20 @@ void ImpalaServer::OpenSession(TOpenSessionResp& return_val,
 }
 
 void ImpalaServer::DecrementCount(
-    std::map<std::string, int64>& loads, const std::string& key) {
-  // Check if key is present as dereferencing the map will insert it.
-  // FIXME C++20: use contains().
-  if (!loads.count(key)) {
+    std::map<std::string, int64_t>& loads, const std::string& key) {
+  auto it = loads.find(key);
+  if (it == loads.end()) {
     return;
   }
-  int64& current_value = loads[key];
-  if (current_value == 1) {
-    // Remove the entry from the map if the current_value will go to zero.
-    loads.erase(key);
-    return;
+
+  // Use auto with reference to avoid unnecessary copy
+  auto& [key_, value] = *it;
+
+  if (value == 1) {
+    loads.erase(it);
+  } else if (value > 0) {
+    --value;
   }
-  if (current_value < 1) {
-    // Don't allow decrement below zero.
-    return;
-  }
-  loads[key]--;
 }
 
 void ImpalaServer::DecrementSessionCount(string& user_name) {

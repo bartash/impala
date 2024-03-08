@@ -192,6 +192,7 @@ class TQueryExecRequest;
 /// * uuid_lock_
 /// * catalog_version_lock_
 /// * connection_to_sessions_map_lock_
+/// * per_user_session_count_lock_
 ///
 /// TODO: The same doesn't apply to the execution state of an individual plan
 /// fragment: the originating coordinator might die, but we can get notified of
@@ -684,6 +685,10 @@ class ImpalaServer : public ImpalaServiceIf,
     /// explicitly set in this session.
     TQueryOptions QueryOptions();
   };
+
+  /// Helper function that decrements the value associated with the given key.
+  /// Removes the entry from the map if the value becomes zero.
+  static void DecrementCount(std::map<std::string, int64>& loads, const std::string& key);
 
  private:
   struct ExpirationEvent;
@@ -1386,7 +1391,23 @@ class ImpalaServer : public ImpalaServiceIf,
   /// acquisition order.
   std::mutex connection_to_sessions_map_lock_;
 
-  /// Map from a connection ID to the associated list of sessions so that all can be
+  /// A map from user to a count of sessions created by the user.
+  typedef std::map<std::string, int64> SessionCounts;
+  SessionCounts per_user_session_count_map_;
+
+  /// Protects per_user_session_count_map_. See "Locking" in the class comment for lock
+  /// acquisition order.
+  std::mutex per_user_session_count_lock_;
+
+  /// Increment the count of HS2 sessions used by the user.
+  /// If max_hs2_sessions_per_user is greater than zero, and the count of HS2 sessions
+  /// used by the user would be above that value, then an error status is returned.
+  Status IncrementAndCheckSessionCount(string& user_name);
+  /// Decrement the count of HS2 sessions used by the user.
+  void DecrementSessionCount(string& user_name);
+
+
+      /// Map from a connection ID to the associated list of sessions so that all can be
   /// closed when the connection ends. HS2 allows for multiplexing several sessions across
   /// a single connection. If a session has already been closed (only possible via HS2) it
   /// is not removed from this map to avoid the cost of looking it up.

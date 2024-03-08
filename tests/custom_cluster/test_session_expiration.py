@@ -166,3 +166,29 @@ class TestSessionExpiration(CustomClusterTestSuite):
     assert num_hs2_connections + 1 == impalad.service.get_metric_value(
         "impala.thrift-server.hiveserver2-frontend.connections-in-use")
     sock.close()
+
+  @pytest.mark.execute_serially
+  @CustomClusterTestSuite.with_args("--max_hs2_sessions_per_user=2")
+  def test_max_hs2_sessions_per_user(self):
+    """Test that the --max_hs2_sessions_per_user flag restricts the total number of
+    sessions per user. Also checks that the per-user count of hs2 sessions can
+    be seen in the webui."""
+    impalad = self.cluster.get_first_impalad()
+    self.close_impala_clients()
+    # Create 2 sessions.
+    client1 = impalad.service.create_hs2_client()
+    client1.execute_async("select sleep(10000)")
+    client2 = impalad.service.create_hs2_client()
+    client2.execute_async("select sleep(10000)")
+    try:
+      # Trying to open a third session should fail.
+      impalad.service.create_hs2_client()
+    except Exception as e:
+      assert "Number of sessions for user exceeds coordinator limit" in str(
+        e), "Unexpected exception: " + str(e)
+
+    # Test webui for hs2 sessions.
+    res = impalad.service.get_debug_webpage_json("/sessions")
+    assert res['num_sessions'] == 2
+    assert res['users'][0]['user'] is not None
+    assert res['users'][0]['session_count'] == 2

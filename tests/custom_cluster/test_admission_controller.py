@@ -1178,8 +1178,8 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
 
     impalad1 = self.cluster.impalads[0]
     impalad2 = self.cluster.impalads[1]
-    client1 = self.execute_aync_and_wait_for_running(impalad1, query, USER_C)
-    client2 = self.execute_aync_and_wait_for_running(impalad2, query, USER_ROOT)
+    query1 = self.execute_aync_and_wait_for_running(impalad1, query, USER_C)
+    query2 = self.execute_aync_and_wait_for_running(impalad2, query, USER_ROOT)
 
     keys = [
       "admission-controller.agg-current-users.root.queueB",
@@ -1195,6 +1195,15 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     assert values1[1] == [USER_C]
     assert values2[1] == [USER_ROOT]
 
+    query1.client.close_query(query1.handle)
+    query2.client.close_query(query2.handle)
+
+  class ClientAndHandle:
+    """Holder class for a client and query handle"""
+    def __init__(self, client, handle):
+      self.client = client
+      self.handle = handle
+
   def execute_aync_and_wait_for_running(self, impalad, query, user):
     # Use beeswax client as it allows specifying the user that runs the query.
     client = impalad.service.create_beeswax_client()
@@ -1204,7 +1213,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     # Make sure the first query has been admitted.
     self.wait_for_state(
       handle, client.QUERY_STATES['RUNNING'], timeout_s, client=client)
-    return client
+    return self.ClientAndHandle(client, handle)
 
   @pytest.mark.execute_serially
   @CustomClusterTestSuite.with_args(
@@ -1786,6 +1795,7 @@ class TestAdmissionControllerWithACService(TestAdmissionController):
     self.wait_for_state(
         handle2, self.client.QUERY_STATES['RUNNING'], timeout_s, client=client2)
 
+
 class TestAdmissionControllerStress(TestAdmissionControllerBase):
   """Submits a number of queries (parameterized) with some delay between submissions
   (parameterized) and the ability to submit to one impalad or many in a round-robin
@@ -2142,8 +2152,7 @@ class TestAdmissionControllerStress(TestAdmissionControllerBase):
         # Sleep and wait for the query to be cancelled. The cancellation will
         # set the state to EXCEPTION.
         start_time = time()
-        while (client.get_state(self.query_handle) !=
-               client.QUERY_STATES['EXCEPTION']):
+        while (client.get_state(self.query_handle) != client.QUERY_STATES['EXCEPTION']):
           assert (time() - start_time < STRESS_TIMEOUT),\
             "Timed out waiting %s seconds for query cancel" % (STRESS_TIMEOUT,)
           sleep(1)

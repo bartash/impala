@@ -806,7 +806,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
       sleep(STATESTORE_RPC_FREQUENCY_MS / 1000)
       exec_options = copy(vector.get_value('exec_option'))
       exec_options['mem_limit'] = "2G"
-      # Since Queuing is synchronous and we can't close the previous query till this
+      # Since Queuing is synchronous, and we can't close the previous query till this
       # returns, we wait for this to timeout instead.
       self.execute_query(query, exec_options)
     except ImpalaBeeswaxException as e:
@@ -1169,8 +1169,8 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
       fs_allocation_file="fair-scheduler-test2.xml",
       llama_site_file="llama-site-test2.xml"),
     statestored_args=_STATESTORED_ARGS)
-  def test_user_quotas(self, vector):
-    """Test that user loads are propagated"""
+  def test_user_loads_propagate(self, vector):
+    """Test that user loads are propagated by checking metric values"""
     USER_ROOT = 'root'
     USER_C = 'userC'
 

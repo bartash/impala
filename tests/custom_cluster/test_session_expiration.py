@@ -19,14 +19,12 @@
 
 from __future__ import absolute_import, division, print_function
 import pytest
-from impala.error import HiveServer2Error
-
-import json
 import socket
 from time import sleep
 
 from tests.common.custom_cluster_test_suite import CustomClusterTestSuite
 from tests.common.impala_cluster import DEFAULT_HS2_PORT
+
 
 class TestSessionExpiration(CustomClusterTestSuite):
   """Tests query expiration logic"""
@@ -40,7 +38,7 @@ class TestSessionExpiration(CustomClusterTestSuite):
     num_expired = impalad.service.get_metric_value("impala-server.num-sessions-expired")
     num_connections = impalad.service.get_metric_value(
         "impala.thrift-server.beeswax-frontend.connections-in-use")
-    client = impalad.service.create_beeswax_client()
+    impalad.service.create_beeswax_client()
     # Sleep for half the expiration time to confirm that the session is not expired early
     # (see IMPALA-838)
     sleep(3)
@@ -74,7 +72,6 @@ class TestSessionExpiration(CustomClusterTestSuite):
     sleep(5)
     assert num_expired + 1 == impalad.service.get_metric_value(
       "impala-server.num-sessions-expired")
-
 
   @pytest.mark.execute_serially
   @CustomClusterTestSuite.with_args("--idle_session_timeout=5 "
@@ -169,6 +166,7 @@ class TestSessionExpiration(CustomClusterTestSuite):
     assert num_hs2_connections + 1 == impalad.service.get_metric_value(
         "impala.thrift-server.hiveserver2-frontend.connections-in-use")
     sock.close()
+
   @pytest.mark.execute_serially
   @CustomClusterTestSuite.with_args("--max_hs2_sessions_per_user=2")
   def test_max_sessions(self):
@@ -186,7 +184,7 @@ class TestSessionExpiration(CustomClusterTestSuite):
       impalad.service.create_hs2_client()
     except Exception as e:
       assert "Number of sessions for user exceeds coordinator limit" in str(e), \
-      "Unexpected exception: " + str(e)
+        "Unexpected exception: " + str(e)
 
     # Test webui for hs2 sessions.
     res = impalad.service.get_debug_webpage_json("/sessions")

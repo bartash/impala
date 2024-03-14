@@ -663,15 +663,16 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   // Simulate that there are 2 queries queued.
   pool_stats->local_stats_.num_queued = 2;
 
+  // Test CanAdmitRequest
   // Query can be admitted from queue...
   bool coordinator_resource_limited = false;
   ASSERT_TRUE(
-      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
+      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
           true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   ASSERT_FALSE(coordinator_resource_limited);
   // ... but same Query cannot be admitted directly.
   ASSERT_FALSE(
-      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
+      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
           false, &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "queue is not empty (size 2); queued queries are executed first");
@@ -680,7 +681,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   // Simulate that there are 7 queries already running.
   pool_stats->agg_num_running_ = 7;
   ASSERT_FALSE(
-      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
+      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
           true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   // Limit of requests is 5 from llama.am.throttling.maximum.placed.reservations.
   EXPECT_STR_CONTAINS(
@@ -689,9 +690,10 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
 
   pool_stats->agg_num_running_ = 3;
   ASSERT_TRUE(
-      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
+      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
           true, &not_admitted_reason, nullptr, coordinator_resource_limited));
 
+  // Test CanAdmitQuota
   // Make sure queue is empty as we are going to pass admit_from_queue=false.
   pool_stats->local_stats_.num_queued = 0;
   // Test with load == limit, should fail

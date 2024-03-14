@@ -1265,16 +1265,12 @@ bool AdmissionController::CanAdmitQuota(const ScheduleState& state,
     string* not_admitted_reason, string* not_admitted_details,
     bool& coordinator_resource_limited) {
   // Can't admit if:
-  //  (a) There are already queued requests (and this is not admitting from the queue).
-  //  (b) The resource pool is already at the maximum number of requests.
-  //  (c) One of the executors in 'schedule' is already at its maximum number of requests
-  //      (when not using the default executor group).
-  //  (d) There are not enough memory resources available for the query.
   //  (e) FIXME asheman quotas
-  const int64_t max_requests = GetMaxRequestsForPool(pool_cfg);
+//  const int64_t max_requests = GetMaxRequestsForPool(pool_cfg);
   PoolStats* pool_stats = GetPoolStats(state);
-  bool default_group =
-      state.executor_group() == ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME;
+//  bool default_group =
+//      state.executor_group() == ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME;
+  /*
   if (!admit_from_queue && pool_stats->local_stats().num_queued > 0) {
     *not_admitted_reason = Substitute(QUEUED_QUEUE_NOT_EMPTY,
         pool_stats->local_stats().num_queued, GetStalenessDetailLocked(" "));
@@ -1299,6 +1295,7 @@ bool AdmissionController::CanAdmitQuota(const ScheduleState& state,
           coordinator_resource_limited, not_admitted_details)) {
     return false;
   }
+   */
   // FIXME asherman can we only reject if admit_from_queue=false?
   // That was my original design.
   // Suppose we enforce

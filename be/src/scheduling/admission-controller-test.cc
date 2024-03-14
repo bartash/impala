@@ -633,7 +633,7 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestCount) {
   ASSERT_FALSE(coordinator_resource_limited);
 }
 
-/// Test CanAdmitRequest in the context of user and group quotas.
+/// Test CanAdmitQuota in the context of user and group quotas.
 TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   // Pass the paths of the configuration files as command line flags.
   FLAGS_fair_scheduler_allocation_path = GetResourceFile("fair-scheduler-test2.xml");
@@ -666,12 +666,12 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   // Query can be admitted from queue...
   bool coordinator_resource_limited = false;
   ASSERT_TRUE(
-      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
           true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   ASSERT_FALSE(coordinator_resource_limited);
   // ... but same Query cannot be admitted directly.
   ASSERT_FALSE(
-      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
           false, &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "queue is not empty (size 2); queued queries are executed first");
@@ -680,7 +680,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   // Simulate that there are 7 queries already running.
   pool_stats->agg_num_running_ = 7;
   ASSERT_FALSE(
-      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
           true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   // Limit of requests is 5 from llama.am.throttling.maximum.placed.reservations.
   EXPECT_STR_CONTAINS(
@@ -689,7 +689,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
 
   pool_stats->agg_num_running_ = 3;
   ASSERT_TRUE(
-      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
           true, &not_admitted_reason, nullptr, coordinator_resource_limited));
 
   // Make sure queue is empty as we are going to pass admit_from_queue=false.
@@ -697,7 +697,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   // Test with load == limit, should fail
   pool_stats->agg_user_loads_.insert(USER_A, 3);
   ASSERT_FALSE(
-      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
           false, &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "current per-user load 3 for user userA is at or above the user limit 3");
@@ -706,25 +706,25 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   // over the wildcard rule.
   pool_stats->agg_user_loads_.insert(USER_A, 2);
   ASSERT_TRUE(
-      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
           false, &not_admitted_reason, nullptr, coordinator_resource_limited));
 
   // Test wildcards with User3
   schedule_state = MakeScheduleState(QUEUE_E, config_e, host_count, 30L * MEGABYTE,
       ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, USER3);
   ASSERT_TRUE(
-      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
           false, &not_admitted_reason, nullptr, coordinator_resource_limited));
   pool_stats->agg_user_loads_.insert(USER3, 3);
   ASSERT_FALSE(
-      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
           false, &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "current per-user load 3 for user user3 is at or above the wildcard limit 1");
 
   pool_stats->agg_user_loads_.clear_key(USER3);
   ASSERT_TRUE(
-      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
           false, &not_admitted_reason, nullptr, coordinator_resource_limited));
 
   // Test group quotas
@@ -742,7 +742,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
 
   pool_stats->agg_user_loads_.insert(USER3, 2);
   ASSERT_FALSE(
-      admission_controller->CanAdmitRequest(*schedule_state, config_e, config_root,
+      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
           false, &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "current per-group load 2 for user user3 in group group1 is at or above the group "

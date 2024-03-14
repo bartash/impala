@@ -1065,6 +1065,11 @@ class AdmissionController {
       const TPoolConfig& root_cfg, bool admit_from_queue, string* not_admitted_reason,
       string* not_admitted_details, bool& coordinator_resource_limited);
 
+  // FIXM asherman add description
+  bool CanAdmitQuota(const ScheduleState& state, const TPoolConfig& pool_cfg,
+      const TPoolConfig& root_cfg, bool admit_from_queue, string* not_admitted_reason,
+      string* not_admitted_details, bool& coordinator_resource_limited);
+
   /// Returns true if the query can be admitted as a trivial query, therefore it can
   /// bypass the admission control immediately.
   bool CanAdmitTrivialRequest(const ScheduleState& state);

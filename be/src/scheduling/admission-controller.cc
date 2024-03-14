@@ -1260,6 +1260,71 @@ bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
   return true;
 }
 
+bool AdmissionController::CanAdmitQuota(const ScheduleState& state,
+    const TPoolConfig& pool_cfg, const TPoolConfig& root_cfg, bool admit_from_queue,
+    string* not_admitted_reason, string* not_admitted_details,
+    bool& coordinator_resource_limited) {
+  // Can't admit if:
+  //  (a) There are already queued requests (and this is not admitting from the queue).
+  //  (b) The resource pool is already at the maximum number of requests.
+  //  (c) One of the executors in 'schedule' is already at its maximum number of requests
+  //      (when not using the default executor group).
+  //  (d) There are not enough memory resources available for the query.
+  //  (e) FIXME asheman quotas
+  const int64_t max_requests = GetMaxRequestsForPool(pool_cfg);
+  PoolStats* pool_stats = GetPoolStats(state);
+  bool default_group =
+      state.executor_group() == ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME;
+  if (!admit_from_queue && pool_stats->local_stats().num_queued > 0) {
+    *not_admitted_reason = Substitute(QUEUED_QUEUE_NOT_EMPTY,
+        pool_stats->local_stats().num_queued, GetStalenessDetailLocked(" "));
+    return false;
+  }
+  if (max_requests >= 0 && pool_stats->agg_num_running() >= max_requests) {
+    // All executor groups are limited by the aggregate number of queries running in the
+    // pool.
+    *not_admitted_reason = Substitute(QUEUED_NUM_RUNNING, pool_stats->agg_num_running(),
+        max_requests, GetStalenessDetailLocked(" "));
+    return false;
+  }
+  if (!default_group
+      && !HasAvailableSlots(
+          state, pool_cfg, not_admitted_reason, coordinator_resource_limited)) {
+    // All non-default executor groups are also limited by the number of running queries
+    // per executor.
+    // TODO(IMPALA-8757): Extend slot based admission to default executor group
+    return false;
+  }
+  if (!HasAvailableMemResources(state, pool_cfg, not_admitted_reason,
+          coordinator_resource_limited, not_admitted_details)) {
+    return false;
+  }
+  // FIXME asherman can we only reject if admit_from_queue=false?
+  // That was my original design.
+  // Suppose we enforce
+  // Check quotas at pool level
+  if (!admit_from_queue) {
+    // Enforce quotas before query is queued.
+    // If you don't enforce at submission time them users can queue queries only to have
+    // them rejected later, which is confusing.
+    // If you enforce at submission time then maybe you don't need ot enforce at dequeue.
+    const string& user =  GetEffectiveUser(state.request().query_ctx.session);
+    int64 user_load = pool_stats->GetUserLoad(user);
+    if (!CheckUserAndGroupPoolQuotas(
+            state, pool_cfg, state.request_pool(), user_load, not_admitted_reason)) {
+      return false;
+    }
+
+    // Check quotas at root level.
+    int64 user_load_across_cluster = root_agg_user_loads_.get(user);
+    if (!CheckUserAndGroupPoolQuotas(
+            state, root_cfg, ROOT_POOL, user_load_across_cluster, not_admitted_reason)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool AdmissionController::RejectForCluster(const string& pool_name,
     const TPoolConfig& pool_cfg, bool admit_from_queue, string* rejection_reason) {
   DCHECK(rejection_reason != nullptr && rejection_reason->empty());

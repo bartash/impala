@@ -1221,6 +1221,10 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     query2 = self.execute_aync_and_wait_for_running(impalad2, query, USER_A, pool=POOL)
     query3 = self.execute_aync_and_wait_for_running(impalad2, query, USER_A, pool=POOL)
 
+    # A 4th query should be rejected
+    client = impalad1.service.create_beeswax_client()
+    client.set_configuration({'request_pool': POOL})
+    result = client.execute(query, user=USER_A)
 
 
     query1.client.close_query(query1.handle)

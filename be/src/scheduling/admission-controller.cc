@@ -1266,36 +1266,8 @@ bool AdmissionController::CanAdmitQuota(const ScheduleState& state,
     bool& coordinator_resource_limited) {
   // Can't admit if:
   //  (e) FIXME asheman quotas
-//  const int64_t max_requests = GetMaxRequestsForPool(pool_cfg);
   PoolStats* pool_stats = GetPoolStats(state);
-//  bool default_group =
-//      state.executor_group() == ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME;
-  /*
-  if (!admit_from_queue && pool_stats->local_stats().num_queued > 0) {
-    *not_admitted_reason = Substitute(QUEUED_QUEUE_NOT_EMPTY,
-        pool_stats->local_stats().num_queued, GetStalenessDetailLocked(" "));
-    return false;
-  }
-  if (max_requests >= 0 && pool_stats->agg_num_running() >= max_requests) {
-    // All executor groups are limited by the aggregate number of queries running in the
-    // pool.
-    *not_admitted_reason = Substitute(QUEUED_NUM_RUNNING, pool_stats->agg_num_running(),
-        max_requests, GetStalenessDetailLocked(" "));
-    return false;
-  }
-  if (!default_group
-      && !HasAvailableSlots(
-          state, pool_cfg, not_admitted_reason, coordinator_resource_limited)) {
-    // All non-default executor groups are also limited by the number of running queries
-    // per executor.
-    // TODO(IMPALA-8757): Extend slot based admission to default executor group
-    return false;
-  }
-  if (!HasAvailableMemResources(state, pool_cfg, not_admitted_reason,
-          coordinator_resource_limited, not_admitted_details)) {
-    return false;
-  }
-   */
+
   // FIXME asherman can we only reject if admit_from_queue=false?
   // That was my original design.
   // Suppose we enforce

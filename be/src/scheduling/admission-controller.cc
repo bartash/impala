@@ -1105,7 +1105,7 @@ bool AdmissionController::HasAvailableSlots(const ScheduleState& state,
 bool AdmissionController::CheckUserAndGroupPoolQuotas(const ScheduleState& state,
     const TPoolConfig& pool_cfg, const string& pool_level, int64 user_load,
     string* quota_exceeded_reason) {
-  const string& user = state.request().query_ctx.session.delegated_user;
+  const string& user =  GetEffectiveUser(state.request().query_ctx.session);
   bool key_matched = false;
   if (!CheckUserQuota(pool_cfg, pool_level, state, user_load, user, quota_exceeded_reason,
           false, &key_matched)) {
@@ -1243,7 +1243,7 @@ bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
     // If you don't enforce at submission time them users can queue queries only to have
     // them rejected later, which is confusing.
     // If you enforce at submission time then maybe you don't need ot enforce at dequeue.
-    const string& user = state.request().query_ctx.session.delegated_user;
+    const string& user =  GetEffectiveUser(state.request().query_ctx.session);
     int64 user_load = pool_stats->GetUserLoad(user);
     if (!CheckUserAndGroupPoolQuotas(
             state, pool_cfg, state.request_pool(), user_load, not_admitted_reason)) {

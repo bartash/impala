@@ -1248,6 +1248,8 @@ bool AdmissionController::CanAdmitQuota(const ScheduleState& state,
   // That was my original design.
   // Suppose we enforce
   // Check quotas at pool level
+
+  // FIXME asherman remove admit_from_queue
   if (!admit_from_queue) {
     // Enforce quotas before query is queued.
     // If you don't enforce at submission time them users can queue queries only to have

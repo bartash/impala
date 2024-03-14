@@ -411,7 +411,7 @@ class AdmissionControllerTest : public testing::Test {
         30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, user);
 
     bool coordinator_resource_limited = false;
-    bool can_admit = admission_controller->CanAdmitRequest(*schedule_state, pool_to_submit,
+    bool can_admit = admission_controller->CanAdmitQuota(*schedule_state, pool_to_submit,
         config_root, false, not_admitted_reason, nullptr, coordinator_resource_limited);
     EXPECT_FALSE(coordinator_resource_limited);
     return can_admit;

@@ -1198,16 +1198,45 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     query1.client.close_query(query1.handle)
     query2.client.close_query(query2.handle)
 
+  @pytest.mark.execute_serially
+  @CustomClusterTestSuite.with_args(
+    impalad_args=impalad_admission_ctrl_config_args(
+      fs_allocation_file="fair-scheduler-test2.xml",
+      llama_site_file="llama-site-test2.xml"),
+    statestored_args=_STATESTORED_ARGS)
+  def test_user_loads_rules(self, vector):
+    """Test that rules for user loads are followed for new queries.
+    Note that some detailed checking of rule semantics is done at the unit test level in
+    admission-controller-test.cc"""
+
+    USER_A = 'userA'
+    POOL = 'root.queueE'
+
+    query = "select count(*) from functional.alltypes where int_col = sleep(20000)"
+
+    # The per-pool limit for userA is 3 in root.queueE.
+    impalad1 = self.cluster.impalads[0]
+    impalad2 = self.cluster.impalads[1]
+    query1 = self.execute_aync_and_wait_for_running(impalad1, query, USER_A, pool=POOL)
+    query2 = self.execute_aync_and_wait_for_running(impalad2, query, USER_A, pool=POOL)
+    query3 = self.execute_aync_and_wait_for_running(impalad2, query, USER_A, pool=POOL)
+
+
+
+    query1.client.close_query(query1.handle)
+    query2.client.close_query(query2.handle)
+    query3.client.close_query(query3.handle)
+
   class ClientAndHandle:
     """Holder class for a client and query handle"""
     def __init__(self, client, handle):
       self.client = client
       self.handle = handle
 
-  def execute_aync_and_wait_for_running(self, impalad, query, user):
+  def execute_aync_and_wait_for_running(self, impalad, query, user, pool='root.queueB'):
     # Use beeswax client as it allows specifying the user that runs the query.
     client = impalad.service.create_beeswax_client()
-    client.set_configuration({'request_pool': 'root.queueB'})
+    client.set_configuration({'request_pool': pool})
     handle = client.execute_async(query, user=user)
     timeout_s = 10
     # Make sure the first query has been admitted.

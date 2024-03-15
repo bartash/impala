@@ -186,8 +186,8 @@ class TestSessionExpiration(CustomClusterTestSuite):
       # Trying to open a third session should fail.
       impalad.service.create_hs2_client()
     except Exception as e:
-      assert re.match(r"Number of sessions for user .* exceeds coordinator limit 2", str(
-        e)), "Unexpected exception: " + str(e)
+      assert re.match(r"Number of sessions for user \S+ exceeds coordinator limit 2",
+                      str(e)), "Unexpected exception: " + str(e)
 
     # Test webui for hs2 sessions.
     res = impalad.service.get_debug_webpage_json("/sessions")

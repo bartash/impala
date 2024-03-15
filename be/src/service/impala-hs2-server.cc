@@ -491,7 +491,7 @@ Status ImpalaServer::IncrementAndCheckSessionCount(string& user_name) {
     // Only check user limit if there is already a session for the user.
     if (per_user_session_count_map_.count(user_name)) {
       int64 load = per_user_session_count_map_[user_name];
-      if (load + 1 > FLAGS_max_hs2_sessions_per_user) {
+      if (load >= FLAGS_max_hs2_sessions_per_user) {
         return Status::Expected("Number of sessions for user exceeds coordinator limit");
       }
     }

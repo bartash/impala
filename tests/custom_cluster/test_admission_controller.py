@@ -1195,8 +1195,8 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     assert values1[1] == [USER_C]
     assert values2[1] == [USER_ROOT]
 
-    query1.client.close_query(query1.handle)
-    query2.client.close_query(query2.handle)
+    query1.close()
+    query2.close()
 
   @pytest.mark.execute_serially
   @CustomClusterTestSuite.with_args(
@@ -1218,8 +1218,8 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     impalad1 = self.cluster.impalads[0]
     impalad2 = self.cluster.impalads[1]
     query1 = self.execute_aync_and_wait_for_running(impalad1, query, USER_A, pool=POOL)
-    query2 = self.execute_aync_and_wait_for_running(impalad1, query, USER_A, pool=POOL)
-    query3 = self.execute_aync_and_wait_for_running(impalad1, query, USER_A, pool=POOL)
+    query2 = self.execute_aync_and_wait_for_running(impalad2, query, USER_A, pool=POOL)
+    query3 = self.execute_aync_and_wait_for_running(impalad2, query, USER_A, pool=POOL)
     # FIXME split queries across impalads
 
     # A 4th query should be rejected
@@ -1233,15 +1233,19 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
               "userA is at or above the user limit 3 in pool root.queueE") in str(e)
 
 
-    query1.client.close_query(query1.handle)
-    query2.client.close_query(query2.handle)
-    query3.client.close_query(query3.handle)
+    query1.close()
+    query2.close()
+    query3.close()
 
   class ClientAndHandle:
     """Holder class for a client and query handle"""
     def __init__(self, client, handle):
       self.client = client
       self.handle = handle
+
+    def close(self):
+      """close the query"""
+      self.client.close_query(self.handle)
 
   def execute_aync_and_wait_for_running(self, impalad, query, user, pool='root.queueB'):
     # Use beeswax client as it allows specifying the user that runs the query.

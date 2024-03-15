@@ -1220,7 +1220,9 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     query1 = self.execute_aync_and_wait_for_running(impalad1, query, USER_A, pool=POOL)
     query2 = self.execute_aync_and_wait_for_running(impalad2, query, USER_A, pool=POOL)
     query3 = self.execute_aync_and_wait_for_running(impalad2, query, USER_A, pool=POOL)
-    # FIXME split queries across impalads
+
+    # Let state sync across impalads.
+    sleep(STATESTORE_RPC_FREQUENCY_MS / 1000.0)
 
     # A 4th query should be rejected
     client = impalad1.service.create_beeswax_client()
@@ -1231,7 +1233,6 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     except Exception as e:
       assert ("Rejected query from pool root.queueE: current per-user load 3 for user "
               "userA is at or above the user limit 3 in pool root.queueE") in str(e)
-
 
     query1.close()
     query2.close()

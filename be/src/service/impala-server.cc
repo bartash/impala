@@ -2689,6 +2689,8 @@ void ImpalaServer::UnregisterSessionTimeout(int32_t session_timeout) {
             UnregisterSessionTimeout(FLAGS_disconnected_session_timeout);
             query_cancel_status =
                 Status::Expected(TErrorCode::DISCONNECTED_SESSION_CLOSED);
+            // FIXME asherman now we have lock ordering
+            DecrementSessionCount(session_state->connected_user);
           } else {
             // Check if the session should be expired.
             if (session_state->expired || session_state->session_timeout == 0) {
@@ -2712,7 +2714,6 @@ void ImpalaServer::UnregisterSessionTimeout(int32_t session_timeout) {
           inflight_queries.insert(session_state->inflight_queries.begin(),
               session_state->inflight_queries.end());
         }
-        DecrementSessionCount(session_state->connected_user);
         // Unregister all open queries from this session.
         for (const TUniqueId& query_id : inflight_queries) {
           cancellation_thread_pool_->Offer(

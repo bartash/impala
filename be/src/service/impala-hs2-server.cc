@@ -20,23 +20,18 @@
 #include "service/impala-server.inline.h"
 
 #include <algorithm>
-#include <type_traits>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/bind.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/unordered_set.hpp>
-#include <jni.h>
 #include <gperftools/heap-profiler.h>
 #include <gperftools/malloc_extension.h>
 #include <gtest/gtest.h>
 #include <gutil/strings/substitute.h>
-#include <thrift/protocol/TDebugProtocol.h>
 
 #include "common/logging.h"
 #include "common/version.h"
-#include "rpc/thrift-util.h"
 #include "runtime/coordinator.h"
 #include "runtime/exec-env.h"
 #include "runtime/raw-value.h"
@@ -370,7 +365,7 @@ void ImpalaServer::OpenSession(TOpenSessionResp& return_val,
         // Note: The 'impala.doas.user' configuration overrides the user specified
         // in the 'doAs' request parameter, which can be specified for hs2-http transport.
         state->do_as_user = v.second;
-        status = AuthorizeProxyUser(state->connected_user, state->do_as_user);
+        Status status = AuthorizeProxyUser(state->connected_user, state->do_as_user);
         HS2_RETURN_IF_ERROR(return_val, status, SQLSTATE_GENERAL_ERROR);
       } else if (iequals(v.first, "use:database")) {
         state->database = v.second;
@@ -382,7 +377,7 @@ void ImpalaServer::OpenSession(TOpenSessionResp& return_val,
         }
         // Normal configuration key. Use it to set session default query options.
         // Ignore failure (failures will be logged in SetQueryOption()).
-        status = SetQueryOption(key, value, &state->set_query_options,
+        Status status = SetQueryOption(key, value, &state->set_query_options,
             &state->set_query_options_mask);
         if (status.ok() && iequals(key, "idle_session_timeout")) {
           state->session_timeout = state->set_query_options.idle_session_timeout;

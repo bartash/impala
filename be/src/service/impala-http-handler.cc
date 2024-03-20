@@ -20,7 +20,6 @@
 #include <algorithm>
 #include <mutex>
 #include <sstream>
-#include <boost/lexical_cast.hpp>
 #include <boost/unordered_set.hpp>
 #include <rapidjson/prettywriter.h>
 #include <rapidjson/stringbuffer.h>
@@ -45,7 +44,6 @@
 #include "service/impala-server.h"
 #include "service/query-state-record.h"
 #include "thrift/protocol/TDebugProtocol.h"
-#include "util/coding-util.h"
 #include "util/debug-util.h"
 #include "util/logging-support.h"
 #include "util/pretty-printer.h"
@@ -782,16 +780,18 @@ bool SessionCountComparer(const Value& a, const Value& b) {
 }
 
 void ImpalaHttpHandler::FillUsersInfo(Document* document) {
-  lock_guard<mutex> l(server_->per_user_session_count_lock_);
   Value users(kArrayType);
-  for (auto const& it : server_->per_user_session_count_map_) {
-    const string& name = it.first;
-    const int64& session_count = it.second;
-    Value users_json(kObjectType);
-    Value user_name(name.c_str(), document->GetAllocator());
-    users_json.AddMember("user", user_name, document->GetAllocator());
-    users_json.AddMember("session_count", session_count, document->GetAllocator());
-    users.PushBack(users_json, document->GetAllocator());
+  {
+    lock_guard<mutex> l(server_->per_user_session_count_lock_);
+    for (auto const& it : server_->per_user_session_count_map_) {
+      const string& name = it.first;
+      const int64& session_count = it.second;
+      Value users_json(kObjectType);
+      Value user_name(name.c_str(), document->GetAllocator());
+      users_json.AddMember("user", user_name, document->GetAllocator());
+      users_json.AddMember("session_count", session_count, document->GetAllocator());
+      users.PushBack(users_json, document->GetAllocator());
+    }
   }
   sort(users.Begin(), users.End(), SessionCountComparer);
   document->AddMember("users", users, document->GetAllocator());
@@ -958,7 +958,7 @@ void ImpalaHttpHandler::CatalogHandler(const Webserver::WebRequest& req,
     database.AddMember("name", str, document->GetAllocator());
 
     TGetTablesResult get_table_results;
-    Status status = server_->exec_env_->frontend()->GetTableNames(
+    status = server_->exec_env_->frontend()->GetTableNames(
         db.db_name, NULL, NULL, &get_table_results);
     if (!status.ok()) {
       Value error(status.GetDetail().c_str(), document->GetAllocator());

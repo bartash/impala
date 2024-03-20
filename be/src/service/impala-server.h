@@ -688,8 +688,6 @@ class ImpalaServer : public ImpalaServiceIf,
 
   /// Helper function that decrements the value associated with the given key.
   /// Removes the entry from the map if the value becomes zero.
-
-  // FIXME rename better?
   static void DecrementCount(std::map<std::string, int64>& loads, const std::string& key);
 
  private:

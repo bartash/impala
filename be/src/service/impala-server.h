@@ -1404,7 +1404,7 @@ class ImpalaServer : public ImpalaServiceIf,
   /// used by the user would be above that value, then an error status is returned.
   Status IncrementAndCheckSessionCount(const string& user_name);
   /// Decrement the count of HS2 sessions used by the user.
-  void DecrementSessionCount(string& user_name);
+  void DecrementSessionCount(const string& user_name);
 
   /// Map from a connection ID to the associated list of sessions so that all can be
   /// closed when the connection ends. HS2 allows for multiplexing several sessions across

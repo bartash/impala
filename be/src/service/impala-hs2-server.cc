@@ -485,7 +485,7 @@ void ImpalaServer::DecrementSessionCount(string& user_name) {
   }
 }
 
-Status ImpalaServer::IncrementAndCheckSessionCount(string& user_name) {
+Status ImpalaServer::IncrementAndCheckSessionCount(const string& user_name) {
   if (FLAGS_max_hs2_sessions_per_user > 0) {
     lock_guard<mutex> l(per_user_session_count_lock_);
     // Only check user limit if there is already a session for the user.

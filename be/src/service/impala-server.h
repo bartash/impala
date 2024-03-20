@@ -1402,7 +1402,7 @@ class ImpalaServer : public ImpalaServiceIf,
   /// Increment the count of HS2 sessions used by the user.
   /// If max_hs2_sessions_per_user is greater than zero, and the count of HS2 sessions
   /// used by the user would be above that value, then an error status is returned.
-  Status IncrementAndCheckSessionCount(string& user_name);
+  Status IncrementAndCheckSessionCount(const string& user_name);
   /// Decrement the count of HS2 sessions used by the user.
   void DecrementSessionCount(string& user_name);
 

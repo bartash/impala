@@ -27,6 +27,7 @@ from time import sleep
 from tests.common.custom_cluster_test_suite import CustomClusterTestSuite
 from tests.common.impala_cluster import DEFAULT_HS2_PORT
 
+
 class TestSessionExpiration(CustomClusterTestSuite):
   """Tests query expiration logic"""
 
@@ -73,7 +74,6 @@ class TestSessionExpiration(CustomClusterTestSuite):
     sleep(5)
     assert num_expired + 1 == impalad.service.get_metric_value(
       "impala-server.num-sessions-expired")
-
 
   @pytest.mark.execute_serially
   @CustomClusterTestSuite.with_args("--idle_session_timeout=5 "
@@ -201,5 +201,3 @@ class TestSessionExpiration(CustomClusterTestSuite):
     client2.close()
     res = impalad.service.get_debug_webpage_json("/sessions")
     assert res['num_sessions'] == 0
-
-

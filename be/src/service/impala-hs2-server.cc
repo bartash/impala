@@ -356,9 +356,6 @@ void ImpalaServer::OpenSession(TOpenSessionResp& return_val,
     state->connected_user = FLAGS_anonymous_user_name;
   }
 
-  Status status = IncrementAndCheckSessionCount(state->connected_user);
-  HS2_RETURN_IF_ERROR(return_val, status, SQLSTATE_GENERAL_ERROR);
-
   // Process the supplied configuration map.
   state->database = "default";
   state->server_default_query_options = &default_query_options_;
@@ -425,6 +422,11 @@ void ImpalaServer::OpenSession(TOpenSessionResp& return_val,
       HS2_RETURN_ERROR(return_val, "User is not authorized.", SQLSTATE_GENERAL_ERROR);
     }
   }
+
+  Status status = IncrementAndCheckSessionCount(state->connected_user);
+  HS2_RETURN_IF_ERROR(return_val, status, SQLSTATE_GENERAL_ERROR);
+
+  // At this point all checks are complete, store session status information.
 
   RegisterSessionTimeout(state->session_timeout);
   TQueryOptionsToMap(state->QueryOptions(), &return_val.configuration);

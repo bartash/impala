@@ -463,6 +463,9 @@ void ImpalaServer::DecrementCount(
   // Check if key is present as dereferencing the map will insert it.
   // FIXME C++20: use contains().
   if (!loads.count(key)) {
+    string msg = Substitute("Missing key $0 when decrementing count", key);
+    LOG(WARNING) << msg;
+    DCHECK(false) << msg;
     return;
   }
   int64& current_value = loads[key];
@@ -473,6 +476,8 @@ void ImpalaServer::DecrementCount(
   }
   if (current_value < 1) {
     // Don't allow decrement below zero.
+    string msg = Substitute("Attempt to decrement below zero with key $0 ", key);
+    LOG(WARNING) << msg;
     return;
   }
   loads[key]--;

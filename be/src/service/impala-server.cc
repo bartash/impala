@@ -262,9 +262,9 @@ DEFINE_int32(disconnected_session_timeout, 15 * 60, "The time, in seconds, that 
     "hiveserver2 session will be maintained after the last connection that it has been "
     "used over is disconnected.");
 DEFINE_int32(max_hs2_sessions_per_user, -1, "The maximum allowed number of HiveServer2 "
-    "sessions that can be opened by any single connected user. If set to -1 or 0 then "
-    "this check is not performed. If set to a positive value then the per-user session "
-    "count is viewable in the webui under /sessions.");
+    "sessions that can be opened by any single connected user on a coordinator. "
+    "If set to -1 or 0 then this check is not performed. If set to a positive value "
+    "then the per-user session count is viewable in the webui under /sessions.");
 DEFINE_int32(idle_client_poll_period_s, 30, "The poll period, in seconds, after "
     "no activity from an Impala client which an Impala service thread (beeswax and HS2) "
     "wakes up to check if the connection should be closed. If --idle_session_timeout is "

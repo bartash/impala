@@ -784,7 +784,7 @@ class AdmissionController {
 
     // Append a string about the memory consumption part of a TPoolStats object to 'ss'.
     static void AppendStatsForConsumedMemory(
-        std::stringstream& ss, const TPoolStats& stats);
+      std::stringstream& ss, const TPoolStats& stats);
 
     FRIEND_TEST(AdmissionControllerTest, Simple);
     FRIEND_TEST(AdmissionControllerTest, PoolStats);

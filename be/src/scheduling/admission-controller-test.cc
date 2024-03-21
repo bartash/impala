@@ -29,6 +29,7 @@
 #include "service/frontend.h"
 #include "service/impala-server.h"
 #include "testutil/gtest-util.h"
+#include "testutil/death-test-util.h"
 #include "util/collection-metrics.h"
 #include "util/metrics.h"
 #include <regex>
@@ -1562,7 +1563,7 @@ TEST_F(AdmissionControllerTest, AggregatedUserLoads) {
   ASSERT_EQ(0, user_loads.get(USER1));
   ASSERT_EQ(0, user_loads.size());
   // Show we cannot go below zero.
-  user_loads.decrement(USER1);
+  IMPALA_ASSERT_DEBUG_DEATH(user_loads.decrement(USER1),"negative decrement allowed");
   ASSERT_EQ(0, user_loads.get(USER1));
   ASSERT_EQ(0, user_loads.size());
 

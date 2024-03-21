@@ -507,6 +507,63 @@ class AdmissionController {
   /// executor groups).
   IntCounter* total_dequeue_failed_coordinator_limited_ = nullptr;
 
+
+  /// A Holder for per-user loads.
+  /// Contains a mapping of user names to number of queries running.
+  /// This matches the generated type of user_loads in TPoolStats.
+  typedef std::map<std::string, int64> UserLoads;
+
+  /// Helper function on UserLoads that increments the value associated with the given
+  /// key by 1.
+  static void DecrementLoad(UserLoads& loads, const std::string& key);
+
+  static std::string DebugString(const UserLoads& loads);
+
+  /// A Holder for aggregated per-user loads.
+  /// This is basically a wrapper around a UserLoads object.
+  class AggregatedUserLoads {
+   public:
+    AggregatedUserLoads() = default;
+
+    /// Inserts a new key-value pair into the map.
+    void insert(const std::string& key, int64 value);
+
+    /// Returns the integer value corresponding to the given key, or 0 if the key does not exist.
+    int64 get(const std::string& key);
+
+    /// Increments the value associated with the given key by 1.
+    void increment(const std::string& key);
+
+    /// Decrements the value associated with the given key by 1.
+    void decrement(const std::string& key);
+
+    /// Return the number of keys. For testing only.
+    int64 size();
+
+    /// Clear all values.
+    void clear();
+
+    /// Clear the value for a key.
+    void clear_key(const std::string& key);
+
+    /// Merge in loads from a map.
+    void add_loads(const UserLoads& loads);
+
+    /// Export keys to a metrics object.
+    void export_users(SetMetric<std::string>* metrics);
+
+    /// Print the keys and values from loads_ into a string.
+    [[nodiscard]] std::string DebugString() const;
+
+    [[nodiscard]] const UserLoads& get_user_loads() const { return loads_; }
+
+   private:
+    UserLoads loads_;
+
+    FRIEND_TEST(AdmissionControllerTest, AggregatedUserLoads);
+    friend class AdmissionControllerTest;
+  };
+
   /// Contains all per-pool statistics and metrics. Accessed via GetPoolStats().
   class PoolStats {
    public:
@@ -727,7 +784,7 @@ class AdmissionController {
 
     // Append a string about the memory consumption part of a TPoolStats object to 'ss'.
     static void AppendStatsForConsumedMemory(
-      std::stringstream& ss, const TPoolStats& stats);
+        std::stringstream& ss, const TPoolStats& stats);
 
     FRIEND_TEST(AdmissionControllerTest, Simple);
     FRIEND_TEST(AdmissionControllerTest, PoolStats);

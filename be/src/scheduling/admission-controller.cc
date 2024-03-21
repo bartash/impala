@@ -56,7 +56,7 @@ DEFINE_bool(balance_queries_across_executor_groups, false,
     "admission is attempted to groups in alphanumerically sorted order.");
 
 DEFINE_int64(queue_wait_timeout_ms, 60 * 1000, "Maximum amount of time (in "
-    "milliseconds) that a request will wait to be admitted before timing out.");
+                                               "milliseconds) that a request will wait to be admitted before timing out.");
 
 // The stale topic warning threshold is made configurable to allow suppressing the
 // error if it turns out to be noisy on some deployments or allow lowering the
@@ -71,13 +71,13 @@ DEFINE_int64_hidden(admission_control_stale_topic_threshold_ms, 5 * 1000,
     "or topic updates are seriously delayed.");
 
 DEFINE_bool(clamp_query_mem_limit_backend_mem_limit, true, "Caps query memory limit to "
-    "memory limit for admission on the backends. The coordinator memory limit is capped "
-    "to the coordinator backend's memory limit, while executor memory limit is capped to "
-    "the effective or minimum memory limit for admission on executor backends. If the "
-    "flag is not set, a query requesting more than backend's memory limit for admission "
-    "gets rejected during admission. However, if this flag is set, such a query gets "
-    "admitted with backend's memory limit and could succeed if the memory request was "
-    "over estimated and could fail if query really needs more memory." );
+                                                           "memory limit for admission on the backends. The coordinator memory limit is capped "
+                                                           "to the coordinator backend's memory limit, while executor memory limit is capped to "
+                                                           "the effective or minimum memory limit for admission on executor backends. If the "
+                                                           "flag is not set, a query requesting more than backend's memory limit for admission "
+                                                           "gets rejected during admission. However, if this flag is set, such a query gets "
+                                                           "admitted with backend's memory limit and could succeed if the memory request was "
+                                                           "over estimated and could fail if query really needs more memory." );
 
 DECLARE_bool(is_coordinator);
 DECLARE_bool(is_executor);
@@ -111,65 +111,65 @@ const string TOPIC_KEY_STAT_PREFIX = "STAT:";
 const char POOL_GROUP_DELIMITER = '-';
 
 const string EXEC_GROUP_QUERY_LOAD_KEY_FORMAT =
-  "admission-controller.executor-group.num-queries-executing.$0";
+    "admission-controller.executor-group.num-queries-executing.$0";
 
 const string TOTAL_DEQUEUE_FAILED_COORDINATOR_LIMITED =
-  "admission-controller.total-dequeue-failed-coordinator-limited";
+    "admission-controller.total-dequeue-failed-coordinator-limited";
 
 // Define metric key format strings for metrics in PoolMetrics
 // '$0' is replaced with the pool name by strings::Substitute
 const string TOTAL_ADMITTED_METRIC_KEY_FORMAT =
-  "admission-controller.total-admitted.$0";
+    "admission-controller.total-admitted.$0";
 const string TOTAL_QUEUED_METRIC_KEY_FORMAT =
-  "admission-controller.total-queued.$0";
+    "admission-controller.total-queued.$0";
 const string TOTAL_DEQUEUED_METRIC_KEY_FORMAT =
-  "admission-controller.total-dequeued.$0";
+    "admission-controller.total-dequeued.$0";
 const string TOTAL_REJECTED_METRIC_KEY_FORMAT =
-  "admission-controller.total-rejected.$0";
+    "admission-controller.total-rejected.$0";
 const string TOTAL_TIMED_OUT_METRIC_KEY_FORMAT =
-  "admission-controller.total-timed-out.$0";
+    "admission-controller.total-timed-out.$0";
 const string TOTAL_RELEASED_METRIC_KEY_FORMAT =
-  "admission-controller.total-released.$0";
+    "admission-controller.total-released.$0";
 const string TIME_IN_QUEUE_METRIC_KEY_FORMAT =
-  "admission-controller.time-in-queue-ms.$0";
+    "admission-controller.time-in-queue-ms.$0";
 const string AGG_NUM_RUNNING_METRIC_KEY_FORMAT =
-  "admission-controller.agg-num-running.$0";
+    "admission-controller.agg-num-running.$0";
 const string AGG_NUM_QUEUED_METRIC_KEY_FORMAT =
-  "admission-controller.agg-num-queued.$0";
+    "admission-controller.agg-num-queued.$0";
 const string AGG_MEM_RESERVED_METRIC_KEY_FORMAT =
-  "admission-controller.agg-mem-reserved.$0";
+    "admission-controller.agg-mem-reserved.$0";
 const string AGG_CURRENT_USERS_METRIC_KEY_FORMAT =
     "admission-controller.agg-current-users.$0";
 const string LOCAL_MEM_ADMITTED_METRIC_KEY_FORMAT =
-  "admission-controller.local-mem-admitted.$0";
+    "admission-controller.local-mem-admitted.$0";
 const string LOCAL_NUM_ADMITTED_RUNNING_METRIC_KEY_FORMAT =
-  "admission-controller.local-num-admitted-running.$0";
+    "admission-controller.local-num-admitted-running.$0";
 const string LOCAL_NUM_QUEUED_METRIC_KEY_FORMAT =
-  "admission-controller.local-num-queued.$0";
+    "admission-controller.local-num-queued.$0";
 const string LOCAL_BACKEND_MEM_USAGE_METRIC_KEY_FORMAT =
-  "admission-controller.local-backend-mem-usage.$0";
+    "admission-controller.local-backend-mem-usage.$0";
 const string LOCAL_BACKEND_MEM_RESERVED_METRIC_KEY_FORMAT =
-  "admission-controller.local-backend-mem-reserved.$0";
+    "admission-controller.local-backend-mem-reserved.$0";
 const string LOCAL_CURRENT_USERS_METRIC_KEY_FORMAT =
     "admission-controller.local-current-users.$0";
 const string POOL_MAX_MEM_RESOURCES_METRIC_KEY_FORMAT =
-  "admission-controller.pool-max-mem-resources.$0";
+    "admission-controller.pool-max-mem-resources.$0";
 const string POOL_MAX_REQUESTS_METRIC_KEY_FORMAT =
-  "admission-controller.pool-max-requests.$0";
+    "admission-controller.pool-max-requests.$0";
 const string POOL_MAX_QUEUED_METRIC_KEY_FORMAT =
-  "admission-controller.pool-max-queued.$0";
+    "admission-controller.pool-max-queued.$0";
 const string POOL_QUEUE_TIMEOUT_METRIC_KEY_FORMAT =
-  "admission-controller.pool-queue-timeout.$0";
+    "admission-controller.pool-queue-timeout.$0";
 const string POOL_MAX_QUERY_MEM_LIMIT_METRIC_KEY_FORMAT =
-  "admission-controller.pool-max-query-mem-limit.$0";
+    "admission-controller.pool-max-query-mem-limit.$0";
 const string POOL_MIN_QUERY_MEM_LIMIT_METRIC_KEY_FORMAT =
-  "admission-controller.pool-min-query-mem-limit.$0";
+    "admission-controller.pool-min-query-mem-limit.$0";
 const string POOL_CLAMP_MEM_LIMIT_QUERY_OPTION_METRIC_KEY_FORMAT =
-  "admission-controller.pool-clamp-mem-limit-query-option.$0";
+    "admission-controller.pool-clamp-mem-limit-query-option.$0";
 const string POOL_MAX_QUERY_CPU_CORE_PER_NODE_LIMIT_METRIC_KEY_FORMAT =
-  "admission-controller.pool-max-query-cpu-core-per-node-limit.$0";
+    "admission-controller.pool-max-query-cpu-core-per-node-limit.$0";
 const string POOL_MAX_QUERY_CPU_CORE_COORDINATOR_LIMIT_METRIC_KEY_FORMAT =
-  "admission-controller.pool-max-query-cpu-core-coordinator-limit.$0";
+    "admission-controller.pool-max-query-cpu-core-coordinator-limit.$0";
 
 // Profile info strings
 const string AdmissionController::PROFILE_INFO_KEY_ADMISSION_RESULT = "Admission result";
@@ -262,14 +262,14 @@ const string QUEUED_NUM_RUNNING =
     "number of running queries $0 is at or over limit $1.$2";
 // $0 = queue size, $1 = staleness detail
 const string QUEUED_QUEUE_NOT_EMPTY = "queue is not empty (size $0); queued queries are "
-    "executed first.$1";
+                                      "executed first.$1";
 // $0 = pool name, $1 = pool max memory, $2 = pool mem needed, $3 = pool mem available,
 // $4 = staleness detail
 const string POOL_MEM_NOT_AVAILABLE = "Not enough aggregate memory available in pool $0 "
-    "with max mem resources $1. Needed $2 but only $3 was available.$4";
+                                      "with max mem resources $1. Needed $2 but only $3 was available.$4";
 // $0 = host name, $1 = host mem needed, $3 = host mem available, $4 = staleness detail
 const string HOST_MEM_NOT_AVAILABLE = "Not enough memory available on host $0. "
-    "Needed $1 but only $2 out of $3 was available.$4";
+                                      "Needed $1 but only $2 out of $3 was available.$4";
 
 // $0 = host name, $1 = num admitted, $2 = max requests
 const string HOST_SLOT_NOT_AVAILABLE = "Not enough admission control slots available on "
@@ -511,7 +511,7 @@ string AdmissionController::GetLogStringForTopNQueriesInPool(
   const TPoolStats& local = pool_stats->local_stats();
   for (auto& query : local.heavy_memory_queries) {
     listOfTopNs.emplace_back(
-      Item(query.memory_consumed, host_id_, query.queryId, nullptr));
+        Item(query.memory_consumed, host_id_, query.queryId, nullptr));
   }
 
   // Collect for all remote stats
@@ -708,8 +708,8 @@ Status AdmissionController::Init() {
   RETURN_IF_ERROR(Thread::Create("scheduling", "admission-thread",
       &AdmissionController::DequeueLoop, this, &dequeue_thread_));
   auto cb = [this](
-      const StatestoreSubscriber::TopicDeltaMap& state,
-      vector<TTopicDelta>* topic_updates) { UpdatePoolStats(state, topic_updates); };
+                const StatestoreSubscriber::TopicDeltaMap& state,
+                vector<TTopicDelta>* topic_updates) { UpdatePoolStats(state, topic_updates); };
   // The executor only needs to read the entry with the key prefix "POOL:" from the topic.
   // This can effectively reduce the network load of the statestore.
   string filter_prefix =
@@ -738,6 +738,14 @@ void AdmissionController::PoolStats::AdmitQueryAndMemory(
 
   metrics_.total_admitted->Increment(1L);
   if (is_trivial) ++local_trivial_running_;
+
+  if (!was_queued) {
+    // if it was queued we already adjusted user loads then, so we don't do it here.
+    agg_user_loads_.increment(user);
+    metrics_.agg_current_users->Add(user);
+    DecrementLoad(local_stats_.user_loads, user);
+    metrics_.local_current_users->Add(user);
+  }
 }
 
 void AdmissionController::PoolStats::ReleaseQuery(
@@ -755,6 +763,15 @@ void AdmissionController::PoolStats::ReleaseQuery(
   if (is_trivial) {
     --local_trivial_running_;
     DCHECK_GE(local_trivial_running_, 0);
+  }
+
+  agg_user_loads_.decrement(user);
+  if (agg_user_loads_.get(user) == 0) {
+    metrics_.agg_current_users->Remove(user);
+  }
+  ImpalaServer::DecrementLoad(local_stats_.user_loads, user);
+  if (local_stats_.user_loads.count(user) == 0) {
+    metrics_.local_current_users->Remove(user);
   }
 
   // Update the 'peak_mem_histogram' based on the given peak memory consumption of the
@@ -784,6 +801,11 @@ void AdmissionController::PoolStats::Queue(const std::string& user) {
   metrics_.local_num_queued->Increment(1L);
 
   metrics_.total_queued->Increment(1L);
+
+  DecrementLoad(local_stats_.user_loads, user);
+  metrics_.local_current_users->Add(user);
+  agg_user_loads_.increment(user);
+  metrics_.agg_current_users->Add(user);
 }
 
 void AdmissionController::PoolStats::Dequeue(bool timed_out) {
@@ -800,6 +822,81 @@ void AdmissionController::PoolStats::Dequeue(bool timed_out) {
   } else {
     metrics_.total_dequeued->Increment(1L);
   }
+}
+
+int64 AdmissionController::PoolStats::GetUserLoad(const string& user) {
+  return agg_user_loads_.get(user);
+}
+
+int64 AdmissionController::AggregatedUserLoads::size() {
+  return loads_.size();
+}
+
+void AdmissionController::AggregatedUserLoads::clear() {
+  return loads_.clear();
+}
+
+void AdmissionController::AggregatedUserLoads::clear_key(const std::string& key) {
+  loads_.erase(key);
+}
+
+void AdmissionController::AggregatedUserLoads::insert(
+    const std::string& key, int64 value) {
+  DCHECK(value > 0);
+  loads_[key] = value;
+}
+
+void AdmissionController::AggregatedUserLoads::add_loads(
+    const UserLoads& loads) {
+  for (const auto & load : loads) {
+    if (loads_.count(load.first)) {
+      loads_[load.first] += load.second;
+    } else {
+      loads_[load.first] = load.second;
+    }
+  }
+}
+
+void AdmissionController::AggregatedUserLoads::export_users(
+    SetMetric<std::string>* metrics) {
+  for (auto & load : loads_) {
+    metrics->Add(load.first);
+  }
+}
+
+std::string AdmissionController::AggregatedUserLoads::DebugString() const {
+  return  AdmissionController::DebugString(loads_);
+}
+
+
+int64 AdmissionController::AggregatedUserLoads::get(const std::string& key) {
+  // Check if key is present as dereferencing the map will insert it.
+  // FIXME C++20: use contains().
+  if (loads_.count(key)) {
+    return loads_[key];
+  }
+  return 0;
+}
+
+void AdmissionController::DecrementLoad(
+    UserLoads& loads, const std::string& key) {
+  loads[key]++;
+}
+
+std::string AdmissionController::DebugString(const UserLoads& loads) {
+  std::ostringstream buffer;
+  for (const auto& [key, value] : loads) {
+    buffer << key << ":" << value << " ";
+  }
+  return buffer.str();
+}
+
+void AdmissionController::AggregatedUserLoads::increment(const std::string& key) {
+  DecrementLoad(loads_, key);
+}
+
+void AdmissionController::AggregatedUserLoads::decrement(const std::string& key) {
+  return ImpalaServer::DecrementLoad(loads_, key);
 }
 
 void AdmissionController::UpdateStatsOnReleaseForBackends(const UniqueIdPB& query_id,
@@ -884,7 +981,7 @@ bool AdmissionController::CanAccommodateMaxInitialReservation(const ScheduleStat
   return CanMemLimitAccommodateReservation(
              executor_mem_limit, executor_min_reservation, mem_unavailable_reason)
       && CanMemLimitAccommodateReservation(
-             coord_mem_limit, coord_min_reservation, mem_unavailable_reason);
+          coord_mem_limit, coord_min_reservation, mem_unavailable_reason);
 }
 
 bool AdmissionController::HasAvailableMemResources(const ScheduleState& state,
@@ -1262,7 +1359,7 @@ bool AdmissionController::RejectForSchedule(
         coord_admit_mem_limit.first = &e.first;
         coord_admit_mem_limit.second = be_state.be_desc.admit_mem_limit();
       } else if (be_state.be_desc.admit_mem_limit() <
-            min_executor_admit_mem_limit.second) {
+          min_executor_admit_mem_limit.second) {
         min_executor_admit_mem_limit.first = &e.first;
         min_executor_admit_mem_limit.second = be_state.be_desc.admit_mem_limit();
       }
@@ -1418,8 +1515,8 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
     bool is_trivial = false;
     bool must_reject =
         !FindGroupToAdmitOrReject(membership_snapshot,
-        queue_node->pool_cfg, queue_node->root_cfg,
-        /* admit_from_queue=*/false, stats, queue_node, unused_bool, &is_trivial);
+            queue_node->pool_cfg, queue_node->root_cfg,
+            /* admit_from_queue=*/false, stats, queue_node, unused_bool, &is_trivial);
     if (must_reject) {
       AdmissionOutcome outcome = admit_outcome->Set(AdmissionOutcome::REJECTED);
       if (outcome != AdmissionOutcome::REJECTED) {

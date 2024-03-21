@@ -515,7 +515,7 @@ class AdmissionController {
 
   /// Helper function on UserLoads that increments the value associated with the given
   /// key by 1.
-  static void DecrementLoad(UserLoads& loads, const std::string& key);
+  static void IncrementCount(UserLoads& loads, const std::string& key);
 
   static std::string DebugString(const UserLoads& loads);
 

@@ -743,7 +743,7 @@ void AdmissionController::PoolStats::AdmitQueryAndMemory(
     // if it was queued we already adjusted user loads then, so we don't do it here.
     agg_user_loads_.increment(user);
     metrics_.agg_current_users->Add(user);
-    DecrementLoad(local_stats_.user_loads, user);
+    IncrementCount(local_stats_.user_loads, user);
     metrics_.local_current_users->Add(user);
   }
 }
@@ -769,7 +769,7 @@ void AdmissionController::PoolStats::ReleaseQuery(
   if (agg_user_loads_.get(user) == 0) {
     metrics_.agg_current_users->Remove(user);
   }
-  ImpalaServer::DecrementLoad(local_stats_.user_loads, user);
+  ImpalaServer::DecrementCount(local_stats_.user_loads, user);
   if (local_stats_.user_loads.count(user) == 0) {
     metrics_.local_current_users->Remove(user);
   }
@@ -802,7 +802,7 @@ void AdmissionController::PoolStats::Queue(const std::string& user) {
 
   metrics_.total_queued->Increment(1L);
 
-  DecrementLoad(local_stats_.user_loads, user);
+  IncrementCount(local_stats_.user_loads, user);
   metrics_.local_current_users->Add(user);
   agg_user_loads_.increment(user);
   metrics_.agg_current_users->Add(user);
@@ -878,7 +878,7 @@ int64 AdmissionController::AggregatedUserLoads::get(const std::string& key) {
   return 0;
 }
 
-void AdmissionController::DecrementLoad(
+void AdmissionController::IncrementCount(
     UserLoads& loads, const std::string& key) {
   loads[key]++;
 }
@@ -892,11 +892,11 @@ std::string AdmissionController::DebugString(const UserLoads& loads) {
 }
 
 void AdmissionController::AggregatedUserLoads::increment(const std::string& key) {
-  DecrementLoad(loads_, key);
+  IncrementCount(loads_, key);
 }
 
 void AdmissionController::AggregatedUserLoads::decrement(const std::string& key) {
-  return ImpalaServer::DecrementLoad(loads_, key);
+  return ImpalaServer::DecrementCount(loads_, key);
 }
 
 void AdmissionController::UpdateStatsOnReleaseForBackends(const UniqueIdPB& query_id,

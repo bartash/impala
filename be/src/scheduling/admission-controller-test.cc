@@ -1074,7 +1074,9 @@ TEST_F(AdmissionControllerTest, PoolStats) {
 
 
   // Show that Admit and Release leave stats at zero.
-  pool_stats->AdmitQueryAndMemory(*schedule_state, USER1, true, false);
+//  FIXME QueueNode node
+  // FIXME asherman allocate noe and maybe add tests where per-suer stats update is diabled
+  pool_stats->AdmitQueryAndMemory(*schedule_state, nullptr, USER1, true, false);
   ASSERT_EQ(1, pool_stats->agg_num_running());
   ASSERT_EQ(1, pool_stats->metrics()->agg_num_running->GetValue());
   ASSERT_EQ("[" + USER1 + "]", pool_stats->metrics()->agg_current_users->ToHumanReadable());

@@ -633,8 +633,9 @@ class AdmissionController {
 
     // ADMISSION LIFECYCLE METHODS
     /// Updates the pool stats when the request represented by 'state' is admitted.
-    void AdmitQueryAndMemory(
-        const ScheduleState& state, const std::string& user, bool was_queued, bool is_trivial);
+    void AdmitQueryAndMemory(const ScheduleState& state,
+        impala::AdmissionController::QueueNode* node, const std::string& user,
+        bool was_queued, bool is_trivial);
     /// Updates the pool stats except the memory admitted stat.
     void ReleaseQuery(int64_t peak_mem_consumption, bool is_trivial, const std::string&);
     /// Releases the specified memory from the pool stats.
@@ -1116,7 +1117,8 @@ class AdmissionController {
   /// Updates the memory admitted and the num of queries running for each backend in
   /// 'state'. Also updates the stats of its associated resource pool. Used only when
   /// the 'state' is admitted.
-  void UpdateStatsOnAdmission(const ScheduleState& state, const std::string& user, bool was_queued, bool is_trivial);
+  void UpdateStatsOnAdmission(const ScheduleState& state, QueueNode* node,
+      const std::string& user, bool was_queued, bool is_trivial);
 
   /// Updates the memory admitted and the num of queries running for each backend in
   /// 'state' which have been release/completed. The list of completed backends is

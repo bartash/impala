@@ -724,7 +724,7 @@ Status AdmissionController::Init() {
 }
 
 void AdmissionController::PoolStats::AdmitQueryAndMemory(const ScheduleState& state,
-    QueueNode* node, const std::string& user, bool was_queued, bool is_trivial) {
+    const std::string& user, bool was_queued, bool is_trivial, bool track_per_user) {
   int64_t cluster_mem_admitted = state.GetClusterMemoryToAdmit();
   DCHECK_GT(cluster_mem_admitted, 0);
   local_mem_admitted_ += cluster_mem_admitted;
@@ -928,14 +928,14 @@ void AdmissionController::UpdateStatsOnReleaseForBackends(const UniqueIdPB& quer
 }
 
 void AdmissionController::UpdateStatsOnAdmission(const ScheduleState& state,
-    QueueNode* node, const std::string& user, bool was_queued, bool is_trivial) {
+    const std::string& user, bool was_queued, bool is_trivial, bool track_per_user) {
   for (const auto& entry : state.per_backend_schedule_states()) {
     const NetworkAddressPB& host_addr = entry.first;
     int64_t mem_to_admit = GetMemToAdmit(state, entry.second);
     UpdateHostStats(host_addr, mem_to_admit, 1, entry.second.exec_params->slots_to_use());
   }
   PoolStats* pool_stats = GetPoolStats(state);
-  pool_stats->AdmitQueryAndMemory(state, node, user, was_queued, is_trivial);
+  pool_stats->AdmitQueryAndMemory(state, user, was_queued, is_trivial, false);
   pools_for_updates_.insert(state.request_pool());
 }
 
@@ -2537,7 +2537,7 @@ void AdmissionController::AdmitQuery(QueueNode* node, bool was_queued, bool is_t
   // FIXME asherman do we need error checking like the one in request-pool-service
 
   // Update memory and number of queries.
-  UpdateStatsOnAdmission(*state, node, user, was_queued, is_trivial);
+  UpdateStatsOnAdmission(*state, user, was_queued, is_trivial, false);
   UpdateExecGroupMetric(state->executor_group(), 1);
   // Update summary profile.
   const string& admission_result = was_queued ?

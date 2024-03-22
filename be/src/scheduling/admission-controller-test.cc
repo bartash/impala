@@ -1058,7 +1058,9 @@ TEST_F(AdmissionControllerTest, PoolStats) {
   CheckPoolStatsEmpty(pool_stats);
 
   // Show that Queue and Dequeue leave stats at zero.
-  pool_stats->Queue(USER1);
+  pool_stats->Queue();
+  pool_stats->QueuePerUser(USER1);
+  // FIXME throttle fix (and possibly enhance) this test
   ASSERT_EQ(1, pool_stats->agg_num_queued());
   ASSERT_EQ(1, pool_stats->metrics()->agg_num_queued->GetValue());
   ASSERT_EQ("[" + USER1 + "]", pool_stats->metrics()->agg_current_users->ToHumanReadable());
@@ -1074,7 +1076,9 @@ TEST_F(AdmissionControllerTest, PoolStats) {
 
 
   // Show that Admit and Release leave stats at zero.
-  pool_stats->AdmitQueryAndMemory(*schedule_state, USER1, true, false);
+//  FIXME QueueNode node
+  // FIXME asherman allocate noe and maybe add tests where per-suer stats update is diabled
+  pool_stats->AdmitQueryAndMemory(*schedule_state, USER1, true, false, false);
   ASSERT_EQ(1, pool_stats->agg_num_running());
   ASSERT_EQ(1, pool_stats->metrics()->agg_num_running->GetValue());
   ASSERT_EQ("[" + USER1 + "]", pool_stats->metrics()->agg_current_users->ToHumanReadable());
@@ -1586,9 +1590,6 @@ TEST_F(AdmissionControllerTest, AggregatedUserLoads) {
   // check input is unchanged.
   ASSERT_EQ(1, loads1[USER1]);
   ASSERT_EQ(4, loads1[USER2]);
-//  SetMetric<std::string> metrics = SetMetric<std::string>();
-//  user_loads.export_users(&metrics);
-//  ASSERT_EQ( "[" + USER1 + "]", metrics->ToHumanReadable());
 
   AdmissionController::UserLoads loads2{{USER1, 1}, {USER3, 6}};
   user_loads.add_loads(loads2);

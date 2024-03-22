@@ -634,14 +634,15 @@ class AdmissionController {
 
     // ADMISSION LIFECYCLE METHODS
     /// Updates the pool stats when the request represented by 'state' is admitted.
-    void AdmitQueryAndMemory(
-        const ScheduleState& state, const std::string& user, bool was_queued, bool is_trivial);
+    void AdmitQueryAndMemory(const ScheduleState& state, const std::string& user,
+        bool was_queued, bool is_trivial, bool track_per_user);
     /// Updates the pool stats except the memory admitted stat.
     void ReleaseQuery(int64_t peak_mem_consumption, bool is_trivial, const std::string&);
     /// Releases the specified memory from the pool stats.
     void ReleaseMem(int64_t mem_to_release);
     /// Updates the pool stats when the request represented by 'state' is queued.
-    void Queue(const std::string&);
+    void Queue();
+    void QueuePerUser(const std::string&);
     /// Updates the pool stats when the request represented by 'state is dequeued.
     void Dequeue(bool timed_out);
 
@@ -872,7 +873,7 @@ class AdmissionController {
     /// Config of the pool this query will be scheduled on.
     string pool_name;
     TPoolConfig pool_cfg;
-    /// FIXME add
+    /// FIXME add description
     TPoolConfig root_cfg;
 
     /// END: Members that are valid for new objects after initialization
@@ -964,7 +965,7 @@ class AdmissionController {
     /// Indicate whether the query is admitted as a trivial query.
     bool is_trivial;
 
-    /// The effective user running the query.
+    /// The effective user running the query. Not set if user quotas are not configured.
     std::string user;
   };
 
@@ -1066,7 +1067,7 @@ class AdmissionController {
       const TPoolConfig& root_cfg, bool admit_from_queue, string* not_admitted_reason,
       string* not_admitted_details, bool& coordinator_resource_limited);
 
-  // FIXM asherman add description
+  // FIXME asherman add description
   bool CanAdmitQuota(const ScheduleState& state, const TPoolConfig& pool_cfg,
       const TPoolConfig& root_cfg, bool admit_from_queue, string* not_admitted_reason,
       string* not_admitted_details, bool& coordinator_resource_limited);
@@ -1117,7 +1118,8 @@ class AdmissionController {
   /// Updates the memory admitted and the num of queries running for each backend in
   /// 'state'. Also updates the stats of its associated resource pool. Used only when
   /// the 'state' is admitted.
-  void UpdateStatsOnAdmission(const ScheduleState& state, const std::string& user, bool was_queued, bool is_trivial);
+  void UpdateStatsOnAdmission(const ScheduleState& state, const std::string& user,
+      bool was_queued, bool is_trivial, bool track_per_user);
 
   /// Updates the memory admitted and the num of queries running for each backend in
   /// 'state' which have been release/completed. The list of completed backends is
@@ -1304,6 +1306,7 @@ class AdmissionController {
 
   // FIXME asherman add description
   // In particular explain user_for_load user_for_limit
+  static bool HasQuotaConfig(const TPoolConfig& pool_cfg);
   static bool CheckUserQuota(const TPoolConfig& pool_cfg, const string& pool_name,
       const ScheduleState& state, int64 user_load, const string& user_for_load,
       string* quota_exceeded_reason, bool use_wildcard, bool* key_matched);

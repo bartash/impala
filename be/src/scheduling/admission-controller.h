@@ -963,7 +963,7 @@ class AdmissionController {
     /// Indicate whether the query is admitted as a trivial query.
     bool is_trivial;
 
-    /// The effective user running the query.
+    /// The effective user running the query. Not set if user quotas are not configured.
     std::string user;
   };
 
@@ -1065,7 +1065,7 @@ class AdmissionController {
       const TPoolConfig& root_cfg, bool admit_from_queue, string* not_admitted_reason,
       string* not_admitted_details, bool& coordinator_resource_limited);
 
-  // FIXM asherman add description
+  // FIXME asherman add description
   bool CanAdmitQuota(const ScheduleState& state, const TPoolConfig& pool_cfg,
       const TPoolConfig& root_cfg, bool admit_from_queue, string* not_admitted_reason,
       string* not_admitted_details, bool& coordinator_resource_limited);

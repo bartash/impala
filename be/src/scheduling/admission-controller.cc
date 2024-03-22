@@ -739,8 +739,8 @@ void AdmissionController::PoolStats::AdmitQueryAndMemory(const ScheduleState& st
   metrics_.total_admitted->Increment(1L);
   if (is_trivial) ++local_trivial_running_;
 
-  if (!was_queued) {
-    // FIXME asherman throttle
+  if (track_per_user && !was_queued) {
+    // FIXME asherman throttle DONE
     // if it was queued we already adjusted user loads then, so we don't do it here.
     agg_user_loads_.increment(user);
     metrics_.agg_current_users->Add(user);
@@ -766,14 +766,16 @@ void AdmissionController::PoolStats::ReleaseQuery(
     DCHECK_GE(local_trivial_running_, 0);
   }
 
-  // FIXME asherman throttle
-  agg_user_loads_.decrement(user);
-  if (agg_user_loads_.get(user) == 0) {
-    metrics_.agg_current_users->Remove(user);
-  }
-  ImpalaServer::DecrementCount(local_stats_.user_loads, user);
-  if (local_stats_.user_loads.count(user) == 0) {
-    metrics_.local_current_users->Remove(user);
+  // FIXME asherman throttle DONE
+  if (!user.empty()) {
+    agg_user_loads_.decrement(user);
+    if (agg_user_loads_.get(user) == 0) {
+      metrics_.agg_current_users->Remove(user);
+    }
+    ImpalaServer::DecrementCount(local_stats_.user_loads, user);
+    if (local_stats_.user_loads.count(user) == 0) {
+      metrics_.local_current_users->Remove(user);
+    }
   }
 
   // Update the 'peak_mem_histogram' based on the given peak memory consumption of the
@@ -935,7 +937,7 @@ void AdmissionController::UpdateStatsOnAdmission(const ScheduleState& state,
     UpdateHostStats(host_addr, mem_to_admit, 1, entry.second.exec_params->slots_to_use());
   }
   PoolStats* pool_stats = GetPoolStats(state);
-  pool_stats->AdmitQueryAndMemory(state, user, was_queued, is_trivial, false);
+  pool_stats->AdmitQueryAndMemory(state, user, was_queued, is_trivial, track_per_user);
   pools_for_updates_.insert(state.request_pool());
 }
 
@@ -2537,7 +2539,8 @@ void AdmissionController::AdmitQuery(QueueNode* node, bool was_queued, bool is_t
   // FIXME asherman do we need error checking like the one in request-pool-service
 
   // Update memory and number of queries.
-  UpdateStatsOnAdmission(*state, user, was_queued, is_trivial, false);
+  bool track_per_user = false; // FIXME asherman throttle - use method on QueueNode perhaps
+  UpdateStatsOnAdmission(*state, user, was_queued, is_trivial, track_per_user);
   UpdateExecGroupMetric(state->executor_group(), 1);
   // Update summary profile.
   const string& admission_result = was_queued ?
@@ -2578,7 +2581,10 @@ void AdmissionController::AdmitQuery(QueueNode* node, bool was_queued, bool is_t
   running_query.request_pool = state->request_pool();
   running_query.executor_group = state->executor_group();
   running_query.is_trivial = is_trivial;
-  running_query.user = user;
+  if (track_per_user) {
+    // Do not set user if user quotas are not configured.
+    running_query.user = user;
+  }
   for (const auto& entry : state->per_backend_schedule_states()) {
     BackendAllocation& allocation = running_query.per_backend_resources[entry.first];
     allocation.slots_to_use = entry.second.exec_params->slots_to_use();

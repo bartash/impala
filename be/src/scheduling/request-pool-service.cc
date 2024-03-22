@@ -195,6 +195,9 @@ Status RequestPoolService::GetPoolConfig(const string& pool_name,
     pool_config->__set_min_query_mem_limit(0);
     pool_config->__set_max_query_mem_limit(0);
     pool_config->__set_clamp_mem_limit_query_option(true);
+    std::map<std::string, int32_t> empty;
+    pool_config->__set_user_query_limits(empty);
+    pool_config->__set_group_query_limits(empty);
     return Status::OK();
   }
 

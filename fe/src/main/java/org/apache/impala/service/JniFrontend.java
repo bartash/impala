@@ -27,6 +27,7 @@ import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.client.HdfsClientConfigKeys;
+import org.apache.hadoop.security.GroupMappingServiceProvider;
 import org.apache.hadoop.security.Groups;
 import org.apache.hadoop.security.JniBasedUnixGroupsMappingWithFallback;
 import org.apache.hadoop.security.JniBasedUnixGroupsNetgroupMappingWithFallback;
@@ -38,7 +39,6 @@ import org.apache.impala.authentication.saml.WrappedWebContext;
 import org.apache.impala.authorization.AuthorizationFactory;
 import org.apache.impala.authorization.ImpalaInternalAdminUser;
 import org.apache.impala.authorization.User;
-import org.apache.impala.catalog.DatabaseNotFoundException;
 import org.apache.impala.catalog.FeDataSource;
 import org.apache.impala.catalog.FeDb;
 import org.apache.impala.catalog.FeTable;
@@ -55,13 +55,13 @@ import org.apache.impala.service.Frontend.PlanCtx;
 import org.apache.impala.thrift.TBackendGflags;
 import org.apache.impala.thrift.TBuildTestDescriptorTableParams;
 import org.apache.impala.thrift.TCatalogObject;
-import org.apache.impala.thrift.TColumnValue;
 import org.apache.impala.thrift.TDatabase;
 import org.apache.impala.thrift.TDescribeDbParams;
 import org.apache.impala.thrift.TDescribeOutputStyle;
 import org.apache.impala.thrift.TDescribeResult;
 import org.apache.impala.thrift.TDescribeTableParams;
 import org.apache.impala.thrift.TDescriptorTable;
+import org.apache.impala.thrift.TErrorCode;
 import org.apache.impala.thrift.TExecRequest;
 import org.apache.impala.thrift.TFunctionCategory;
 import org.apache.impala.thrift.TGetAllHadoopConfigsResponse;
@@ -83,16 +83,18 @@ import org.apache.impala.thrift.TLoadDataReq;
 import org.apache.impala.thrift.TLoadDataResp;
 import org.apache.impala.thrift.TLogLevel;
 import org.apache.impala.thrift.TMetadataOpRequest;
-import org.apache.impala.thrift.TConvertTableRequest;
 import org.apache.impala.thrift.TQueryCompleteContext;
 import org.apache.impala.thrift.TQueryCtx;
 import org.apache.impala.thrift.TResultSet;
+import org.apache.impala.thrift.TSetHadoopGroupsRequest;
+import org.apache.impala.thrift.TSetHadoopGroupsResponse;
 import org.apache.impala.thrift.TShowFilesParams;
 import org.apache.impala.thrift.TShowGrantPrincipalParams;
 import org.apache.impala.thrift.TShowRolesParams;
 import org.apache.impala.thrift.TShowStatsOp;
 import org.apache.impala.thrift.TShowStatsParams;
 import org.apache.impala.thrift.TDescribeHistoryParams;
+import org.apache.impala.thrift.TStatus;
 import org.apache.impala.thrift.TTableName;
 import org.apache.impala.thrift.TUniqueId;
 import org.apache.impala.thrift.TUpdateCatalogCacheRequest;
@@ -118,8 +120,11 @@ import java.lang.IllegalArgumentException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * JNI-callable interface onto a wrapped Frontend instance. The main point is to serialise
@@ -130,6 +135,10 @@ public class JniFrontend {
   private final static TBinaryProtocol.Factory protocolFactory_ =
       new TBinaryProtocol.Factory();
   private final Frontend frontend_;
+
+  // For testing only, groups to return from getHadoopGroups().
+  // Key is group name, value is members of the group.
+  static     Map<String, Set<String>> groupsToUsers_;
 
   /**
    * Create a new instance of the Jni Frontend.
@@ -628,7 +637,7 @@ public class JniFrontend {
 
   // Caching this saves ~50ms per call to getHadoopConfigAsHtml
   private static final Configuration CONF = new Configuration();
-  private static final Groups GROUPS = Groups.getUserToGroupsMappingService(CONF);
+  private static Groups GROUPS = Groups.getUserToGroupsMappingService(CONF);
 
   /**
    * Returns a string of all loaded Hadoop configuration parameters as a table of keys
@@ -692,6 +701,82 @@ public class JniFrontend {
       return serializer.serialize(result);
     } catch (TException e) {
       throw new InternalException(e.getMessage());
+    }
+  }
+
+
+
+  /**
+   * Set Hadoop groups on the Java side. This causes the UserToGroupsMappingService
+   * implementation to be replaced with a custom class which will return the groups
+   * passed to this function.
+   */
+  public byte[] setHadoopGroups(byte[] serializedRequest) throws ImpalaException {
+    TSetHadoopGroupsRequest request = new TSetHadoopGroupsRequest();
+    JniUtil.deserializeThrift(protocolFactory_, request, serializedRequest);
+    TSetHadoopGroupsResponse result = new TSetHadoopGroupsResponse();
+
+    // Key is group name, value is members of the group.
+    Map<String, Set<String>> groups = request.getGroups();
+
+    if (!groups.isEmpty()) {
+      // There is currently no synchronization here as this is just for testing.
+      groupsToUsers_ = groups;
+      Configuration conf = new Configuration();
+      conf.set(CommonConfigurationKeys.HADOOP_SECURITY_GROUP_MAPPING,
+          GroupHack.class.getName());
+      GROUPS = Groups.getUserToGroupsMappingServiceWithLoadedConfiguration(conf);
+    } else {
+      // Undo the use of GroupHack
+      groupsToUsers_ = null;
+      Configuration conf = new Configuration();
+      GROUPS = Groups.getUserToGroupsMappingServiceWithLoadedConfiguration(conf);
+    }
+
+    result.setStatus(new TStatus(TErrorCode.OK, Lists.newArrayList()));
+      try {
+      TSerializer serializer = new TSerializer(protocolFactory_);
+      return serializer.serialize(result);
+    } catch (TException e) {
+      throw new InternalException(e.getMessage());
+    }
+  }
+
+  /**
+   * A custom GroupMappingServiceProvider used only for testing.
+   * This class returns groups for a user based on the values in groupsToUsers_.
+   */
+  public static class GroupHack implements GroupMappingServiceProvider {
+
+    public GroupHack() {
+    }
+
+    @Override
+    public List<String> getGroups(String userName) throws IOException {
+      return new ArrayList<>(this.getGroupsSet(userName));
+    }
+
+    @Override
+    public void cacheGroupsRefresh() throws IOException {
+    }
+
+    @Override
+    public void cacheGroupsAdd(List<String> list) throws IOException {
+    }
+
+    @Override
+    public Set<String> getGroupsSet(String userName) throws IOException {
+      Set<String>  ret = new HashSet<>();
+      if (JniFrontend.groupsToUsers_  != null) {
+        Set<String> groups = JniFrontend.groupsToUsers_.keySet();
+        for (String group : groups) {
+          Set<String> users = JniFrontend.groupsToUsers_.get(group);
+          if (users.contains(userName)) {
+            ret.add(group);
+          }
+        }
+      }
+      return ret;
     }
   }
 
@@ -785,6 +870,7 @@ public class JniFrontend {
     return frontend_.getSaml2Client().validateBearer(webContext);
   }
 
+  /**
   /**
    * Aborts a Kudu transaction.
    * @param queryId the id of the query.

@@ -1169,18 +1169,29 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
       fs_allocation_file="fair-scheduler-test2.xml",
       llama_site_file="llama-site-test2.xml"),
     statestored_args=_STATESTORED_ARGS)
-  def test_user_loads_propagate(self, vector):
+  def test_user_loads_propagate(self):
     """Test that user loads are propagated by checking metric values"""
+    self.check_user_loads(user_loads_present=True)
+
+  @pytest.mark.execute_serially
+  @CustomClusterTestSuite.with_args(
+    impalad_args=impalad_admission_ctrl_config_args(
+      fs_allocation_file="fair-scheduler-3-groups.xml",
+      llama_site_file="llama-site-3-groups.xml"),
+    statestored_args=_STATESTORED_ARGS)
+  def test_user_loads_do_not_propagate(self):
+    """Test that user loads are not propagated if user quotas are not configured
+    as there are no quotas in fair-scheduler-3-groups.xml."""
+    self.check_user_loads(user_loads_present=False, pool="root.tiny")
+
+  def check_user_loads(self, user_loads_present, pool='root.queueB'):
     USER_ROOT = 'root'
     USER_C = 'userC'
-
     query = "select count(*) from functional.alltypes where int_col = sleep(20000)"
-
     impalad1 = self.cluster.impalads[0]
     impalad2 = self.cluster.impalads[1]
-    query1 = self.execute_aync_and_wait_for_running(impalad1, query, USER_C)
-    query2 = self.execute_aync_and_wait_for_running(impalad2, query, USER_ROOT)
-
+    query1 = self.execute_aync_and_wait_for_running(impalad1, query, USER_C, pool=pool)
+    query2 = self.execute_aync_and_wait_for_running(impalad2, query, USER_ROOT, pool=pool)
     keys = [
       "admission-controller.agg-current-users.root.queueB",
       "admission-controller.local-current-users.root.queueB",
@@ -1188,13 +1199,18 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     values1 = impalad1.service.get_metric_values(keys)
     values2 = impalad2.service.get_metric_values(keys)
 
-    # The aggregate users are the same on either server.
-    assert values1[0] == [USER_ROOT, USER_C]
-    assert values2[0] == [USER_ROOT, USER_C]
-    # The local users differ.
-    assert values1[1] == [USER_C]
-    assert values2[1] == [USER_ROOT]
-
+    if user_loads_present:
+      # The aggregate users are the same on either server.
+      assert values1[0] == [USER_ROOT, USER_C]
+      assert values2[0] == [USER_ROOT, USER_C]
+      # The local users differ.
+      assert values1[1] == [USER_C]
+      assert values2[1] == [USER_ROOT]
+    else:
+      assert values1[0] is None
+      assert values2[0] is None
+      assert values1[1] is None
+      assert values2[1] is None
     query1.close()
     query2.close()
 
@@ -1248,7 +1264,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
       """close the query"""
       self.client.close_query(self.handle)
 
-  def execute_aync_and_wait_for_running(self, impalad, query, user, pool='root.queueB'):
+  def execute_aync_and_wait_for_running(self, impalad, query, user, pool):
     # Use beeswax client as it allows specifying the user that runs the query.
     client = impalad.service.create_beeswax_client()
     client.set_configuration({'request_pool': pool})

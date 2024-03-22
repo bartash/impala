@@ -723,8 +723,8 @@ Status AdmissionController::Init() {
   return status;
 }
 
-void AdmissionController::PoolStats::AdmitQueryAndMemory(
-    const ScheduleState& state, const std::string& user, bool was_queued, bool is_trivial) {
+void AdmissionController::PoolStats::AdmitQueryAndMemory(const ScheduleState& state,
+    const std::string& user, bool was_queued, bool is_trivial, bool track_per_user) {
   int64_t cluster_mem_admitted = state.GetClusterMemoryToAdmit();
   DCHECK_GT(cluster_mem_admitted, 0);
   local_mem_admitted_ += cluster_mem_admitted;
@@ -739,7 +739,8 @@ void AdmissionController::PoolStats::AdmitQueryAndMemory(
   metrics_.total_admitted->Increment(1L);
   if (is_trivial) ++local_trivial_running_;
 
-  if (!was_queued) {
+  if (track_per_user && !was_queued) {
+    // FIXME asherman throttle DONE
     // if it was queued we already adjusted user loads then, so we don't do it here.
     agg_user_loads_.increment(user);
     metrics_.agg_current_users->Add(user);
@@ -765,13 +766,16 @@ void AdmissionController::PoolStats::ReleaseQuery(
     DCHECK_GE(local_trivial_running_, 0);
   }
 
-  agg_user_loads_.decrement(user);
-  if (agg_user_loads_.get(user) == 0) {
-    metrics_.agg_current_users->Remove(user);
-  }
-  ImpalaServer::DecrementCount(local_stats_.user_loads, user);
-  if (local_stats_.user_loads.count(user) == 0) {
-    metrics_.local_current_users->Remove(user);
+  // FIXME asherman throttle DONE
+  if (!user.empty()) {
+    agg_user_loads_.decrement(user);
+    if (agg_user_loads_.get(user) == 0) {
+      metrics_.agg_current_users->Remove(user);
+    }
+    ImpalaServer::DecrementCount(local_stats_.user_loads, user);
+    if (local_stats_.user_loads.count(user) == 0) {
+      metrics_.local_current_users->Remove(user);
+    }
   }
 
   // Update the 'peak_mem_histogram' based on the given peak memory consumption of the
@@ -793,7 +797,7 @@ void AdmissionController::PoolStats::ReleaseMem(int64_t mem_to_release) {
   metrics_.local_mem_admitted->Increment(-mem_to_release);
 }
 
-void AdmissionController::PoolStats::Queue(const std::string& user) {
+void AdmissionController::PoolStats::Queue() {
   agg_num_queued_ += 1;
   metrics_.agg_num_queued->Increment(1L);
 
@@ -801,7 +805,10 @@ void AdmissionController::PoolStats::Queue(const std::string& user) {
   metrics_.local_num_queued->Increment(1L);
 
   metrics_.total_queued->Increment(1L);
+}
 
+void AdmissionController::PoolStats::QueuePerUser(const std::string& user) {
+  // FIXME asherman throttle DONE
   IncrementCount(local_stats_.user_loads, user);
   metrics_.local_current_users->Add(user);
   agg_user_loads_.increment(user);
@@ -924,15 +931,15 @@ void AdmissionController::UpdateStatsOnReleaseForBackends(const UniqueIdPB& quer
   pools_for_updates_.insert(running_query.request_pool);
 }
 
-void AdmissionController::UpdateStatsOnAdmission(
-    const ScheduleState& state, const std::string& user, bool was_queued, bool is_trivial) {
+void AdmissionController::UpdateStatsOnAdmission(const ScheduleState& state,
+    const std::string& user, bool was_queued, bool is_trivial, bool track_per_user) {
   for (const auto& entry : state.per_backend_schedule_states()) {
     const NetworkAddressPB& host_addr = entry.first;
     int64_t mem_to_admit = GetMemToAdmit(state, entry.second);
     UpdateHostStats(host_addr, mem_to_admit, 1, entry.second.exec_params->slots_to_use());
   }
   PoolStats* pool_stats = GetPoolStats(state);
-  pool_stats->AdmitQueryAndMemory(state, user, was_queued, is_trivial);
+  pool_stats->AdmitQueryAndMemory(state, user, was_queued, is_trivial, track_per_user);
   pools_for_updates_.insert(state.request_pool());
 }
 
@@ -1105,6 +1112,11 @@ bool AdmissionController::HasAvailableSlots(const ScheduleState& state,
 bool AdmissionController::CheckUserAndGroupPoolQuotas(const ScheduleState& state,
     const TPoolConfig& pool_cfg, const string& pool_level, int64 user_load,
     string* quota_exceeded_reason) {
+  // FIXME asherman throttle DONE
+  if (!HasQuotaConfig(pool_cfg)) {
+    // No need to check.
+    return true;
+  }
   const string& user =  GetEffectiveUser(state.request().query_ctx.session);
   bool key_matched = false;
   if (!CheckUserQuota(pool_cfg, pool_level, state, user_load, user, quota_exceeded_reason,
@@ -1128,6 +1140,9 @@ bool AdmissionController::CheckUserAndGroupPoolQuotas(const ScheduleState& state
     return false;
   }
   return true;
+}
+bool AdmissionController::HasQuotaConfig(const TPoolConfig& pool_cfg) {
+  return !pool_cfg.user_query_limits.empty() || !pool_cfg.group_query_limits.empty();
 }
 
 bool AdmissionController::CheckUserQuota(const TPoolConfig& pool_cfg, const string& pool_name,
@@ -1240,8 +1255,6 @@ bool AdmissionController::CanAdmitQuota(const ScheduleState& state,
     const TPoolConfig& pool_cfg, const TPoolConfig& root_cfg, bool admit_from_queue,
     string* not_admitted_reason, string* not_admitted_details,
     bool& coordinator_resource_limited) {
-  // Can't admit if:
-  //  (e) FIXME asheman quotas
   PoolStats* pool_stats = GetPoolStats(state);
 
   // FIXME asherman can we only reject if admit_from_queue=false?
@@ -1499,6 +1512,7 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
   // Re-resolve the pool name to propagate any resolution errors now that this request is
   // known to require a valid pool. All executor groups / schedules will use the same pool
   // name.
+  // FIXME asherman ths is where we get pool config
   RETURN_IF_ERROR(ResolvePoolAndGetConfig(request.request.query_ctx,
       &queue_node->pool_name, &queue_node->pool_cfg, &queue_node->root_cfg));
   request.summary_profile->AddInfoString("Request Pool", queue_node->pool_name);
@@ -1566,8 +1580,12 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
     }
     queue_node->initial_queue_reason = queue_node->not_admitted_reason;
 
-    const string& user =  GetEffectiveUser(request.request.query_ctx.session);
-    stats->Queue(user);
+    stats->Queue();
+    // FIXME asherman throttle DONE
+    if (HasQuotaConfig(queue_node->pool_cfg) || HasQuotaConfig(queue_node->root_cfg)) {
+      const string& user = GetEffectiveUser(request.request.query_ctx.session);
+      stats->QueuePerUser(user);
+    }
     queue->Enqueue(queue_node);
 
     // Must be done while we still hold 'admission_ctrl_lock_' as the dequeue loop thread
@@ -1990,6 +2008,7 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
   int64_t num_running = 0;
   int64_t num_queued = 0;
   int64_t mem_reserved = 0;
+  // FIXME asherman throttle OK as work limited
   agg_user_loads_.clear();
   metrics_.agg_current_users->Reset();
   for (const PoolStats::RemoteStatsMap::value_type& remote_entry : remote_stats_) {
@@ -2004,6 +2023,7 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
     num_running += remote_pool_stats.num_admitted_running;
     num_queued += remote_pool_stats.num_queued;
 
+    // FIXME asherman throttle OK as work limited
     agg_user_loads_.add_loads(remote_pool_stats.user_loads);
 
     // Update the per-pool and per-host aggregates with the mem reserved by this host in
@@ -2018,6 +2038,7 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
   num_queued += local_stats_.num_queued;
   mem_reserved += local_stats_.backend_mem_reserved;
   (*host_mem_reserved)[coord_id] += local_stats_.backend_mem_reserved;
+  // FIXME asherman throttle OK as work limited
   agg_user_loads_.add_loads(local_stats_.user_loads);
   agg_user_loads_.export_users(metrics_.agg_current_users);
 
@@ -2052,6 +2073,7 @@ void AdmissionController::UpdateClusterAggregates() {
     entry.second.UpdateAggregates(&updated_mem_reserved);
   }
 
+  // FIXME asherman throttle OK as work limited
   root_agg_user_loads_.clear();
   for (auto& entry : pool_stats_) {
     root_agg_user_loads_.add_loads(
@@ -2525,10 +2547,12 @@ void AdmissionController::AdmitQuery(QueueNode* node, bool was_queued, bool is_t
            << " coord_backend_mem_to_admit set to: "
            << PrintBytes(state->coord_backend_mem_to_admit());
   const std::string& user =  GetEffectiveUser(node->admission_request.request.query_ctx.session);
-  // FIXME do we need error checking like the one in request-pool-service
+  // FIXME asherman do we need error checking like the one in request-pool-service
 
   // Update memory and number of queries.
-  UpdateStatsOnAdmission(*state, user, was_queued, is_trivial);
+  // FIXME asherman throttle DONE
+  bool track_per_user =  HasQuotaConfig(node->pool_cfg) || HasQuotaConfig(node->root_cfg);
+  UpdateStatsOnAdmission(*state, user, was_queued, is_trivial, track_per_user);
   UpdateExecGroupMetric(state->executor_group(), 1);
   // Update summary profile.
   const string& admission_result = was_queued ?
@@ -2569,7 +2593,10 @@ void AdmissionController::AdmitQuery(QueueNode* node, bool was_queued, bool is_t
   running_query.request_pool = state->request_pool();
   running_query.executor_group = state->executor_group();
   running_query.is_trivial = is_trivial;
-  running_query.user = user;
+  if (track_per_user) {
+    // Do not set user if user quotas are not configured.
+    running_query.user = user;
+  }
   for (const auto& entry : state->per_backend_schedule_states()) {
     BackendAllocation& allocation = running_query.per_backend_resources[entry.first];
     allocation.slots_to_use = entry.second.exec_params->slots_to_use();
@@ -2996,5 +3023,3 @@ void AdmissionController::UpdateExecGroupMetric(
 }
 
 } // namespace impala
-
-#pragma clang diagnostic pop

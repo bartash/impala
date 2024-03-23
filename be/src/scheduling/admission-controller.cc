@@ -808,7 +808,7 @@ void AdmissionController::PoolStats::Queue() {
 }
 
 void AdmissionController::PoolStats::QueuePerUser(const std::string& user) {
-  // FIXME asherman throttle
+  // FIXME asherman throttle DONE
   IncrementCount(local_stats_.user_loads, user);
   metrics_.local_current_users->Add(user);
   agg_user_loads_.increment(user);
@@ -1248,8 +1248,6 @@ bool AdmissionController::CanAdmitQuota(const ScheduleState& state,
     const TPoolConfig& pool_cfg, const TPoolConfig& root_cfg, bool admit_from_queue,
     string* not_admitted_reason, string* not_admitted_details,
     bool& coordinator_resource_limited) {
-  // Can't admit if:
-  //  (e) FIXME asheman quotas
   PoolStats* pool_stats = GetPoolStats(state);
 
   // FIXME asherman can we only reject if admit_from_queue=false?

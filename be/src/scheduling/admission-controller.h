@@ -872,7 +872,7 @@ class AdmissionController {
     /// Config of the pool this query will be scheduled on.
     string pool_name;
     TPoolConfig pool_cfg;
-    /// FIXME add
+    /// FIXME add description
     TPoolConfig root_cfg;
 
     /// END: Members that are valid for new objects after initialization

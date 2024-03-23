@@ -2008,7 +2008,7 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
   int64_t num_running = 0;
   int64_t num_queued = 0;
   int64_t mem_reserved = 0;
-  // FIXME asherman throttle
+  // FIXME asherman throttle OK as work limited
   agg_user_loads_.clear();
   metrics_.agg_current_users->Reset();
   for (const PoolStats::RemoteStatsMap::value_type& remote_entry : remote_stats_) {
@@ -2023,7 +2023,7 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
     num_running += remote_pool_stats.num_admitted_running;
     num_queued += remote_pool_stats.num_queued;
 
-    // FIXME asherman throttle
+    // FIXME asherman throttle OK as work limited
     agg_user_loads_.add_loads(remote_pool_stats.user_loads);
 
     // Update the per-pool and per-host aggregates with the mem reserved by this host in
@@ -2038,7 +2038,7 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
   num_queued += local_stats_.num_queued;
   mem_reserved += local_stats_.backend_mem_reserved;
   (*host_mem_reserved)[coord_id] += local_stats_.backend_mem_reserved;
-  // FIXME asherman throttle
+  // FIXME asherman throttle OK as work limited
   agg_user_loads_.add_loads(local_stats_.user_loads);
   agg_user_loads_.export_users(metrics_.agg_current_users);
 
@@ -2069,11 +2069,11 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
 void AdmissionController::UpdateClusterAggregates() {
   // Recompute mem_reserved for all hosts.
   PoolStats::HostMemMap updated_mem_reserved;
-  // FIXME asherman throttle
   for (auto& entry : pool_stats_) {
     entry.second.UpdateAggregates(&updated_mem_reserved);
   }
 
+  // FIXME asherman throttle OK as work limited
   root_agg_user_loads_.clear();
   for (auto& entry : pool_stats_) {
     root_agg_user_loads_.add_loads(

@@ -797,7 +797,7 @@ void AdmissionController::PoolStats::ReleaseMem(int64_t mem_to_release) {
   metrics_.local_mem_admitted->Increment(-mem_to_release);
 }
 
-void AdmissionController::PoolStats::Queue(const std::string& user) {
+void AdmissionController::PoolStats::Queue() {
   agg_num_queued_ += 1;
   metrics_.agg_num_queued->Increment(1L);
 
@@ -805,7 +805,9 @@ void AdmissionController::PoolStats::Queue(const std::string& user) {
   metrics_.local_num_queued->Increment(1L);
 
   metrics_.total_queued->Increment(1L);
+}
 
+void AdmissionController::PoolStats::QueuePerUser(const std::string& user) {
   // FIXME asherman throttle
   IncrementCount(local_stats_.user_loads, user);
   metrics_.local_current_users->Add(user);
@@ -1573,8 +1575,12 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
     }
     queue_node->initial_queue_reason = queue_node->not_admitted_reason;
 
-    const string& user =  GetEffectiveUser(request.request.query_ctx.session);
-    stats->Queue(user);
+    stats->Queue();
+    // FIXME asherman throttle use QueueNode method
+    if (true) {
+      const string& user = GetEffectiveUser(request.request.query_ctx.session);
+      stats->QueuePerUser(user);
+    }
     queue->Enqueue(queue_node);
 
     // Must be done while we still hold 'admission_ctrl_lock_' as the dequeue loop thread

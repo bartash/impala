@@ -1058,7 +1058,9 @@ TEST_F(AdmissionControllerTest, PoolStats) {
   CheckPoolStatsEmpty(pool_stats);
 
   // Show that Queue and Dequeue leave stats at zero.
-  pool_stats->Queue(USER1);
+  pool_stats->Queue();
+  pool_stats->QueuePerUser(USER1);
+  // FIXME throttle fix (and possibly enhance) this test
   ASSERT_EQ(1, pool_stats->agg_num_queued());
   ASSERT_EQ(1, pool_stats->metrics()->agg_num_queued->GetValue());
   ASSERT_EQ("[" + USER1 + "]", pool_stats->metrics()->agg_current_users->ToHumanReadable());

@@ -1112,7 +1112,11 @@ bool AdmissionController::HasAvailableSlots(const ScheduleState& state,
 bool AdmissionController::CheckUserAndGroupPoolQuotas(const ScheduleState& state,
     const TPoolConfig& pool_cfg, const string& pool_level, int64 user_load,
     string* quota_exceeded_reason) {
-  // FIXME asherman throttle
+  // FIXME asherman throttle DONE
+  if (!HasQuotaConfig(pool_cfg)) {
+    // No need to check.
+    return true;
+  }
   const string& user =  GetEffectiveUser(state.request().query_ctx.session);
   bool key_matched = false;
   if (!CheckUserQuota(pool_cfg, pool_level, state, user_load, user, quota_exceeded_reason,
@@ -1136,6 +1140,9 @@ bool AdmissionController::CheckUserAndGroupPoolQuotas(const ScheduleState& state
     return false;
   }
   return true;
+}
+bool AdmissionController::HasQuotaConfig(const TPoolConfig& pool_cfg) {
+  return !pool_cfg.user_query_limits.empty() || !pool_cfg.group_query_limits.empty();
 }
 
 bool AdmissionController::CheckUserQuota(const TPoolConfig& pool_cfg, const string& pool_name,
@@ -1574,8 +1581,8 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
     queue_node->initial_queue_reason = queue_node->not_admitted_reason;
 
     stats->Queue();
-    // FIXME asherman throttle use QueueNode method
-    if (true) {
+    // FIXME asherman throttle DONE
+    if (HasQuotaConfig(queue_node->pool_cfg) || HasQuotaConfig(queue_node->root_cfg)) {
       const string& user = GetEffectiveUser(request.request.query_ctx.session);
       stats->QueuePerUser(user);
     }
@@ -2543,7 +2550,8 @@ void AdmissionController::AdmitQuery(QueueNode* node, bool was_queued, bool is_t
   // FIXME asherman do we need error checking like the one in request-pool-service
 
   // Update memory and number of queries.
-  bool track_per_user = false; // FIXME asherman throttle - use method on QueueNode perhaps
+  // FIXME asherman throttle DONE
+  bool track_per_user =  HasQuotaConfig(node->pool_cfg) || HasQuotaConfig(node->root_cfg);
   UpdateStatsOnAdmission(*state, user, was_queued, is_trivial, track_per_user);
   UpdateExecGroupMetric(state->executor_group(), 1);
   // Update summary profile.

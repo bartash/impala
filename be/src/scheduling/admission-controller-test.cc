@@ -646,9 +646,11 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   // Get the PoolConfig for the global "root" configuration.
   TPoolConfig config_root;
   ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
+  ASSERT_TRUE(AdmissionController::HasQuotaConfig(config_root));
 
   TPoolConfig config_e;
   ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_E, &config_e));
+  ASSERT_TRUE(AdmissionController::HasQuotaConfig(config_e));
 
   // Check the PoolStats for QUEUE_E.
   AdmissionController::PoolStats* pool_stats =

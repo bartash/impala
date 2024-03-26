@@ -1047,19 +1047,20 @@ TEST_F(AdmissionControllerTest, PoolStats) {
   AdmissionController* admission_controller = MakeAdmissionController();
   RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
 
-  // Get the PoolConfig for QUEUE_C ("root.queueC").
-  TPoolConfig config_c;
-  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_C, &config_c));
+  // Get a default PoolConfig (as fair-scheduler and llama files not set)
+  TPoolConfig config;
+  const string QUEUE = "unused";
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE, &config));
+  ASSERT_FALSE(AdmissionController::HasQuotaConfig(config));
 
-  // Create a ScheduleState to run on QUEUE_C.
-  ScheduleState* schedule_state = MakeScheduleState(QUEUE_C, config_c, 1, 1000);
+  // Create a ScheduleState.
+  ScheduleState* schedule_state = MakeScheduleState(QUEUE, config, 1, 1000);
 
-  // Get the PoolStats for QUEUE_C.
-  AdmissionController::PoolStats* pool_stats =
-      admission_controller->GetPoolStats(QUEUE_C);
+  // Get a PoolStats object.
+  AdmissionController::PoolStats* pool_stats = admission_controller->GetPoolStats(QUEUE);
   CheckPoolStatsEmpty(pool_stats);
 
-  // Show that Queue and Dequeue leave stats at zero.
+  // Show that Queue, QueuePerUser, and Dequeue leave stats at zero.
   pool_stats->Queue();
   pool_stats->QueuePerUser(USER1);
   // FIXME throttle fix (and possibly enhance) this test

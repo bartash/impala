@@ -742,8 +742,6 @@ void AdmissionController::PoolStats::AdmitQueryAndMemory(const ScheduleState& st
   if (is_trivial) ++local_trivial_running_;
 
   if (track_per_user && !was_queued) {
-    // FIXME asherman throttle DONE
-    // if it was queued we already adjusted user loads then, so we don't do it here.
     agg_user_loads_.increment(user);
     metrics_.agg_current_users->Add(user);
     IncrementCount(local_stats_.user_loads, user);
@@ -768,7 +766,6 @@ void AdmissionController::PoolStats::ReleaseQuery(
     DCHECK_GE(local_trivial_running_, 0);
   }
 
-  // FIXME asherman throttle DONE
   if (!user.empty()) {
     agg_user_loads_.decrement(user);
     if (agg_user_loads_.get(user) == 0) {
@@ -810,7 +807,6 @@ void AdmissionController::PoolStats::Queue() {
 }
 
 void AdmissionController::PoolStats::QueuePerUser(const std::string& user) {
-  // FIXME asherman throttle DONE
   IncrementCount(local_stats_.user_loads, user);
   metrics_.local_current_users->Add(user);
   agg_user_loads_.increment(user);
@@ -1114,7 +1110,6 @@ bool AdmissionController::HasAvailableSlots(const ScheduleState& state,
 bool AdmissionController::CheckUserAndGroupPoolQuotas(const ScheduleState& state,
     const TPoolConfig& pool_cfg, const string& pool_level, int64 user_load,
     string* quota_exceeded_reason) {
-  // FIXME asherman throttle DONE
   if (!HasQuotaConfig(pool_cfg)) {
     // No need to check.
     return true;
@@ -1514,7 +1509,6 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
   // Re-resolve the pool name to propagate any resolution errors now that this request is
   // known to require a valid pool. All executor groups / schedules will use the same pool
   // name.
-  // FIXME asherman ths is where we get pool config
   RETURN_IF_ERROR(ResolvePoolAndGetConfig(request.request.query_ctx,
       &queue_node->pool_name, &queue_node->pool_cfg, &queue_node->root_cfg));
   request.summary_profile->AddInfoString("Request Pool", queue_node->pool_name);
@@ -1583,7 +1577,6 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
     queue_node->initial_queue_reason = queue_node->not_admitted_reason;
 
     stats->Queue();
-    // FIXME asherman throttle DONE
     if (HasQuotaConfig(queue_node->pool_cfg) || HasQuotaConfig(queue_node->root_cfg)) {
       const string& user = GetEffectiveUser(request.request.query_ctx.session);
       stats->QueuePerUser(user);
@@ -2010,7 +2003,6 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
   int64_t num_running = 0;
   int64_t num_queued = 0;
   int64_t mem_reserved = 0;
-  // FIXME asherman throttle OK as work limited
   agg_user_loads_.clear();
   metrics_.agg_current_users->Reset();
   for (const PoolStats::RemoteStatsMap::value_type& remote_entry : remote_stats_) {
@@ -2025,7 +2017,6 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
     num_running += remote_pool_stats.num_admitted_running;
     num_queued += remote_pool_stats.num_queued;
 
-    // FIXME asherman throttle OK as work limited
     agg_user_loads_.add_loads(remote_pool_stats.user_loads);
 
     // Update the per-pool and per-host aggregates with the mem reserved by this host in
@@ -2040,7 +2031,6 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
   num_queued += local_stats_.num_queued;
   mem_reserved += local_stats_.backend_mem_reserved;
   (*host_mem_reserved)[coord_id] += local_stats_.backend_mem_reserved;
-  // FIXME asherman throttle OK as work limited
   agg_user_loads_.add_loads(local_stats_.user_loads);
   agg_user_loads_.export_users(metrics_.agg_current_users);
 
@@ -2075,7 +2065,6 @@ void AdmissionController::UpdateClusterAggregates() {
     entry.second.UpdateAggregates(&updated_mem_reserved);
   }
 
-  // FIXME asherman throttle OK as work limited
   root_agg_user_loads_.clear();
   for (auto& entry : pool_stats_) {
     root_agg_user_loads_.add_loads(
@@ -2552,7 +2541,6 @@ void AdmissionController::AdmitQuery(QueueNode* node, bool was_queued, bool is_t
   // FIXME asherman do we need error checking like the one in request-pool-service
 
   // Update memory and number of queries.
-  // FIXME asherman throttle DONE
   bool track_per_user =  HasQuotaConfig(node->pool_cfg) || HasQuotaConfig(node->root_cfg);
   UpdateStatsOnAdmission(*state, user, was_queued, is_trivial, track_per_user);
   UpdateExecGroupMetric(state->executor_group(), 1);

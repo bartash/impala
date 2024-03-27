@@ -2260,6 +2260,7 @@ bool AdmissionController::FindGroupToAdmitOrReject(
     if (!CanAdmitQuota(*state, pool_config, root_cfg, admit_from_queue,
             &queue_node->not_admitted_reason, &queue_node->not_admitted_details,
             coordinator_resource_limited)) {
+      // Reject query.
       queue_node->admitted_schedule = std::move(group_state.state);
       return false;
     }

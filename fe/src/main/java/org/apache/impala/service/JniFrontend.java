@@ -21,6 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.fs.CommonConfigurationKeys;
@@ -39,13 +40,10 @@ import org.apache.impala.authentication.saml.WrappedWebContext;
 import org.apache.impala.authorization.AuthorizationFactory;
 import org.apache.impala.authorization.ImpalaInternalAdminUser;
 import org.apache.impala.authorization.User;
-import org.apache.impala.catalog.DatabaseNotFoundException;
 import org.apache.impala.catalog.FeDataSource;
 import org.apache.impala.catalog.FeDb;
 import org.apache.impala.catalog.FeTable;
 import org.apache.impala.catalog.Function;
-import org.apache.impala.catalog.StructType;
-import org.apache.impala.catalog.Type;
 import org.apache.impala.common.FileSystemUtil;
 import org.apache.impala.common.ImpalaException;
 import org.apache.impala.common.InternalException;
@@ -56,10 +54,8 @@ import org.apache.impala.service.Frontend.PlanCtx;
 import org.apache.impala.thrift.TBackendGflags;
 import org.apache.impala.thrift.TBuildTestDescriptorTableParams;
 import org.apache.impala.thrift.TCatalogObject;
-import org.apache.impala.thrift.TColumnValue;
 import org.apache.impala.thrift.TDatabase;
 import org.apache.impala.thrift.TDescribeDbParams;
-import org.apache.impala.thrift.TDescribeOutputStyle;
 import org.apache.impala.thrift.TDescribeResult;
 import org.apache.impala.thrift.TDescribeTableParams;
 import org.apache.impala.thrift.TDescriptorTable;
@@ -85,7 +81,6 @@ import org.apache.impala.thrift.TLoadDataReq;
 import org.apache.impala.thrift.TLoadDataResp;
 import org.apache.impala.thrift.TLogLevel;
 import org.apache.impala.thrift.TMetadataOpRequest;
-import org.apache.impala.thrift.TConvertTableRequest;
 import org.apache.impala.thrift.TQueryCompleteContext;
 import org.apache.impala.thrift.TQueryCtx;
 import org.apache.impala.thrift.TResultSet;
@@ -119,11 +114,11 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.lang.IllegalArgumentException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * JNI-callable interface onto a wrapped Frontend instance. The main point is to serialise
@@ -708,18 +703,26 @@ public class JniFrontend {
     TGetHadoopGroupsRequest request = new TGetHadoopGroupsRequest();
     JniUtil.deserializeThrift(protocolFactory_, request, serializedRequest);
     TGetHadoopGroupsResponse result = new TGetHadoopGroupsResponse();
-    try {
-      result.setGroups(GROUPS.getGroups(request.getUser()));
-    } catch (IOException e) {
-      // HACK: https://issues.apache.org/jira/browse/HADOOP-15505
-      // There is no easy way to know if no groups found for a user
-      // other than reading the exception message.
-      if (e.getMessage().startsWith("No groups found for user")) {
-        result.setGroups(Collections.<String>emptyList());
-      } else {
-        LOG.error("Error getting Hadoop groups for user: " + request.getUser(), e);
-        throw new InternalException(e.getMessage());
+    String user  = request.getUser();
+    String injectedGroups = BackendConfig.INSTANCE.getInjectedGroupMembersDebugOnly();
+    if (StringUtils.isEmpty(injectedGroups)) {
+      try {
+        result.setGroups(GROUPS.getGroups(user));
+      } catch (IOException e) {
+        // HACK: https://issues.apache.org/jira/browse/HADOOP-15505
+        // There is no easy way to know if no groups found for a user
+        // other than reading the exception message.
+        if (e.getMessage().startsWith("No groups found for user")) {
+          result.setGroups(Collections.emptyList());
+        } else {
+          LOG.error("Error getting Hadoop groups for user: " + request.getUser(), e);
+          throw new InternalException(e.getMessage());
+        }
       }
+    } else {
+      List<String> groups = JniUtil.decodeInjectedGroups(injectedGroups, user);
+      LOG.info("getHadoopGroups returns injected groups " + groups + " for user " + user);
+      result.setGroups(groups);
     }
     try {
       TSerializer serializer = new TSerializer(protocolFactory_);

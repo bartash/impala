@@ -60,6 +60,8 @@ LOG = logging.getLogger('admission_test')
 # that running queries can be correlated with the thread that submitted them.
 QUERY = " union all ".join(["select * from functional.alltypesagg where id != {0}"] * 30)
 
+SLOW_QUERY = "select count(*) from functional.alltypes where int_col = sleep(20000)"
+
 # Same query but with additional unpartitioned non-coordinator fragments.
 # The unpartitioned fragments are both interior fragments that consume input
 # from a scan fragment and non-interior fragments with a constant UNION.
@@ -545,7 +547,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     cluster_size=2)
   def test_dedicated_coordinator_mem_accounting(self, vector):
     """Verify that when using dedicated coordinators, the memory admitted for and the
-    mem limit applied to the query fragments running on the coordinator is different than
+    mem limit applied to the query fragments running on the coordinator is different from
     the ones on executors."""
     self.__verify_mem_accounting(vector, using_dedicated_coord_estimates=True)
 
@@ -703,7 +705,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
   @SkipIfNotHdfsMinicluster.tuned_for_minicluster
   @pytest.mark.execute_serially
   @CustomClusterTestSuite.with_args(num_exclusive_coordinators=1, cluster_size=2)
-  def test_mem_limit_executors(self, vector, unique_database):
+  def test_mem_limit_executors(self, vector):
     """Verify that the query option mem_limit_executors is only enforced on the
     executors."""
     ImpalaTestSuite.change_database(self.client, vector.get_value('table_format'))
@@ -743,7 +745,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
   @CustomClusterTestSuite.with_args(num_exclusive_coordinators=1, cluster_size=2,
       impalad_args=impalad_admission_ctrl_flags(max_requests=1, max_queued=1,
           pool_max_mem=2 * 1024 * 1024 * 1024, proc_mem_limit=3 * 1024 * 1024 * 1024))
-  def test_mem_limits(self, vector, unique_database):
+  def test_mem_limits(self, vector):
     """Verify that the query option mem_limit_coordinators and mem_limit_executors are
     ignored when mem_limit is set."""
     ImpalaTestSuite.change_database(self.client, vector.get_value('table_format'))
@@ -806,7 +808,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
       sleep(STATESTORE_RPC_FREQUENCY_MS / 1000)
       exec_options = copy(vector.get_value('exec_option'))
       exec_options['mem_limit'] = "2G"
-      # Since Queuing is synchronous and we can't close the previous query till this
+      # Since Queuing is synchronous, and we can't close the previous query till this
       # returns, we wait for this to timeout instead.
       self.execute_query(query, exec_options)
     except ImpalaBeeswaxException as e:
@@ -1188,6 +1190,138 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     # per_cluster values used in the test.
     exec_options['num_nodes'] = 1
     self.run_test_case('QueryTest/admission-max-min-mem-limits', vector)
+
+  @pytest.mark.execute_serially
+  @CustomClusterTestSuite.with_args(
+    impalad_args=impalad_admission_ctrl_config_args(
+      fs_allocation_file="fair-scheduler-test2.xml",
+      llama_site_file="llama-site-test2.xml"),
+    statestored_args=_STATESTORED_ARGS)
+  def test_user_loads_propagate(self):
+    """Test that user loads are propagated by checking metric values"""
+    self.check_user_loads(user_loads_present=True, pool='root.queueB')
+
+  @pytest.mark.execute_serially
+  @CustomClusterTestSuite.with_args(
+    impalad_args=impalad_admission_ctrl_config_args(
+      fs_allocation_file="fair-scheduler-3-groups.xml",
+      llama_site_file="llama-site-3-groups.xml"),
+    statestored_args=_STATESTORED_ARGS)
+  def test_user_loads_do_not_propagate(self):
+    """Test that user loads are not propagated if user quotas are not configured
+    as there are no quotas in fair-scheduler-3-groups.xml."""
+    self.check_user_loads(user_loads_present=False, pool="root.tiny")
+
+  def check_user_loads(self, user_loads_present, pool):
+    """Fetches the metrics for user loads from the webui and checks they are as
+    expected."""
+    USER_ROOT = 'root'
+    USER_C = 'userC'
+    query = "select count(*) from functional.alltypes where int_col = sleep(20000)"
+    impalad1 = self.cluster.impalads[0]
+    impalad2 = self.cluster.impalads[1]
+    query1 = self.execute_aync_and_wait_for_running(impalad1, query, USER_C, pool=pool)
+    query2 = self.execute_aync_and_wait_for_running(impalad2, query, USER_ROOT, pool=pool)
+    keys = [
+      "admission-controller.agg-current-users.root.queueB",
+      "admission-controller.local-current-users.root.queueB",
+    ]
+    values1 = impalad1.service.get_metric_values(keys)
+    values2 = impalad2.service.get_metric_values(keys)
+
+    if user_loads_present:
+      # The aggregate users are the same on either server.
+      assert values1[0] == [USER_ROOT, USER_C]
+      assert values2[0] == [USER_ROOT, USER_C]
+      # The local users differ.
+      assert values1[1] == [USER_C]
+      assert values2[1] == [USER_ROOT]
+    else:
+      assert values1[0] is None
+      assert values2[0] is None
+      assert values1[1] is None
+      assert values2[1] is None
+    query1.close()
+    query2.close()
+
+  @pytest.mark.execute_serially
+  @CustomClusterTestSuite.with_args(
+    impalad_args=impalad_admission_ctrl_config_args(
+      fs_allocation_file="fair-scheduler-test2.xml",
+      llama_site_file="llama-site-test2.xml",
+      additional_args="--injected_group_members_debug_only=group1:userB,userC"
+    ),
+    statestored_args=_STATESTORED_ARGS)
+  def test_user_loads_rules(self):
+    """Test that rules for user loads are followed for new queries.
+    Note that some detailed checking of rule semantics is done at the unit test level in
+    admission-controller-test.cc"""
+
+    # The per-pool limit for userA is 3 in root.queueE.
+    self.check_user_load_limits('userA', 'root.queueE', 3, "user")
+    # In queueE the wildcard limit is 1
+    self.check_user_load_limits('random_user', 'root.queueE', 1, "wildcard")
+
+    # userB is in the injected group1, so the limit is 2.
+    self.check_user_load_limits('userB', 'root.queueE', 2, "group", group_name="group1")
+
+    # userD had a limit at the pool level, run it in queueD which has no wildcard limit.
+    self.check_user_load_limits('userD', 'root.queueD', 2, "user", pool_to_fail="root")
+
+  def check_user_load_limits(self, user, pool, limit, err_type, group_name="", pool_to_fail=None):
+    query_handles = []
+    type = "group" if group_name else "user"
+    group_description = " in group " + group_name if group_name else ""
+    pool_that_fails = pool_to_fail if pool_to_fail else pool
+    for i in range(limit):
+      impalad = self.cluster.impalads[i % 2]
+      query_handle = self.execute_aync_and_wait_for_running(impalad, SLOW_QUERY, user,
+                                                            pool=pool)
+      query_handles.append(query_handle)
+
+    # Let state sync across impalads.
+    sleep(STATESTORE_RPC_FREQUENCY_MS / 1000.0)
+
+    # Another query should be rejected
+    impalad = self.cluster.impalads[limit % 2]
+    client = impalad.service.create_beeswax_client()
+    client.set_configuration({'request_pool': pool})
+    try:
+      client.execute(SLOW_QUERY, user=user)
+      assert False, "query should fail"
+    except Exception as e:
+      # Construct the expected error message.
+      expected = ("Rejected query from pool {pool}: current per-{type} load {limit} for "
+                  "user {user}{group_description} is at or above the {err_type} limit "
+                  "{limit} in pool {pool_that_fails}".
+                  format(pool=pool, type=type, limit=limit, user=user,
+                         group_description=group_description, err_type=err_type,
+                         pool_that_fails=pool_that_fails))
+      assert expected in str(e)
+
+    for query_handle in query_handles:
+      query_handle.close()
+
+  class ClientAndHandle:
+    """Holder class for a client and query handle"""
+    def __init__(self, client, handle):
+      self.client = client
+      self.handle = handle
+
+    def close(self):
+      """close the query"""
+      self.client.close_query(self.handle)
+
+  def execute_aync_and_wait_for_running(self, impalad, query, user, pool):
+    # Use beeswax client as it allows specifying the user that runs the query.
+    client = impalad.service.create_beeswax_client()
+    client.set_configuration({'request_pool': pool})
+    handle = client.execute_async(query, user=user)
+    timeout_s = 10
+    # Make sure the query has been admitted and is running.
+    self.wait_for_state(
+      handle, client.QUERY_STATES['RUNNING'], timeout_s, client=client)
+    return self.ClientAndHandle(client, handle)
 
   @pytest.mark.execute_serially
   @CustomClusterTestSuite.with_args(
@@ -1769,6 +1903,7 @@ class TestAdmissionControllerWithACService(TestAdmissionController):
     self.wait_for_state(
         handle2, self.client.QUERY_STATES['RUNNING'], timeout_s, client=client2)
 
+
 class TestAdmissionControllerStress(TestAdmissionControllerBase):
   """Submits a number of queries (parameterized) with some delay between submissions
   (parameterized) and the ability to submit to one impalad or many in a round-robin
@@ -2125,8 +2260,7 @@ class TestAdmissionControllerStress(TestAdmissionControllerBase):
         # Sleep and wait for the query to be cancelled. The cancellation will
         # set the state to EXCEPTION.
         start_time = time()
-        while (client.get_state(self.query_handle) !=
-               client.QUERY_STATES['EXCEPTION']):
+        while (client.get_state(self.query_handle) != client.QUERY_STATES['EXCEPTION']):
           assert (time() - start_time < STRESS_TIMEOUT),\
             "Timed out waiting %s seconds for query cancel" % (STRESS_TIMEOUT,)
           sleep(1)

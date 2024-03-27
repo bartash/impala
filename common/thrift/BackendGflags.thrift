@@ -308,4 +308,6 @@ struct TBackendGflags {
   138: required bool is_release_build
 
   139: required bool enable_catalogd_ha
+
+  140: required string injected_group_members_debug_only
 }

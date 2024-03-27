@@ -310,4 +310,6 @@ struct TBackendGflags {
   139: required bool enable_catalogd_ha
 
   140: required bool iceberg_always_allow_merge_on_read_operations
+
+  141: required string injected_group_members_debug_only
 }

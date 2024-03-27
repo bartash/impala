@@ -17,7 +17,6 @@
 
 #include "scheduling/admission-controller.h"
 
-#include <boost/algorithm/string.hpp>
 #include <boost/mem_fn.hpp>
 #include <gutil/strings/stringpiece.h>
 #include <gutil/strings/substitute.h>
@@ -256,6 +255,7 @@ const string REASON_NO_EXECUTOR_GROUPS =
     "coordinator (either NUM_NODES set to 1 or when small query optimization is "
     "triggered) can currently run.";
 
+// The name of the root pool.
 const string ROOT_POOL = "root";
 
 // Queue decision details
@@ -910,7 +910,7 @@ void AdmissionController::UpdateStatsOnReleaseForBackends(const UniqueIdPB& quer
   for (const auto& host_addr : host_addrs) {
     auto backend_allocation = running_query.per_backend_resources.find(host_addr);
     if (backend_allocation == running_query.per_backend_resources.end()) {
-      // In the context of the admission control service, this may happen, eg. if a
+      // In the context of the admission control service, this may happen, e.g. if a
       // ReleaseQueryBackends rpc is delayed in the network and arrives after the
       // ReleaseQuery rpc, so only log as a WARNING.
       string err_msg =
@@ -1250,8 +1250,7 @@ bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
 
 bool AdmissionController::CanAdmitQuota(const ScheduleState& state,
     const TPoolConfig& pool_cfg, const TPoolConfig& root_cfg, bool admit_from_queue,
-    string* not_admitted_reason, string* not_admitted_details,
-    bool& coordinator_resource_limited) {
+    string* not_admitted_reason) {
   PoolStats* pool_stats = GetPoolStats(state);
 
   // FIXME asherman can we only reject if admit_from_queue=false?
@@ -1259,7 +1258,7 @@ bool AdmissionController::CanAdmitQuota(const ScheduleState& state,
   // Suppose we enforce
   // Check quotas at pool level
 
-  // FIXME asherman remove admit_from_queue
+  // FIXME asherman remove or explain admit_from_queue
   if (!admit_from_queue) {
     // Enforce quotas before query is queued.
     // If you don't enforce at submission time them users can queue queries only to have
@@ -1711,7 +1710,7 @@ void AdmissionController::ReleaseQuery(const UniqueIdPB& query_id,
     lock_guard<mutex> lock(admission_ctrl_lock_);
     auto host_it = running_queries_.find(coord_id);
     if (host_it == running_queries_.end()) {
-      // In the context of the admission control service, this may happen, eg. if a
+      // In the context of the admission control service, this may happen, e.g. if a
       // coordinator is reported as failed by the statestore but a ReleaseQuery rpc from
       // it is delayed in the network and arrives much later.
       LOG(WARNING) << "Unable to find host " << PrintId(coord_id)
@@ -1771,7 +1770,7 @@ void AdmissionController::ReleaseQueryBackendsLocked(const UniqueIdPB& query_id,
     const UniqueIdPB& coord_id, const vector<NetworkAddressPB>& host_addrs) {
   auto host_it = running_queries_.find(coord_id);
   if (host_it == running_queries_.end()) {
-    // In the context of the admission control service, this may happen, eg. if a
+    // In the context of the admission control service, this may happen, e.g. if a
     // coordinator is reported as failed by the statestore but a ReleaseQuery rpc from
     // it is delayed in the network and arrives much later.
     LOG(WARNING) << "Unable to find host " << PrintId(coord_id)
@@ -1781,7 +1780,7 @@ void AdmissionController::ReleaseQueryBackendsLocked(const UniqueIdPB& query_id,
   }
   auto it = host_it->second.find(query_id);
   if (it == host_it->second.end()) {
-    // In the context of the admission control service, this may happen, eg. if a
+    // In the context of the admission control service, this may happen, e.g. if a
     // ReleaseQueryBackends rpc is delayed in the network and arrives after the
     // ReleaseQuery rpc, so only log as a WARNING.
     LOG(WARNING) << "Unable to find resources to release backends for query "
@@ -1797,7 +1796,7 @@ void AdmissionController::ReleaseQueryBackendsLocked(const UniqueIdPB& query_id,
   if (released_backends != num_released_backends_.end()) {
     released_backends->second -= host_addrs.size();
   } else {
-    // In the context of the admission control service, this may happen, eg. if a
+    // In the context of the admission control service, this may happen, e.g. if a
     // ReleaseQueryBackends rpc is delayed in the network and arrives after the
     // ReleaseQuery rpc, so only log as a WARNING.
     string err_msg = Substitute(
@@ -2257,11 +2256,11 @@ bool AdmissionController::FindGroupToAdmitOrReject(
       return false;
     }
 
-    if (!CanAdmitQuota(*state, pool_config, root_cfg, admit_from_queue,
-            &queue_node->not_admitted_reason, &queue_node->not_admitted_details,
-            coordinator_resource_limited)) {
-      // Reject query.
-      queue_node->admitted_schedule = std::move(group_state.state);
+    // Query is rejected if user quotas are in place and quoya is exceeded.
+    if (!CanAdmitQuota(
+            *state, pool_config, root_cfg, admit_from_queue, &rejection_reason)) {
+      DCHECK(!rejection_reason.empty());
+      queue_node->not_admitted_reason = rejection_reason;
       return false;
     }
     if (CanAdmitRequest(*state, pool_config, root_cfg, admit_from_queue,

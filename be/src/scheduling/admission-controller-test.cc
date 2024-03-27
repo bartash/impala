@@ -412,8 +412,8 @@ class AdmissionControllerTest : public testing::Test {
         30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, user);
 
     bool coordinator_resource_limited = false;
-    bool can_admit = admission_controller->CanAdmitQuota(*schedule_state, pool_to_submit,
-        config_root, false, not_admitted_reason, nullptr, coordinator_resource_limited);
+    bool can_admit = admission_controller->CanAdmitQuota(
+        *schedule_state, pool_to_submit, config_root, false, not_admitted_reason);
     EXPECT_FALSE(coordinator_resource_limited);
     return can_admit;
   }
@@ -701,36 +701,31 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   pool_stats->local_stats_.num_queued = 0;
   // Test with load == limit, should fail
   pool_stats->agg_user_loads_.insert(USER_A, 3);
-  ASSERT_FALSE(
-      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
-          false, &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_FALSE(admission_controller->CanAdmitQuota(
+      *schedule_state, config_e, config_root, false, &not_admitted_reason));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "current per-user load 3 for user userA is at or above the user limit 3");
 
   // If UserA's load is 2 it should be admitted because the user rule takes precedence
   // over the wildcard rule.
   pool_stats->agg_user_loads_.insert(USER_A, 2);
-  ASSERT_TRUE(
-      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
-          false, &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_TRUE(admission_controller->CanAdmitQuota(
+      *schedule_state, config_e, config_root, false, &not_admitted_reason));
 
   // Test wildcards with User3
   schedule_state = MakeScheduleState(QUEUE_E, config_e, host_count, 30L * MEGABYTE,
       ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, USER3);
-  ASSERT_TRUE(
-      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
-          false, &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_TRUE(admission_controller->CanAdmitQuota(
+      *schedule_state, config_e, config_root, false, &not_admitted_reason));
   pool_stats->agg_user_loads_.insert(USER3, 3);
-  ASSERT_FALSE(
-      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
-          false, &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_FALSE(admission_controller->CanAdmitQuota(
+      *schedule_state, config_e, config_root, false, &not_admitted_reason));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "current per-user load 3 for user user3 is at or above the wildcard limit 1");
 
   pool_stats->agg_user_loads_.clear_key(USER3);
-  ASSERT_TRUE(
-      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
-          false, &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_TRUE(admission_controller->CanAdmitQuota(
+      *schedule_state, config_e, config_root, false, &not_admitted_reason));
 
   // Test group quotas
 
@@ -746,9 +741,8 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   ASSERT_TRUE(SetHadoopGroups(groups));
 
   pool_stats->agg_user_loads_.insert(USER3, 2);
-  ASSERT_FALSE(
-      admission_controller->CanAdmitQuota(*schedule_state, config_e, config_root,
-          false, &not_admitted_reason, nullptr, coordinator_resource_limited));
+  ASSERT_FALSE(admission_controller->CanAdmitQuota(
+      *schedule_state, config_e, config_root, false, &not_admitted_reason));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "current per-group load 2 for user user3 in group group1 is at or above the group "
       "limit 2");

@@ -118,6 +118,7 @@ Frontend::Frontend() {
     {"getHadoopConfig", "([B)[B", &get_hadoop_config_id_},
     {"getAllHadoopConfigs", "()[B", &get_hadoop_configs_id_},
     {"getHadoopGroups", "([B)[B", &get_hadoop_groups_id_},
+    {"setHadoopGroups", "([B)[B", &set_hadoop_groups_id_},
     {"checkConfiguration", "()Ljava/lang/String;", &check_config_id_},
     {"updateCatalogCache", "([B)[B", &update_catalog_cache_id_},
     {"updateExecutorMembership", "([B)V", &update_membership_id_},
@@ -347,6 +348,11 @@ Status Frontend::GetHadoopConfig(const TGetHadoopConfigRequest& request,
 Status Frontend::GetHadoopGroups(const TGetHadoopGroupsRequest& request,
     TGetHadoopGroupsResponse* response) {
   return JniUtil::CallJniMethod(fe_, get_hadoop_groups_id_, request, response);
+}
+
+Status Frontend::SetHadoopGroups(const TSetHadoopGroupsRequest& request,
+    TSetHadoopGroupsResponse* response) {
+  return JniUtil::CallJniMethod(fe_, set_hadoop_groups_id_, request, response);
 }
 
 Status Frontend::LoadData(const TLoadDataReq& request, TLoadDataResp* response) {

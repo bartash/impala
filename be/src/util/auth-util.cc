@@ -47,6 +47,12 @@ const string& GetEffectiveUser(const TSessionState& session) {
   return session.connected_user;
 }
 
+string GetEffectiveShortUser(const TSessionState& session) {
+  // If the name is not a kerberos principal, then GetShortUsernameFromKerberosPrincipal()
+  // has no effect.
+  return GetShortUsernameFromKerberosPrincipal(GetEffectiveUser(session));
+}
+
 const string& GetEffectiveUser(const ImpalaServer::SessionState& session) {
   return session.do_as_user.empty() ? session.connected_user : session.do_as_user;
 }

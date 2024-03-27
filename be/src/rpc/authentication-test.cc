@@ -280,6 +280,52 @@ TEST(Auth, LdapKerbAuthCustomFiltersNotAllowed) {
   ASSERT_FALSE(ap->is_secure());
 }
 
+// Checks that GetEffectiveUser() returns the expected values
+void assertEffectiveUser(
+    const string& connected_user, const string& delegated_user, const string& expected) {
+  TSessionState session;
+  if (!connected_user.empty()) session.__set_connected_user(connected_user);
+  if (!delegated_user.empty()) session.__set_delegated_user(delegated_user);
+  ASSERT_EQ(GetEffectiveUser(session), expected);
+}
+
+// Checks that GetEffectiveShortUser() returns the expected values
+void assertEffectiveShortUser(
+    const string& connected_user, const string& delegated_user, const string& expected) {
+  TSessionState session;
+  if (!connected_user.empty()) session.__set_connected_user(connected_user);
+  if (!delegated_user.empty()) session.__set_delegated_user(delegated_user);
+  ASSERT_EQ(GetEffectiveShortUser(session), expected);
+}
+
+// Unit test for GetShortUsernameFromKerberosPrincipal().;
+TEST(Auth, UserUtilities) {
+  // Usernames that are not mutated by GetShortUsernameFromKerberosPrincipal().
+  const char* unchanged_usernames[] = {
+      "andrew", "andrew_sherman", "andrew-sherman", "Andrew"};
+  for (auto& name : unchanged_usernames) {
+    ASSERT_EQ(GetShortUsernameFromKerberosPrincipal(name), name);
+  }
+
+  // Kerberos usernames and the derived short name.
+  std::pair<const char*, const char*> kerberos_name_mappings[] = {
+      {"impala@ROOT.COMOPS.SITE", "impala"},
+      {"changepw/kdc1.example.com@EXAMPLE.COM", "changepw"},
+      {"krbtgt/EAST.EXAMPLE.COM@WEST.EXAMPLE.COM", "krbtgt"}
+  };
+  for (const auto& pair : kerberos_name_mappings) {
+    ASSERT_EQ(GetShortUsernameFromKerberosPrincipal(pair.first), pair.second);
+  }
+
+  assertEffectiveUser("connected1", "delegated1", "delegated1");
+  assertEffectiveUser("connected1", "", "connected1");
+  assertEffectiveUser("impala@ROOT.COMOPS.SITE", "", "impala@ROOT.COMOPS.SITE");
+
+  assertEffectiveShortUser("connected1", "delegated1", "delegated1");
+  assertEffectiveShortUser("connected1", "", "connected1");
+  assertEffectiveShortUser("impala@ROOT.COMOPS.SITE", "", "impala");
+}
+
 }
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

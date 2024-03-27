@@ -41,6 +41,9 @@ const std::string& GetEffectiveUser(const TSessionState& session);
 /// Same behavior as the function above with different input parameter type.
 const std::string& GetEffectiveUser(const ImpalaServer::SessionState& session);
 
+/// As the above GetEffectiveUser(), but returns the short form of the name.
+std::string GetEffectiveShortUser(const TSessionState& session);
+
 /// Checks if 'user' can access the runtime profile or execution summary of a
 /// statement by comparing 'user' with the user that run the statement, 'effective_user',
 /// and checking if 'effective_user' is authorized to access the profile, as indicated by

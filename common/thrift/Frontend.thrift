@@ -967,6 +967,16 @@ struct TGetHadoopGroupsResponse {
   1: required list<string> groups
 }
 
+struct TSetHadoopGroupsRequest {
+  // The list of groups that the user belongs to.
+  1: required map<string, set<string>> groups
+}
+
+struct TSetHadoopGroupsResponse {
+  // A repsonse status
+  1: required Status.TStatus status
+}
+
 // For creating a test descriptor table. The tuples and their memory layout are computed
 // in the FE.
 struct TBuildTestDescriptorTableParams {

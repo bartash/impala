@@ -180,6 +180,10 @@ class Frontend {
   Status GetHadoopGroups(const TGetHadoopGroupsRequest& request,
       TGetHadoopGroupsResponse* response);
 
+  /// Sets the list of groups for the given user for white box testing only
+  Status SetHadoopGroups(const TSetHadoopGroupsRequest& request,
+      TSetHadoopGroupsResponse* response);
+
   /// Loads a single file or set of files into a table or partition. Saves the RPC
   /// response in the TLoadDataResp output parameter. Returns OK if the operation
   /// completed successfully.
@@ -246,6 +250,7 @@ class Frontend {
   jmethodID get_hadoop_config_id_;  // JniFrontend.getHadoopConfig(byte[])
   jmethodID get_hadoop_configs_id_;  // JniFrontend.getAllHadoopConfigs()
   jmethodID get_hadoop_groups_id_;  // JniFrontend.getHadoopGroups()
+  jmethodID set_hadoop_groups_id_;  // JniFrontend.setHadoopGroups()
   jmethodID check_config_id_; // JniFrontend.checkConfiguration()
   jmethodID update_catalog_cache_id_; // JniFrontend.updateCatalogCache(byte[][])
   jmethodID update_membership_id_; // JniFrontend.updateMembership()

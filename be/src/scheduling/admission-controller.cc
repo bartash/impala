@@ -2039,7 +2039,9 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
   // FIXME add DCHECKS for agg_user_loads_
 
   if (agg_num_running_ == num_running && agg_num_queued_ == num_queued
-      && agg_mem_reserved_ == mem_reserved) {
+      && agg_mem_reserved_ == mem_reserved
+      && agg_user_loads_.get_user_loads() == new_agg_user_loads.get_user_loads()) {
+    // Nothing changed
     DCHECK_EQ(num_running, metrics_.agg_num_running->GetValue());
     DCHECK_EQ(num_queued, metrics_.agg_num_queued->GetValue());
     DCHECK_EQ(mem_reserved, metrics_.agg_mem_reserved->GetValue());

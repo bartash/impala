@@ -386,11 +386,11 @@ class AdmissionControllerTest : public testing::Test {
   // Try and run a query in a 2-pool system.
   bool can_queue(const char* user, int64 current_load_small, int64 current_load_large,
       bool use_small_queue, string* not_admitted_reason) {
-    
     AdmissionController* admission_controller = MakeAdmissionController();
-    RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
-    
-    // Get the PoolConfig for the global "root" configuration.
+    RequestPoolService* request_pool_service =
+        admission_controller->request_pool_service_;
+
+    // Get the PoolConfigs.
     TPoolConfig config_root;
     EXPECT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
     TPoolConfig config_large;
@@ -404,7 +404,8 @@ class AdmissionControllerTest : public testing::Test {
     admission_controller->UpdateClusterAggregates();
 
     // Validate the aggregation done in UpdateClusterAggregates().
-    EXPECT_EQ(current_load_small + current_load_large, admission_controller->root_agg_user_loads_.get(user));
+    EXPECT_EQ(current_load_small + current_load_large,
+        admission_controller->root_agg_user_loads_.get(user));
     AdmissionController::PoolStats* large_pool_stats =
         admission_controller->GetPoolStats(QUEUE_LARGE, true);
     AdmissionController::PoolStats* small_pool_stats =
@@ -415,8 +416,8 @@ class AdmissionControllerTest : public testing::Test {
     TPoolConfig pool_to_submit = use_small_queue ? config_small : config_large;
     string pool_name_to_submit = use_small_queue ? QUEUE_SMALL : QUEUE_LARGE;
 
-    ScheduleState* schedule_state = MakeScheduleState(pool_name_to_submit, pool_to_submit, 12,
-        30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, user);
+    ScheduleState* schedule_state = MakeScheduleState(pool_name_to_submit, pool_to_submit,
+        12, 30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, user);
 
     bool coordinator_resource_limited = false;
     bool can_admit = admission_controller->CanAdmitQuota(

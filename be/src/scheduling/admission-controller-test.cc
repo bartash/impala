@@ -404,6 +404,15 @@ class AdmissionControllerTest : public testing::Test {
 
     admission_controller->UpdateClusterAggregates();
 
+    // Validate aggregation in UpdateClusterAggregates().
+    EXPECT_EQ(current_load_small + current_load_large, admission_controller->root_agg_user_loads_.get(user));
+    AdmissionController::PoolStats* large_pool_stats =
+        admission_controller->GetPoolStats(QUEUE_LARGE, true);
+    AdmissionController::PoolStats* small_pool_stats =
+        admission_controller->GetPoolStats(QUEUE_SMALL, true);
+    EXPECT_EQ(current_load_small, small_pool_stats->GetUserLoad(user));
+    EXPECT_EQ(current_load_large, large_pool_stats->GetUserLoad(user));
+
     TPoolConfig pool_to_submit = use_small_queue ? config_small : config_large;
     string pool_name_to_submit = use_small_queue ? QUEUE_SMALL : QUEUE_LARGE;
 

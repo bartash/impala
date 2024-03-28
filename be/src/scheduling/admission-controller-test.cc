@@ -374,14 +374,13 @@ class AdmissionControllerTest : public testing::Test {
     return true;
   }
 
-  // Set the per-user loads for a pool.
+  // Set the per-user loads for a pool. Used only for testing.
   static void set_user_loads(AdmissionController* admission_controller, const char* user,
       const string& pool_name, int64 load) {
-    AdmissionController::PoolStats* large_pool_stats =
-        admission_controller->GetPoolStats(pool_name);
-    TPoolStats stats_large;
-    stats_large.user_loads[user] = load;
-    large_pool_stats->local_stats_ = stats_large;
+    AdmissionController::PoolStats* stats = admission_controller->GetPoolStats(pool_name);
+    TPoolStats pool_stats;
+    pool_stats.user_loads[user] = load;
+    stats->local_stats_ = pool_stats;
   }
 
   // Try and run a query in a 2-pool system.
@@ -404,7 +403,7 @@ class AdmissionControllerTest : public testing::Test {
 
     admission_controller->UpdateClusterAggregates();
 
-    // Validate aggregation in UpdateClusterAggregates().
+    // Validate the aggregation done in UpdateClusterAggregates().
     EXPECT_EQ(current_load_small + current_load_large, admission_controller->root_agg_user_loads_.get(user));
     AdmissionController::PoolStats* large_pool_stats =
         admission_controller->GetPoolStats(QUEUE_LARGE, true);
@@ -415,7 +414,6 @@ class AdmissionControllerTest : public testing::Test {
 
     TPoolConfig pool_to_submit = use_small_queue ? config_small : config_large;
     string pool_name_to_submit = use_small_queue ? QUEUE_SMALL : QUEUE_LARGE;
-
 
     ScheduleState* schedule_state = MakeScheduleState(pool_name_to_submit, pool_to_submit, 12,
         30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, user);

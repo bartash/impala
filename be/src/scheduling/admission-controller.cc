@@ -2002,8 +2002,7 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
   int64_t num_running = 0;
   int64_t num_queued = 0;
   int64_t mem_reserved = 0;
-  agg_user_loads_.clear();
-  metrics_.agg_current_users->Reset();
+  AggregatedUserLoads  new_agg_user_loads;
   for (const PoolStats::RemoteStatsMap::value_type& remote_entry : remote_stats_) {
     const string& host = remote_entry.first;
     // Skip an update from this subscriber as the information may be outdated.
@@ -2016,7 +2015,7 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
     num_running += remote_pool_stats.num_admitted_running;
     num_queued += remote_pool_stats.num_queued;
 
-    agg_user_loads_.add_loads(remote_pool_stats.user_loads);
+    new_agg_user_loads.add_loads(remote_pool_stats.user_loads);
 
     // Update the per-pool and per-host aggregates with the mem reserved by this host in
     // this pool.
@@ -2030,8 +2029,7 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
   num_queued += local_stats_.num_queued;
   mem_reserved += local_stats_.backend_mem_reserved;
   (*host_mem_reserved)[coord_id] += local_stats_.backend_mem_reserved;
-  agg_user_loads_.add_loads(local_stats_.user_loads);
-  agg_user_loads_.export_users(metrics_.agg_current_users);
+  new_agg_user_loads.add_loads(local_stats_.user_loads);
 
   DCHECK_GE(num_running, 0);
   DCHECK_GE(num_queued, 0);
@@ -2054,6 +2052,12 @@ void AdmissionController::PoolStats::UpdateAggregates(HostMemMap* host_mem_reser
   metrics_.agg_num_running->SetValue(num_running);
   metrics_.agg_num_queued->SetValue(num_queued);
   metrics_.agg_mem_reserved->SetValue(mem_reserved);
+
+  agg_user_loads_.clear();
+  agg_user_loads_.add_loads(new_agg_user_loads.get_user_loads());
+  metrics_.agg_current_users->Reset();
+  new_agg_user_loads.export_users(metrics_.agg_current_users);
+
   VLOG_ROW << "Updated: " << DebugString();
 }
 

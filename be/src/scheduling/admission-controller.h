@@ -550,7 +550,7 @@ class AdmissionController {
     /// Merge in loads from a map.
     void add_loads(const UserLoads& loads);
 
-    /// Export keys to a metrics object.
+    /// Export user names to a metrics set.
     void export_users(SetMetric<std::string>* metrics);
 
     /// Print the keys and values from loads_ into a string.

@@ -1132,7 +1132,6 @@ void ImpalaServer::ArchiveQuery(const QueryHandle& query_handle) {
     }
   }
 
-  if (FLAGS_query_log_size == 0 || FLAGS_query_log_size_in_bytes == 0) return;
   // 'fetch_rows_lock()' protects several fields in ClientRequestState that are read
   // during QueryStateRecord creation. There should be no contention on this lock because
   // the query has already been closed (e.g. no more results can be fetched).

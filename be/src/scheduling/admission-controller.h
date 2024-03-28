@@ -665,7 +665,8 @@ class AdmissionController {
     typedef boost::unordered_map<std::string, int64_t> HostMemMap;
 
     /// Called after updating local_stats_ and remote_stats_ to update the aggregate
-    /// values of agg_num_running_, agg_num_queued_, and agg_mem_reserved_. The in/out
+    /// values of agg_num_running_, agg_num_queued_, agg_mem_reserved_
+    /// and agg_user_loads_. The in/out
     /// parameter host_mem_reserved is a map from host id to memory reserved used to
     /// aggregate the mem reserved values across all pools for each host. Used by
     /// UpdateClusterAggregates() to update host_mem_reserved_; it provides the host
@@ -792,12 +793,12 @@ class AdmissionController {
     FRIEND_TEST(AdmissionControllerTest, PoolStats);
     FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestMemory);
     FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestCount);
-    FRIEND_TEST(AdmissionControllerTest, UserAndGroupQuotas);
-    FRIEND_TEST(AdmissionControllerTest, QuotaExamples);
     FRIEND_TEST(AdmissionControllerTest, GetMaxToDequeue);
     FRIEND_TEST(AdmissionControllerTest, QueryRejection);
     FRIEND_TEST(AdmissionControllerTest, TopNQueryCheck);
     FRIEND_TEST(AdmissionControllerTest, AggregatedUserLoads);
+    FRIEND_TEST(AdmissionControllerTest, UserAndGroupQuotas);
+    FRIEND_TEST(AdmissionControllerTest, QuotaExamples);
     friend class AdmissionControllerTest;
   };
 

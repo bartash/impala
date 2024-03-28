@@ -385,7 +385,7 @@ class AdmissionControllerTest : public testing::Test {
   }
 
   // Try and run a query in a 2-pool system.
-  bool can_queue(const char* user, int64 current_queued_small, int64 current_queued_large,
+  bool can_queue(const char* user, int64 current_load_small, int64 current_load_large,
       bool use_small_queue, string* not_admitted_reason) {
     
     AdmissionController* admission_controller = MakeAdmissionController();
@@ -399,8 +399,8 @@ class AdmissionControllerTest : public testing::Test {
     TPoolConfig config_small;
     EXPECT_OK(request_pool_service->GetPoolConfig(QUEUE_SMALL, &config_small));
 
-    set_user_loads(admission_controller, user, QUEUE_LARGE, current_queued_large);
-    set_user_loads(admission_controller, user, QUEUE_SMALL, current_queued_small);
+    set_user_loads(admission_controller, user, QUEUE_LARGE, current_load_large);
+    set_user_loads(admission_controller, user, QUEUE_SMALL, current_load_small);
 
     admission_controller->UpdateClusterAggregates();
 

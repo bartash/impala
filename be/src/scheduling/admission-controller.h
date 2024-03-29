@@ -608,10 +608,6 @@ class AdmissionController {
       IntGauge* max_query_cpu_core_coordinator_limit;
     };
 
-
-
-
-
     PoolStats(AdmissionController* parent, const std::string& name)
       : name_(name),
         parent_(parent),

@@ -148,7 +148,7 @@ class AdmissionControllerTest : public testing::Test {
       const string& executor_group = ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME,
       const string& delegated_user = USER1) {
     return MakeScheduleState(request_pool_name, 0, config, num_hosts,
-        per_host_mem_estimate, per_host_mem_estimate, false, executor_group,
+        per_host_mem_estimate, per_host_mem_estimate, false, executor_group, -1, -1,
         delegated_user);
   }
 
@@ -1014,6 +1014,7 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestSlots) {
   ASSERT_FALSE(coordinator_resource_limited);
   // Assert that coordinator-only schedule also not admitted.
   ASSERT_FALSE(admission_controller->CanAdmitRequest(*coordinator_only_schedule, config_d,
+      config_root,
       true, &not_admitted_reason, nullptr, coordinator_resource_limited));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "Not enough admission control slots available on host host0:25000. Needed 4 "
@@ -1034,6 +1035,9 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestSlotsDefault) {
   TPoolConfig pool_config;
   ASSERT_OK(request_pool_service->GetPoolConfig(
       RequestPoolService::DEFAULT_POOL_NAME, &pool_config));
+
+  TPoolConfig config_root;
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
 
   // Create ScheduleStates to run on "default-pool" on 12 hosts.
   // Running both distributed and coordinator-only schedule.
@@ -1060,13 +1064,14 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestSlotsDefault) {
   // All schedules should be admitted.
   SetSlotsInUse(admission_controller, host_addrs, slots_per_host);
   ASSERT_TRUE(admission_controller->CanAdmitRequest(*default_pool_schedule, pool_config,
+      config_root,
       true, &not_admitted_reason, nullptr, coordinator_resource_limited))
       << not_admitted_reason;
   ASSERT_FALSE(coordinator_resource_limited);
   ASSERT_EQ(coordinator_only_schedule->executor_group(),
       ClusterMembershipMgr::EMPTY_GROUP_NAME);
   ASSERT_TRUE(admission_controller->CanAdmitRequest(*coordinator_only_schedule,
-      pool_config, true, &not_admitted_reason, nullptr, coordinator_resource_limited))
+      pool_config, config_root, true, &not_admitted_reason, nullptr, coordinator_resource_limited))
       << not_admitted_reason;
   ASSERT_FALSE(coordinator_resource_limited);
 }

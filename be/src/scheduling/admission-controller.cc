@@ -2424,104 +2424,108 @@ void AdmissionController::DequeueLoop() {
       dequeue_cv_.Wait(lock);
     }
     pending_dequeue_ = false;
-    ClusterMembershipMgr::SnapshotPtr membership_snapshot =
-        cluster_membership_mgr_->GetSnapshot();
+    TryDequeue();
+  }
+}
 
-    // If a query was queued while the cluster is still starting up but the client facing
-    // services have already started to accept connections, the whole membership can still
-    // be empty.
-    if (membership_snapshot->executor_groups.empty()) continue;
+void AdmissionController::TryDequeue() {
+  ClusterMembershipMgr::SnapshotPtr membership_snapshot =
+      cluster_membership_mgr_->GetSnapshot();
 
-    for (const PoolConfigMap::value_type& entry: pool_config_map_) {
-      const string& pool_name = entry.first;
-      const TPoolConfig& pool_config = entry.second;
-      PoolStats* stats = GetPoolStats(pool_name, /* dcheck_exists=*/true);
+  // If a query was queued while the cluster is still starting up but the client facing
+  // services have already started to accept connections, the whole membership can still
+  // be empty.
+  if (membership_snapshot->executor_groups.empty()) return;
 
-      if (stats->local_stats().num_queued == 0) continue; // Nothing to dequeue
-      DCHECK_GE(stats->agg_num_queued(), stats->local_stats().num_queued);
+  for (const PoolConfigMap::value_type& entry: pool_config_map_) {
+    const string& pool_name = entry.first;
+    const TPoolConfig& pool_config = entry.second;
+    PoolStats* stats = GetPoolStats(pool_name, /* dcheck_exists=*/true);
 
-      RequestQueue& queue = request_queue_map_[pool_name];
-      int64_t max_to_dequeue = GetMaxToDequeue(queue, stats, pool_config);
-      VLOG_RPC << "Dequeue thread will try to admit " << max_to_dequeue << " requests"
-               << ", pool=" << pool_name
-               << ", num_queued=" << stats->local_stats().num_queued
-               << " cluster_size=" << GetClusterSize(*membership_snapshot);
-      if (max_to_dequeue == 0) continue; // to next pool.
+    if (stats->local_stats().num_queued == 0) continue; // Nothing to dequeue
+    DCHECK_GE(stats->agg_num_queued(), stats->local_stats().num_queued);
 
-      while (max_to_dequeue > 0 && !queue.empty()) {
-        QueueNode* queue_node = queue.head();
-        DCHECK(queue_node != nullptr);
-        // Find a group that can admit the query
-        bool is_cancelled = queue_node->admit_outcome->IsSet()
-            && queue_node->admit_outcome->Get() == AdmissionOutcome::CANCELLED;
+    RequestQueue& queue = request_queue_map_[pool_name];
+    int64_t max_to_dequeue = GetMaxToDequeue(queue, stats, pool_config);
+    VLOG_RPC << "Dequeue thread will try to admit " << max_to_dequeue << " requests"
+             << ", pool=" << pool_name
+             << ", num_queued=" << stats->local_stats().num_queued
+             << " cluster_size=" << GetClusterSize(*membership_snapshot);
+    if (max_to_dequeue == 0) continue; // to next pool.
 
-        bool coordinator_resource_limited = false;
-        bool is_trivial = false;
-        bool is_rejected = !is_cancelled
-            && !FindGroupToAdmitOrReject(membership_snapshot, pool_config,
-                queue_node->root_cfg,
-                /* admit_from_queue=*/true, stats, queue_node,
-                coordinator_resource_limited, &is_trivial);
+    while (max_to_dequeue > 0 && !queue.empty()) {
+      QueueNode* queue_node = queue.head();
+      DCHECK(queue_node != nullptr);
+      // Find a group that can admit the query
+      bool is_cancelled = queue_node->admit_outcome->IsSet()
+          && queue_node->admit_outcome->Get() == AdmissionOutcome::CANCELLED;
 
-        if (!is_cancelled && !is_rejected
-            && queue_node->admitted_schedule.get() == nullptr) {
-          // If no group was found, stop trying to dequeue.
-          // TODO(IMPALA-2968): Requests further in the queue may be blocked
-          // unnecessarily. Consider a better policy once we have better test scenarios.
-          LogDequeueFailed(queue_node, queue_node->not_admitted_reason);
-          if (coordinator_resource_limited) {
-            // Dequeue failed because of a resource issue that can't be solved by adding
-            // more executor groups. The common reason for this is that we are hitting a
-            // limit on the coordinator.
-            total_dequeue_failed_coordinator_limited_->Increment(1);
-          }
-          break;
+      bool coordinator_resource_limited = false;
+      bool is_trivial = false;
+      bool is_rejected = !is_cancelled
+          && !FindGroupToAdmitOrReject(membership_snapshot, pool_config,
+              queue_node->root_cfg,
+              /* admit_from_queue=*/true, stats, queue_node,
+              coordinator_resource_limited, &is_trivial);
+
+      if (!is_cancelled && !is_rejected
+          && queue_node->admitted_schedule.get() == nullptr) {
+        // If no group was found, stop trying to dequeue.
+        // TODO(IMPALA-2968): Requests further in the queue may be blocked
+        // unnecessarily. Consider a better policy once we have better test scenarios.
+        LogDequeueFailed(queue_node, queue_node->not_admitted_reason);
+        if (coordinator_resource_limited) {
+          // Dequeue failed because of a resource issue that can't be solved by adding
+          // more executor groups. The common reason for this is that we are hitting a
+          // limit on the coordinator.
+          total_dequeue_failed_coordinator_limited_->Increment(1);
         }
-
-        // At this point we know that the query must be taken off the queue
-        queue.Dequeue();
-        --max_to_dequeue;
-        VLOG(3) << "Dequeueing from stats for pool " << pool_name;
-        stats->Dequeue(false);
-
-        if (is_rejected) {
-          AdmissionOutcome outcome =
-              queue_node->admit_outcome->Set(AdmissionOutcome::REJECTED);
-          if (outcome == AdmissionOutcome::REJECTED) {
-            stats->metrics()->total_rejected->Increment(1);
-            continue; // next query
-          } else {
-            DCHECK_ENUM_EQ(outcome, AdmissionOutcome::CANCELLED);
-            is_cancelled = true;
-          }
-        }
-        DCHECK(is_cancelled || queue_node->admitted_schedule != nullptr);
-
-        const UniqueIdPB& query_id = queue_node->admission_request.query_id;
-        if (!is_cancelled) {
-          VLOG_QUERY << "Admitting from queue: query=" << PrintId(query_id);
-          AdmissionOutcome outcome =
-              queue_node->admit_outcome->Set(AdmissionOutcome::ADMITTED);
-          if (outcome != AdmissionOutcome::ADMITTED) {
-            DCHECK_ENUM_EQ(outcome, AdmissionOutcome::CANCELLED);
-            is_cancelled = true;
-          }
-        }
-
-        if (is_cancelled) {
-          VLOG_QUERY << "Dequeued cancelled query=" << PrintId(query_id);
-          continue; // next query
-        }
-
-        DCHECK(queue_node->admit_outcome->IsSet());
-        DCHECK_ENUM_EQ(queue_node->admit_outcome->Get(), AdmissionOutcome::ADMITTED);
-        DCHECK(!is_cancelled);
-        DCHECK(!is_rejected);
-        DCHECK(queue_node->admitted_schedule != nullptr);
-        AdmitQuery(queue_node, true /* was_queued */, is_trivial);
+        break;
       }
-      pools_for_updates_.insert(pool_name);
+
+      // At this point we know that the query must be taken off the queue
+      queue.Dequeue();
+      --max_to_dequeue;
+      VLOG(3) << "Dequeueing from stats for pool " << pool_name;
+      stats->Dequeue(false);
+
+      if (is_rejected) {
+        AdmissionOutcome outcome =
+            queue_node->admit_outcome->Set(AdmissionOutcome::REJECTED);
+        if (outcome == AdmissionOutcome::REJECTED) {
+          stats->metrics()->total_rejected->Increment(1);
+          return; // next query
+        } else {
+          DCHECK_ENUM_EQ(outcome, AdmissionOutcome::CANCELLED);
+          is_cancelled = true;
+        }
+      }
+      DCHECK(is_cancelled || queue_node->admitted_schedule != nullptr);
+
+      const UniqueIdPB& query_id = queue_node->admission_request.query_id;
+      if (!is_cancelled) {
+        VLOG_QUERY << "Admitting from queue: query=" << PrintId(query_id);
+        AdmissionOutcome outcome =
+            queue_node->admit_outcome->Set(AdmissionOutcome::ADMITTED);
+        if (outcome != AdmissionOutcome::ADMITTED) {
+          DCHECK_ENUM_EQ(outcome, AdmissionOutcome::CANCELLED);
+          is_cancelled = true;
+        }
+      }
+
+      if (is_cancelled) {
+        VLOG_QUERY << "Dequeued cancelled query=" << PrintId(query_id);
+        return; // next query
+      }
+
+      DCHECK(queue_node->admit_outcome->IsSet());
+      DCHECK_ENUM_EQ(queue_node->admit_outcome->Get(), AdmissionOutcome::ADMITTED);
+      DCHECK(!is_cancelled);
+      DCHECK(!is_rejected);
+      DCHECK(queue_node->admitted_schedule != nullptr);
+      AdmitQuery(queue_node, true /* was_queued */, is_trivial);
     }
+    pools_for_updates_.insert(pool_name);
   }
 }
 

@@ -1054,6 +1054,7 @@ class AdmissionController {
   /// Dequeues the queued queries when notified by dequeue_cv_ and admits them if they
   /// have not been cancelled yet.
   void DequeueLoop();
+  void TryDequeue();
 
   /// Returns true if schedule can be admitted to the pool with pool_cfg.
   /// admit_from_queue is true if attempting to admit from the queue. Otherwise, returns

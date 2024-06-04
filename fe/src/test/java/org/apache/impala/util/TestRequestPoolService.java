@@ -17,17 +17,23 @@
 
 package org.apache.impala.util;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.net.URISyntaxException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTH_TO_LOCAL;
 
-import com.ibm.icu.impl.coll.Collation;
+import com.google.common.collect.Iterables;
+import com.google.common.io.Files;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.impala.authorization.User;
+import org.apache.impala.common.ByteUnits;
+import org.apache.impala.common.InternalException;
+import org.apache.impala.common.RuntimeEnv;
+import org.apache.impala.thrift.TErrorCode;
+import org.apache.impala.thrift.TPoolConfig;
+import org.apache.impala.thrift.TResolveRequestPoolParams;
+import org.apache.impala.thrift.TResolveRequestPoolResult;
 import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationConfigurationException;
+import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationFileLoaderService;
+import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.QueuePlacementPolicy;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -37,23 +43,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTH_TO_LOCAL;
-
-import org.apache.hadoop.conf.Configuration;
-
-import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationFileLoaderService;
-
-import org.apache.impala.authorization.User;
-import org.apache.impala.common.ByteUnits;
-import org.apache.impala.common.InternalException;
-import org.apache.impala.common.RuntimeEnv;
-import org.apache.impala.thrift.TErrorCode;
-import org.apache.impala.thrift.TPoolConfig;
-import org.apache.impala.thrift.TResolveRequestPoolParams;
-import org.apache.impala.thrift.TResolveRequestPoolResult;
-import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.QueuePlacementPolicy;
-import com.google.common.collect.Iterables;
-import com.google.common.io.Files;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.net.URISyntaxException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Unit tests for the user to pool resolution, authorization, and getting configuration
@@ -202,7 +198,7 @@ public class TestRequestPoolService {
     Assert.assertTrue(poolService_.hasAccess("root.queueB", "userB"));
     Assert.assertFalse(poolService_.hasAccess("root.queueB", "userA"));
     Assert.assertTrue(poolService_.hasAccess("root.queueB", "root"));
-    // Test comma separated users.
+    // Test that comma separated users are parsed correctly.
     Assert.assertTrue(poolService_.hasAccess("root.queueD", "userA"));
     Assert.assertTrue(poolService_.hasAccess("root.queueD", "userB"));
     Assert.assertFalse(poolService_.hasAccess("root.queueD", "userZ"));
@@ -222,7 +218,7 @@ public class TestRequestPoolService {
         10000L, "mem_limit=1024m,query_timeout_s=10");
     checkPoolConfigResult("root.queueB", 5, 10, -1, 30000L, "mem_limit=1024m");
     checkPoolConfigResult("root.queueC", 5, 10, 1024 * ByteUnits.MEGABYTE, 30000L,
-            "mem_limit=1024m", 1000, 10, false, 8, 8, null, null);
+        "mem_limit=1024m", 1000, 10, false, 8, 8, null, null);
 
     Map<String, Integer> queueDUserQueryLimits = new HashMap<>();
     queueDUserQueryLimits.put("userA", 2);

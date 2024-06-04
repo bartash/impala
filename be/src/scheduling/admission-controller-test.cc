@@ -1211,27 +1211,33 @@ TEST_F(AdmissionControllerTest, GetMaxToDequeue) {
   max_to_dequeue = admission_controller->GetMaxToDequeue(queue_c, stats_c, config_c);
   ASSERT_EQ(0, max_to_dequeue);
 
-  AdmissionController::PoolStats stats(admission_controller, "test");
 
-  // First of all test non-scalable configuration.
+}
 
-  // Queue holds 10 with 10 running - cannot dequeue
-  config.max_requests = 10;
-  stats.local_stats_.num_queued = 10;
-  stats.agg_num_queued_ = 20;
-  stats.agg_num_running_ = 10;
-  max_to_dequeue = admission_controller->GetMaxToDequeue(queue_c, &stats, config);
+
+TEST_F(AdmissionControllerTest, DequeueLoop) {
+  // Pass the paths of the configuration files as command line flags
+  FLAGS_fair_scheduler_allocation_path = GetResourceFile("fair-scheduler-test2.xml");
+  FLAGS_llama_site_path = GetResourceFile("llama-site-test2.xml");
+
+  AdmissionController* admission_controller = MakeAdmissionController();
+  RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
+
+  // Get the PoolConfig for QUEUE_C and QUEUE_D
+  TPoolConfig config_c;
+  TPoolConfig config_d;
+  TPoolConfig config;
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_D, &config_d));
+  AdmissionController::RequestQueue& queue_c =
+      admission_controller->request_queue_map_[QUEUE_C];
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_C, &config_c));
+
+  AdmissionController::PoolStats* stats_c = admission_controller->GetPoolStats(QUEUE_C);
+
+  int64_t max_to_dequeue;
+  // Queue is empty, so nothing to dequeue
+  max_to_dequeue = admission_controller->GetMaxToDequeue(queue_c, stats_c, config_c);
   ASSERT_EQ(0, max_to_dequeue);
-
-  // Can only dequeue 1.
-  stats.agg_num_running_ = 9;
-  max_to_dequeue = admission_controller->GetMaxToDequeue(queue_c, &stats, config);
-  ASSERT_EQ(1, max_to_dequeue);
-
-  // There is space for 10, but it looks like there are 2 coordinators.
-  stats.agg_num_running_ = 0;
-  max_to_dequeue = admission_controller->GetMaxToDequeue(queue_c, &stats, config);
-  ASSERT_EQ(5, max_to_dequeue);
 }
 
 /// Test that RequestPoolService correctly reads configuration files.

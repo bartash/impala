@@ -1234,10 +1234,38 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
 
   AdmissionController::PoolStats* stats_c = admission_controller->GetPoolStats(QUEUE_C);
 
-  int64_t max_to_dequeue;
+  int64_t  max_to_dequeue;
   // Queue is empty, so nothing to dequeue
+  ASSERT_TRUE(queue_c.empty());
   max_to_dequeue = admission_controller->GetMaxToDequeue(queue_c, stats_c, config_c);
   ASSERT_EQ(0, max_to_dequeue);
+  TQueryOptions query_options;
+  RuntimeProfile* summary_profile = pool_.Add(new RuntimeProfile(&pool_, "foo"));
+  std::unordered_set<NetworkAddressPB> blacklisted_executor_addresses;
+
+  ScheduleState* schedule_state = MakeScheduleState(QUEUE_C, config, 1, 1000);
+  const TQueryExecRequest& exec_request = schedule_state->request();
+  UniqueIdPB* query_id = pool_.Add(new UniqueIdPB());
+  UniqueIdPB* coord_id = pool_.Add(new UniqueIdPB());
+  AdmissionController::AdmissionRequest request = {*query_id,
+      *coord_id, exec_request, query_options, summary_profile, blacklisted_executor_addresses
+  };
+
+  Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER> admit_outcome;
+
+  AdmissionController::QueueNode* queue_node;
+  {
+    lock_guard<mutex> lock(admission_controller->queue_nodes_lock_);
+    auto it = admission_controller->queue_nodes_.emplace(std::piecewise_construct,
+        std::forward_as_tuple(request.query_id),
+        std::forward_as_tuple(request, &admit_outcome, request.summary_profile));
+    ASSERT_TRUE(it.second);
+    queue_node = &it.first->second;
+  }
+
+  queue_c.Enqueue(queue_node);
+
+
 }
 
 /// Test that RequestPoolService correctly reads configuration files.

@@ -1262,10 +1262,13 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   queue_c.Enqueue(queue_node);
   stats_c->Queue();
   stats_c->QueuePerUser(USER1);
+  ASSERT_FALSE(queue_c.empty());
 
   max_to_dequeue = admission_controller->GetMaxToDequeue(queue_c, stats_c, config_c);
   ASSERT_EQ(1, max_to_dequeue);
 
+  admission_controller->TryDequeue();
+  ASSERT_TRUE(queue_c.empty());
 
 
 

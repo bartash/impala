@@ -1225,12 +1225,13 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
 
   // Get the PoolConfig for QUEUE_C and QUEUE_D
   TPoolConfig config_c;
-  TPoolConfig config_d;
+//  TPoolConfig config_d;
   TPoolConfig config;
-  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_D, &config_d));
+//  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_D, &config_d));
   AdmissionController::RequestQueue& queue_c =
       admission_controller->request_queue_map_[QUEUE_C];
   ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_C, &config_c));
+//  config_c.max_requests = 1;
 
   AdmissionController::PoolStats* stats_c = admission_controller->GetPoolStats(QUEUE_C);
 
@@ -1250,9 +1251,7 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   AdmissionController::AdmissionRequest request = {*query_id,
       *coord_id, exec_request, query_options, summary_profile, blacklisted_executor_addresses
   };
-
   Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER> admit_outcome;
-
   AdmissionController::QueueNode* queue_node;
   {
     lock_guard<mutex> lock(admission_controller->queue_nodes_lock_);
@@ -1264,6 +1263,13 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   }
 
   queue_c.Enqueue(queue_node);
+  stats_c->Queue();
+  stats_c->QueuePerUser(USER1);
+
+  max_to_dequeue = admission_controller->GetMaxToDequeue(queue_c, stats_c, config_c);
+  ASSERT_EQ(1, max_to_dequeue);
+
+
 
 
 }

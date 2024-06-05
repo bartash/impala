@@ -1225,13 +1225,10 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
 
   // Get the PoolConfig for QUEUE_C and QUEUE_D
   TPoolConfig config_c;
-//  TPoolConfig config_d;
   TPoolConfig config;
-//  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_D, &config_d));
   AdmissionController::RequestQueue& queue_c =
       admission_controller->request_queue_map_[QUEUE_C];
   ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_C, &config_c));
-//  config_c.max_requests = 1;
 
   AdmissionController::PoolStats* stats_c = admission_controller->GetPoolStats(QUEUE_C);
 

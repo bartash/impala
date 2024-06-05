@@ -157,6 +157,8 @@ void ClusterMembershipMgr::RegisterUpdateCallbackFn(UpdateCallbackFn fn) {
 
 ClusterMembershipMgr::SnapshotPtr ClusterMembershipMgr::GetSnapshot() const {
   lock_guard<mutex> l(current_membership_lock_);
+  std::cout  << "cluster mgt";
+  std::cout  << current_membership_.get()->version;
   DCHECK(current_membership_.get() != nullptr);
   SnapshotPtr state = current_membership_;
   return state;

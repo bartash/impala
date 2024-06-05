@@ -2429,13 +2429,17 @@ void AdmissionController::DequeueLoop() {
 }
 
 void AdmissionController::TryDequeue() {
+  std::cout << "hellov";
   ClusterMembershipMgr::SnapshotPtr membership_snapshot =
       cluster_membership_mgr_->GetSnapshot();
-
+  std::cout  << "there";
   // If a query was queued while the cluster is still starting up but the client facing
   // services have already started to accept connections, the whole membership can still
   // be empty.
-  if (membership_snapshot->executor_groups.empty()) return;
+  if (membership_snapshot->executor_groups.empty()) {
+    std::cout  << "no spapshots";
+    return;
+  }
 
   for (const PoolConfigMap::value_type& entry: pool_config_map_) {
     const string& pool_name = entry.first;
@@ -2527,6 +2531,7 @@ void AdmissionController::TryDequeue() {
     }
     pools_for_updates_.insert(pool_name);
   }
+  std::cout << "bye";
 }
 
 int64_t AdmissionController::GetQueueTimeoutForPoolMs(const TPoolConfig& pool_config) {

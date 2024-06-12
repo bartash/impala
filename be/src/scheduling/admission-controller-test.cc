@@ -1251,7 +1251,7 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER> admit_outcome;
   AdmissionController::QueueNode* queue_node;
   {
-    lock_guard<mutex> lock(admission_controller->queue_nodes_lock_);
+    lock_guard<mutex> lock(admission_controller->queue_nodes_lock_); // FIXME do I want to lock in a test?
     auto it = admission_controller->queue_nodes_.emplace(std::piecewise_construct,
         std::forward_as_tuple(request.query_id),
         std::forward_as_tuple(request, &admit_outcome, request.summary_profile));

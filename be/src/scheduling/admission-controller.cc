@@ -2437,7 +2437,7 @@ void AdmissionController::TryDequeue() {
   // services have already started to accept connections, the whole membership can still
   // be empty.
   if (membership_snapshot->executor_groups.empty()) {
-    std::cout  << "no spapshots"<< std::endl;
+    std::cout  << "no executor_groups"<< std::endl;
     return;
   }
 

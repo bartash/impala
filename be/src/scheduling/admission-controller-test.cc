@@ -354,6 +354,12 @@ class AdmissionControllerTest : public testing::Test {
     addr->__set_port(25000);
     ClusterMembershipMgr* cmm =
         pool_.Add(new ClusterMembershipMgr("", nullptr, metric_group));
+
+    ClusterMembershipMgr::Snapshot* snapshot =
+        pool_.Add(new ClusterMembershipMgr::Snapshot());
+    ClusterMembershipMgr::SnapshotPtr new_state =
+        std::make_shared<ClusterMembershipMgr::Snapshot>(*snapshot);
+    cmm->SetState(new_state);
     return pool_.Add(new AdmissionController(cmm, nullptr, request_pool_service,
         metric_group, ExecEnv::GetInstance()->scheduler(),
         ExecEnv::GetInstance()->pool_mem_trackers(), *addr));

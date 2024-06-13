@@ -1277,8 +1277,10 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   max_to_dequeue = admission_controller->GetMaxToDequeue(queue_c, stats_c, config_c);
   ASSERT_EQ(1, max_to_dequeue);
 
+  admission_controller->pool_config_map_[queue_node->pool_name] = queue_node->pool_cfg;
+
   admission_controller->TryDequeue();
-//  ASSERT_TRUE(queue_c.empty());
+  ASSERT_TRUE(queue_c.empty());
 
 
 }

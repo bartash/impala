@@ -357,6 +357,10 @@ class AdmissionControllerTest : public testing::Test {
 
     ClusterMembershipMgr::Snapshot* snapshot =
         pool_.Add(new ClusterMembershipMgr::Snapshot());
+
+    ExecutorGroup* eg = pool_.Add(new ExecutorGroup("EG1"));
+    snapshot->executor_groups.emplace(eg->name(), *eg);
+
     ClusterMembershipMgr::SnapshotPtr new_state =
         std::make_shared<ClusterMembershipMgr::Snapshot>(*snapshot);
     cmm->SetState(new_state);

@@ -1267,6 +1267,7 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
         std::forward_as_tuple(request, &admit_outcome, request.summary_profile));
     ASSERT_TRUE(it.second);
     queue_node = &it.first->second;
+    queue_node->pool_name = QUEUE_C;
   }
 
   queue_c.Enqueue(queue_node);

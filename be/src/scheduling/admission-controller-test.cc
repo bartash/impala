@@ -396,10 +396,11 @@ class AdmissionControllerTest : public testing::Test {
 
   AdmissionController::QueueNode* makeQueueNode(AdmissionController* admission_controller,
       Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER>* admit_outcome,
-      RuntimeProfile* summary_profile, TPoolConfig& config, const string& pool_name) {
+   TPoolConfig& config, const string& pool_name) {
     ScheduleState* schedule_state = MakeScheduleState(QUEUE_C, config, 1, 1000);
     UniqueIdPB* query_id = pool_.Add(new UniqueIdPB());
     UniqueIdPB* coord_id = pool_.Add(new UniqueIdPB());
+    RuntimeProfile* summary_profile = pool_.Add(new RuntimeProfile(&pool_, "foo"));
     std::unordered_set<NetworkAddressPB> blacklisted_executor_addresses;
     const TQueryExecRequest& exec_request = schedule_state->request();
     TQueryOptions query_options;
@@ -1285,11 +1286,10 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   ASSERT_TRUE(queue_c.empty());
   max_to_dequeue = admission_controller->GetMaxToDequeue(queue_c, stats_c, config_c);
   ASSERT_EQ(0, max_to_dequeue);
-  RuntimeProfile* summary_profile = pool_.Add(new RuntimeProfile(&pool_, "foo"));
 
   Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER> admit_outcome;
   AdmissionController::QueueNode* queue_node = makeQueueNode(
-      admission_controller,  &admit_outcome, summary_profile, config_c,  QUEUE_C);
+      admission_controller,  &admit_outcome, config_c,  QUEUE_C);
 
   queue_c.Enqueue(queue_node);
   stats_c->Queue();

@@ -360,6 +360,7 @@ class AdmissionControllerTest : public testing::Test {
 
     ExecutorGroup* eg = pool_.Add(new ExecutorGroup("EG1"));
     snapshot->executor_groups.emplace(eg->name(), *eg);
+    snapshot->version = 1;
 
     ClusterMembershipMgr::SnapshotPtr new_state =
         std::make_shared<ClusterMembershipMgr::Snapshot>(*snapshot);
@@ -406,6 +407,10 @@ class AdmissionControllerTest : public testing::Test {
     TQueryOptions query_options;
     AdmissionController::AdmissionRequest request = {*query_id, *coord_id, exec_request,
         query_options, summary_profile, blacklisted_executor_addresses};
+
+    // Clear queue_nodes_ so we can call this method again, though this means there can
+    // only ever be one queue node.
+    admission_controller->queue_nodes_.clear();
 
     auto it = admission_controller->queue_nodes_.emplace(std::piecewise_construct,
         std::forward_as_tuple(request.query_id),
@@ -1273,7 +1278,7 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   AdmissionController* admission_controller = MakeAdmissionController();
   RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
 
-  // Get the PoolConfig for QUEUE_C and QUEUE_D
+  // Get the PoolConfig for QUEUE_C
   TPoolConfig config_c;
   AdmissionController::RequestQueue& queue_c =
       admission_controller->request_queue_map_[QUEUE_C];
@@ -1310,6 +1315,20 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
 
 
 
+  Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER> admit_outcome2;
+  queue_node = makeQueueNode(
+      admission_controller,  &admit_outcome2, config_c,  QUEUE_C);
+  queue_node->pool_cfg.__set_max_requests(1);
+  queue_node->pool_cfg.__set_max_mem_resources(2 * GIGABYTE);
+  admission_controller->pool_config_map_[queue_node->pool_name] = queue_node->pool_cfg;
+
+  queue_c.Enqueue(queue_node);
+  stats_c->Queue();
+  stats_c->QueuePerUser(USER1);
+  ASSERT_FALSE(queue_c.empty());
+
+  admission_controller->TryDequeue();
+  ASSERT_TRUE(queue_c.empty());
 
 
   std::cout  << "reason " << queue_node->not_admitted_reason << std::endl;

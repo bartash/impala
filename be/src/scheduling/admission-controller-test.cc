@@ -1304,12 +1304,17 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
 
   admission_controller->TryDequeue();
   ASSERT_TRUE(queue_c.empty());
+  // The pool max_requests is 0 so query will be rejected.
+  ASSERT_EQ(AdmissionOutcome::REJECTED, queue_node->admit_outcome->Get());
+  ASSERT_EQ("disabled by requests limit set to 0", queue_node->not_admitted_reason);
+
+
+
 
 
   std::cout  << "reason " << queue_node->not_admitted_reason << std::endl;
   std::cout  << "details " << queue_node->not_admitted_details << std::endl;
   std::cout  << "outcome " << Outcome(queue_node->admit_outcome->Get()) << std::endl;
-  ASSERT_EQ(AdmissionOutcome::REJECTED, queue_node->admit_outcome->Get());
 
 
 }

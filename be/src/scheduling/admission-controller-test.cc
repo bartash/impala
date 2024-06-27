@@ -31,6 +31,7 @@
 #include "testutil/gtest-util.h"
 #include "testutil/death-test-util.h"
 #include "util/collection-metrics.h"
+#include "util/debug-util.h"
 #include "util/metrics.h"
 #include <regex>
 
@@ -345,6 +346,11 @@ class AdmissionControllerTest : public testing::Test {
 
   /// Make an AdmissionController with some dummy parameters
   AdmissionController* MakeAdmissionController() {
+    UniqueIdPB* coord_id = pool_.Add(new UniqueIdPB());
+    return MakeAdmissionController(coord_id);
+  }
+
+  AdmissionController* MakeAdmissionController(UniqueIdPB* coord_id ) {
     // Create a RequestPoolService which will read the configuration files.
     MetricGroup* metric_group = pool_.Add(new MetricGroup("impala-metrics"));
     RequestPoolService* request_pool_service =
@@ -361,6 +367,8 @@ class AdmissionControllerTest : public testing::Test {
     ExecutorGroup* eg = pool_.Add(new ExecutorGroup("EG1"));
     snapshot->executor_groups.emplace(eg->name(), *eg);
     snapshot->version = 1;
+    BackendDescriptorPB * coordinator = pool_.Add(new BackendDescriptorPB());
+    snapshot->current_backends.emplace(PrintId(*coord_id), *coordinator);
 
     ClusterMembershipMgr::SnapshotPtr new_state =
         std::make_shared<ClusterMembershipMgr::Snapshot>(*snapshot);
@@ -396,11 +404,12 @@ class AdmissionControllerTest : public testing::Test {
   }
 
   AdmissionController::QueueNode* makeQueueNode(AdmissionController* admission_controller,
-      Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER>* admit_outcome,
+      UniqueIdPB* coord_id,
+          Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER>* admit_outcome,
    TPoolConfig& config, const string& pool_name) {
     ScheduleState* schedule_state = MakeScheduleState(QUEUE_C, config, 1, 1000);
     UniqueIdPB* query_id = pool_.Add(new UniqueIdPB());
-    UniqueIdPB* coord_id = pool_.Add(new UniqueIdPB());
+//    UniqueIdPB* coord_id = pool_.Add(new UniqueIdPB());
     RuntimeProfile* summary_profile = pool_.Add(new RuntimeProfile(&pool_, "foo"));
     std::unordered_set<NetworkAddressPB> blacklisted_executor_addresses;
     const TQueryExecRequest& exec_request = schedule_state->request();
@@ -1275,7 +1284,8 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   FLAGS_fair_scheduler_allocation_path = GetResourceFile("fair-scheduler-test2.xml");
   FLAGS_llama_site_path = GetResourceFile("llama-site-test2.xml");
 
-  AdmissionController* admission_controller = MakeAdmissionController();
+  UniqueIdPB* coord_id = pool_.Add(new UniqueIdPB());
+  AdmissionController* admission_controller = MakeAdmissionController(coord_id);
   RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
 
   // Get the PoolConfig for QUEUE_C
@@ -1294,7 +1304,7 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
 
   Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER> admit_outcome;
   AdmissionController::QueueNode* queue_node = makeQueueNode(
-      admission_controller,  &admit_outcome, config_c,  QUEUE_C);
+      admission_controller, coord_id, &admit_outcome, config_c,  QUEUE_C);
 
   queue_c.Enqueue(queue_node);
   stats_c->Queue();
@@ -1317,10 +1327,14 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
 
   Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER> admit_outcome2;
   queue_node = makeQueueNode(
-      admission_controller,  &admit_outcome2, config_c,  QUEUE_C);
+      admission_controller,  coord_id, &admit_outcome2, config_c,  QUEUE_C);
   queue_node->pool_cfg.__set_max_requests(1);
   queue_node->pool_cfg.__set_max_mem_resources(2 * GIGABYTE);
   admission_controller->pool_config_map_[queue_node->pool_name] = queue_node->pool_cfg;
+
+
+
+
 
   queue_c.Enqueue(queue_node);
   stats_c->Queue();

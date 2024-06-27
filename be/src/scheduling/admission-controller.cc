@@ -2580,6 +2580,8 @@ void AdmissionController::LogDequeueFailed(QueueNode* node,
     const string& not_admitted_reason) {
   VLOG_QUERY << "Could not dequeue query id=" << PrintId(node->admission_request.query_id)
              << " reason: " << not_admitted_reason;
+  std::cout << "Could not dequeue query id=" << PrintId(node->admission_request.query_id)
+             << " reason: " << not_admitted_reason << std::endl;
   node->admission_request.summary_profile->AddInfoString(
       PROFILE_INFO_KEY_LAST_QUEUED_REASON, not_admitted_reason);
 }

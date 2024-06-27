@@ -377,6 +377,23 @@ class AdmissionControllerTest : public testing::Test {
     ASSERT_EQ(expected_result, AdmissionController::PoolDisabled(pool_config));
   }
 
+
+  static const string Outcome(const AdmissionOutcome outcome) {
+    if (outcome == AdmissionOutcome::REJECTED) {
+      return "REJECTED";
+    }
+    if (outcome == AdmissionOutcome::ADMITTED) {
+      return "ADMITTED";
+    }
+    if (outcome == AdmissionOutcome::TIMED_OUT) {
+      return "TIMED_OUT";
+    }
+    if (outcome == AdmissionOutcome::CANCELLED) {
+      return "CANCELLED";
+    }
+    DCHECK(false) << "unknown outcome";
+  }
+
   void ResetMemConsumed(MemTracker* tracker) {
     tracker->consumption_->Set(0);
     for (MemTracker* child : tracker->child_trackers_) {
@@ -1283,8 +1300,14 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   admission_controller->TryDequeue();
   ASSERT_TRUE(queue_c.empty());
 
+  std::cout  << "outcome " << queue_node->not_admitted_details << std::endl;
+  std::cout  << "outcome " << queue_node->not_admitted_details << std::endl;
+  std::cout  << "outcome " << Outcome(queue_node->admit_outcome->Get()) << std::endl;
+
 
 }
+
+
 
 /// Test that RequestPoolService correctly reads configuration files.
 TEST_F(AdmissionControllerTest, Config) {

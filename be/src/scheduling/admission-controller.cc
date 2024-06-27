@@ -2488,6 +2488,7 @@ void AdmissionController::TryDequeue() {
       }
 
       // At this point we know that the query must be taken off the queue
+      std::cout  << "dequeue1" << std::endl;
       queue.Dequeue();
       --max_to_dequeue;
       VLOG(3) << "Dequeueing from stats for pool " << pool_name;
@@ -2498,9 +2499,11 @@ void AdmissionController::TryDequeue() {
             queue_node->admit_outcome->Set(AdmissionOutcome::REJECTED);
         if (outcome == AdmissionOutcome::REJECTED) {
           stats->metrics()->total_rejected->Increment(1);
+          std::cout  << "dequeue rejected" << std::endl;
           return; // next query
         } else {
           DCHECK_ENUM_EQ(outcome, AdmissionOutcome::CANCELLED);
+          std::cout  << "dequeue cancelled" << std::endl;
           is_cancelled = true;
         }
       }
@@ -2519,6 +2522,7 @@ void AdmissionController::TryDequeue() {
 
       if (is_cancelled) {
         VLOG_QUERY << "Dequeued cancelled query=" << PrintId(query_id);
+        std::cout   << "Dequeued cancelled query=" <<  PrintId(query_id) << std::endl;
         return; // next query
       }
 
@@ -2527,6 +2531,7 @@ void AdmissionController::TryDequeue() {
       DCHECK(!is_cancelled);
       DCHECK(!is_rejected);
       DCHECK(queue_node->admitted_schedule != nullptr);
+      std::cout  << "dequeue admit" << std::endl;
       AdmitQuery(queue_node, true /* was_queued */, is_trivial);
     }
     pools_for_updates_.insert(pool_name);

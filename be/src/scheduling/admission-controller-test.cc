@@ -378,7 +378,7 @@ class AdmissionControllerTest : public testing::Test {
   }
 
 
-  static const string Outcome(const AdmissionOutcome outcome) {
+  static string Outcome(const AdmissionOutcome outcome) {
     if (outcome == AdmissionOutcome::REJECTED) {
       return "REJECTED";
     }
@@ -392,6 +392,21 @@ class AdmissionControllerTest : public testing::Test {
       return "CANCELLED";
     }
     DCHECK(false) << "unknown outcome";
+  }
+
+  AdmissionController::QueueNode* makeQueueNode(AdmissionController* admission_controller,
+      AdmissionController::AdmissionRequest& request,
+      Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER>& admit_outcome,
+      RuntimeProfile* summary_profile) {
+    AdmissionController::QueueNode* queue_node = pool_.Add(
+        new AdmissionController::QueueNode::QueueNode(request, admit_outcome, summary_profile));
+    auto it = admission_controller->queue_nodes_.emplace(std::piecewise_construct,
+        std::forward_as_tuple(request.query_id),
+        std::forward_as_tuple(request, &admit_outcome, request.summary_profile));
+    EXPECT_TRUE(it.second);
+    queue_node = &it.first->second;
+    queue_node->pool_name = QUEUE_C;
+    return queue_node;
   }
 
   void ResetMemConsumed(MemTracker* tracker) {
@@ -1277,15 +1292,13 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   };
   Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER> admit_outcome;
   AdmissionController::QueueNode* queue_node;
-  {
-    lock_guard<mutex> lock(admission_controller->queue_nodes_lock_); // FIXME do I want to lock in a test?
-    auto it = admission_controller->queue_nodes_.emplace(std::piecewise_construct,
-        std::forward_as_tuple(request.query_id),
-        std::forward_as_tuple(request, &admit_outcome, request.summary_profile));
-    ASSERT_TRUE(it.second);
-    queue_node = &it.first->second;
-    queue_node->pool_name = QUEUE_C;
-  }
+  queue_node = makeQueueNode(admission_controller, request, admit_outcome, summary_profile )
+  auto it = admission_controller->queue_nodes_.emplace(std::piecewise_construct,
+      std::forward_as_tuple(request.query_id),
+      std::forward_as_tuple(request, &admit_outcome, request.summary_profile));
+  ASSERT_TRUE(it.second);
+  queue_node = &it.first->second;
+  queue_node->pool_name = QUEUE_C;
 
   queue_c.Enqueue(queue_node);
   stats_c->Queue();

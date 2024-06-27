@@ -394,18 +394,17 @@ class AdmissionControllerTest : public testing::Test {
     DCHECK(false) << "unknown outcome";
   }
 
-  AdmissionController::QueueNode* makeQueueNode(AdmissionController* admission_controller,
+ static  AdmissionController::QueueNode& makeQueueNode(AdmissionController* admission_controller,
       AdmissionController::AdmissionRequest& request,
-      Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER>& admit_outcome,
+      Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER>* admit_outcome,
       RuntimeProfile* summary_profile) {
-    AdmissionController::QueueNode* queue_node = pool_.Add(
-        new AdmissionController::QueueNode::QueueNode(request, admit_outcome, summary_profile));
+    AdmissionController::QueueNode queue_node(request, admit_outcome, summary_profile);
     auto it = admission_controller->queue_nodes_.emplace(std::piecewise_construct,
         std::forward_as_tuple(request.query_id),
-        std::forward_as_tuple(request, &admit_outcome, request.summary_profile));
-    EXPECT_TRUE(it.second);
-    queue_node = &it.first->second;
-    queue_node->pool_name = QUEUE_C;
+        std::forward_as_tuple(request, admit_outcome, request.summary_profile));
+//    EXPECT_TRUE(it.second);
+//    queue_node = &it.first->second;
+    queue_node.pool_name = QUEUE_C;
     return queue_node;
   }
 
@@ -1291,16 +1290,15 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
       *coord_id, exec_request, query_options, summary_profile, blacklisted_executor_addresses
   };
   Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER> admit_outcome;
-  AdmissionController::QueueNode* queue_node;
-  queue_node = makeQueueNode(admission_controller, request, admit_outcome, summary_profile )
-  auto it = admission_controller->queue_nodes_.emplace(std::piecewise_construct,
-      std::forward_as_tuple(request.query_id),
-      std::forward_as_tuple(request, &admit_outcome, request.summary_profile));
-  ASSERT_TRUE(it.second);
-  queue_node = &it.first->second;
-  queue_node->pool_name = QUEUE_C;
+  AdmissionController::QueueNode& queue_node = makeQueueNode(admission_controller, request, admit_outcome, summary_profile );
+//  auto it = admission_controller->queue_nodes_.emplace(std::piecewise_construct,
+//      std::forward_as_tuple(request.query_id),
+//      std::forward_as_tuple(request, &admit_outcome, request.summary_profile));
+//  ASSERT_TRUE(it.second);
+//  queue_node = &it.first->second;
+//  queue_node->pool_name = QUEUE_C;
 
-  queue_c.Enqueue(queue_node);
+  queue_c.Enqueue(&queue_node);
   stats_c->Queue();
   stats_c->QueuePerUser(USER1);
   ASSERT_FALSE(queue_c.empty());

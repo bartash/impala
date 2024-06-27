@@ -1291,13 +1291,15 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
       *coord_id, exec_request, query_options, summary_profile, blacklisted_executor_addresses
   };
   Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER> admit_outcome;
-  AdmissionController::QueueNode* queue_node = makeQueueNode(admission_controller, request, &admit_outcome, summary_profile, QUEUE_C );
+  AdmissionController::QueueNode* queue_node = makeQueueNode(
+      admission_controller, request, &admit_outcome, summary_profile, QUEUE_C);
 
   queue_c.Enqueue(queue_node);
   stats_c->Queue();
   stats_c->QueuePerUser(USER1);
   ASSERT_FALSE(queue_c.empty());
 
+  // Check we put it in the queue
   max_to_dequeue = admission_controller->GetMaxToDequeue(queue_c, stats_c, config_c);
   ASSERT_EQ(1, max_to_dequeue);
 

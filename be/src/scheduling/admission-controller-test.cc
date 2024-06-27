@@ -1305,8 +1305,9 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   admission_controller->TryDequeue();
   ASSERT_TRUE(queue_c.empty());
 
-  std::cout  << "outcome " << queue_node->not_admitted_details << std::endl;
-  std::cout  << "outcome " << queue_node->not_admitted_details << std::endl;
+
+  std::cout  << "reason " << queue_node->not_admitted_reason << std::endl;
+  std::cout  << "details " << queue_node->not_admitted_details << std::endl;
   std::cout  << "outcome " << Outcome(queue_node->admit_outcome->Get()) << std::endl;
   ASSERT_EQ(AdmissionOutcome::REJECTED, queue_node->admit_outcome->Get());
 

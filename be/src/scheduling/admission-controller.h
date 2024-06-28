@@ -638,6 +638,7 @@ class AdmissionController {
     void ReleaseMem(int64_t mem_to_release);
     /// Updates the pool stats when the request represented by 'state' is queued.
     void Queue();
+    /// Increment per-user stats for a user.
     void IncrementPerUser(const std::string& user);
     /// Updates the pool stats when the request represented by 'state is dequeued.
     void Dequeue(bool timed_out);

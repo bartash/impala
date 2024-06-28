@@ -765,14 +765,7 @@ void AdmissionController::PoolStats::ReleaseQuery(
   }
 
   if (!user.empty()) {
-    agg_user_loads_.decrement(user);
-    if (agg_user_loads_.get(user) == 0) {
-      metrics_.agg_current_users->Remove(user);
-    }
-    ImpalaServer::DecrementCount(local_stats_.user_loads, user);
-    if (local_stats_.user_loads.count(user) == 0) {
-      metrics_.local_current_users->Remove(user);
-    }
+    DecrementPerUser(user);
   }
 
   // Update the 'peak_mem_histogram' based on the given peak memory consumption of the
@@ -810,6 +803,18 @@ void AdmissionController::PoolStats::IncrementPerUser(const std::string& user) {
   metrics_.local_current_users->Add(user);
   IncrementCount(local_stats_.user_loads, user);
 }
+
+void AdmissionController::PoolStats::DecrementPerUser(const string& user) {
+  agg_user_loads_.decrement(user);
+  if (agg_user_loads_.get(user) == 0) {
+    metrics_.agg_current_users->Remove(user);
+  }
+  ImpalaServer::DecrementCount(local_stats_.user_loads, user);
+  if (local_stats_.user_loads.count(user) == 0) {
+    metrics_.local_current_users->Remove(user);
+  }
+}
+
 
 void AdmissionController::PoolStats::Dequeue(bool timed_out) {
   agg_num_queued_ -= 1;

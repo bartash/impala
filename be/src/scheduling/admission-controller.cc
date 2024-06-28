@@ -745,8 +745,8 @@ void AdmissionController::PoolStats::AdmitQueryAndMemory(const ScheduleState& st
     // If the query was not previously queued then track the user counts.
     agg_user_loads_.increment(user);
     metrics_.agg_current_users->Add(user);
-    IncrementCount(local_stats_.user_loads, user);
     metrics_.local_current_users->Add(user);
+    IncrementCount(local_stats_.user_loads, user);
   }
 }
 
@@ -808,10 +808,10 @@ void AdmissionController::PoolStats::Queue() {
 }
 
 void AdmissionController::PoolStats::QueuePerUser(const std::string& user) {
-  IncrementCount(local_stats_.user_loads, user);
-  metrics_.local_current_users->Add(user);
   agg_user_loads_.increment(user);
   metrics_.agg_current_users->Add(user);
+  metrics_.local_current_users->Add(user);
+  IncrementCount(local_stats_.user_loads, user);
 }
 
 void AdmissionController::PoolStats::Dequeue(bool timed_out) {

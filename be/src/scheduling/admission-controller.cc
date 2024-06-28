@@ -742,6 +742,7 @@ void AdmissionController::PoolStats::AdmitQueryAndMemory(const ScheduleState& st
   if (is_trivial) ++local_trivial_running_;
 
   if (track_per_user && !was_queued) {
+    // If the query was not previously queued then track the user counts.
     agg_user_loads_.increment(user);
     metrics_.agg_current_users->Add(user);
     IncrementCount(local_stats_.user_loads, user);

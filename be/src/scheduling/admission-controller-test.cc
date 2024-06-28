@@ -1295,6 +1295,7 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_C, &config_c));
 
   AdmissionController::PoolStats* stats_c = admission_controller->GetPoolStats(QUEUE_C);
+  CheckPoolStatsEmpty(stats_c);
 
   int64_t  max_to_dequeue;
   // Queue is empty, so nothing to dequeue
@@ -1305,6 +1306,7 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER> admit_outcome;
   AdmissionController::QueueNode* queue_node = makeQueueNode(
       admission_controller, coord_id, &admit_outcome, config_c,  QUEUE_C);
+
 
   queue_c.Enqueue(queue_node);
   stats_c->Queue();

@@ -1308,7 +1308,7 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
 
   queue_c.Enqueue(queue_node);
   stats_c->Queue();
-  stats_c->QueuePerUser(USER1);
+  stats_c->IncrementPerUser(USER1);
   ASSERT_FALSE(queue_c.empty());
 
   // Check we put it in the queue
@@ -1338,7 +1338,7 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
 
   queue_c.Enqueue(queue_node);
   stats_c->Queue();
-  stats_c->QueuePerUser(USER1);
+  stats_c->IncrementPerUser(USER1);
   ASSERT_FALSE(queue_c.empty());
 
   admission_controller->TryDequeue();
@@ -1390,9 +1390,9 @@ TEST_F(AdmissionControllerTest, PoolStats) {
   AdmissionController::PoolStats* pool_stats = admission_controller->GetPoolStats(QUEUE);
   CheckPoolStatsEmpty(pool_stats);
 
-  // Show that Queue, QueuePerUser, and Dequeue leave stats at zero.
+  // Show that Queue, IncrementPerUser, and Dequeue leave stats at zero.
   pool_stats->Queue();
-  pool_stats->QueuePerUser(USER1);
+  pool_stats->IncrementPerUser(USER1);
   // FIXME throttle fix (and possibly enhance) this test
   ASSERT_EQ(1, pool_stats->agg_num_queued());
   ASSERT_EQ(1, pool_stats->metrics()->agg_num_queued->GetValue());

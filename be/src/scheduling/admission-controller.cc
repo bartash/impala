@@ -743,10 +743,7 @@ void AdmissionController::PoolStats::AdmitQueryAndMemory(const ScheduleState& st
 
   if (track_per_user && !was_queued) {
     // If the query was not previously queued then track the user counts.
-    agg_user_loads_.increment(user);
-    metrics_.agg_current_users->Add(user);
-    metrics_.local_current_users->Add(user);
-    IncrementCount(local_stats_.user_loads, user);
+    IncrementPerUser(user);
   }
 }
 
@@ -807,7 +804,7 @@ void AdmissionController::PoolStats::Queue() {
   metrics_.total_queued->Increment(1L);
 }
 
-void AdmissionController::PoolStats::QueuePerUser(const std::string& user) {
+void AdmissionController::PoolStats::IncrementPerUser(const std::string& user) {
   agg_user_loads_.increment(user);
   metrics_.agg_current_users->Add(user);
   metrics_.local_current_users->Add(user);
@@ -1633,7 +1630,7 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
     stats->Queue();
     if (HasQuotaConfig(queue_node->pool_cfg) || HasQuotaConfig(queue_node->root_cfg)) {
       const string& user = GetEffectiveUser(request.request.query_ctx.session);
-      stats->QueuePerUser(user);
+      stats->IncrementPerUser(user);
     }
     queue->Enqueue(queue_node);
 

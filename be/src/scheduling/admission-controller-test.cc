@@ -1429,6 +1429,22 @@ TEST_F(AdmissionControllerTest, PoolStats) {
   ASSERT_EQ("[]", pool_stats->metrics()->agg_current_users->ToHumanReadable());
   ASSERT_EQ("[]", pool_stats->metrics()->local_current_users->ToHumanReadable());
   CheckPoolStatsEmpty(pool_stats);
+
+  // Check that IncrementPerUser and DecrementPerUser have opposite effects.
+  ASSERT_EQ(0, pool_stats->GetUserLoad(USER1));
+  pool_stats->IncrementPerUser(USER1);
+  pool_stats->IncrementPerUser(USER1);
+  ASSERT_EQ(2, pool_stats->local_stats_.user_loads[USER1]);
+  ASSERT_EQ(2, pool_stats->agg_user_loads_.get(USER1));
+  ASSERT_EQ("[" + USER1 + "]", pool_stats->metrics()->agg_current_users->ToHumanReadable());
+  ASSERT_EQ("[" + USER1 + "]", pool_stats->metrics()->local_current_users->ToHumanReadable());
+  pool_stats->DecrementPerUser(USER1);
+  pool_stats->DecrementPerUser(USER1);
+  ASSERT_EQ(0, pool_stats->local_stats_.user_loads[USER1]);
+  ASSERT_EQ(0, pool_stats->agg_user_loads_.get(USER1));
+  ASSERT_EQ("[]", pool_stats->metrics()->agg_current_users->ToHumanReadable());
+  ASSERT_EQ("[]", pool_stats->metrics()->local_current_users->ToHumanReadable());
+  CheckPoolStatsEmpty(pool_stats);
 }
 
 /// Test that PoolDisabled works

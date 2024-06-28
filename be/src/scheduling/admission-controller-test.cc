@@ -1325,26 +1325,16 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
 
 
 
-  Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER> admit_outcome2;
-  admit_outcome2.Set(AdmissionOutcome::CANCELLED);
+  Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER> canceled_outcome;
+  // Mark the outcome as cancelled to force execution through the cancellation path in
+  // AdmissionController::TryDequeue()
+  canceled_outcome.Set(AdmissionOutcome::CANCELLED);
   queue_node = makeQueueNode(
-      admission_controller,  coord_id, &admit_outcome2, config_c,  QUEUE_C);
+      admission_controller,  coord_id, &canceled_outcome, config_c,  QUEUE_C);
   queue_node->pool_cfg.__set_max_requests(1);
   queue_node->pool_cfg.__set_max_mem_resources(2 * GIGABYTE);
   admission_controller->pool_config_map_[queue_node->pool_name] = queue_node->pool_cfg;
 
-//  TPlanExecInfo info;
-//  TPlanFragment frag;
-//  info.fragments.emplace_back(frag);
-//  vector<TPlanExecInfo>& foo  = queue_node->admission_request.request.plan_exec_info;
-//  auto j = queue_node->admission_request.request.plan_exec_info;
-//  j.emplace_back(info);
-
-//  const vector<TPlanExecInfo> vec;
-
-//  queue_node->admission_request.request.plan_exec_info = vec;
-//  queue_node->admission_request.request.plan_exec_info.emplace_back(info);
-//  queue_node->admission_request.request.__set_plan_exec_info(vec)
 
   queue_c.Enqueue(queue_node);
   stats_c->Queue();
@@ -1353,13 +1343,14 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
 
   admission_controller->TryDequeue();
   ASSERT_TRUE(queue_c.empty());
-
+  ASSERT_EQ(AdmissionOutcome::CANCELLED, queue_node->admit_outcome->Get());
 
   std::cout  << "reason2 " << queue_node->not_admitted_reason << std::endl;
   std::cout  << "details2 " << queue_node->not_admitted_details << std::endl;
   std::cout  << "outcome2 " << Outcome(queue_node->admit_outcome->Get()) << std::endl;
 
 
+  // FIXME add assertions to show that user stats are decremtned on rejection or cancellation
 }
 
 

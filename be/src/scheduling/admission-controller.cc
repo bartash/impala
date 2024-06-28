@@ -2500,6 +2500,7 @@ void AdmissionController::TryDequeue() {
         if (outcome == AdmissionOutcome::REJECTED) {
           stats->metrics()->total_rejected->Increment(1);
           std::cout  << "dequeue rejected" << std::endl;
+          // RETURN XXX 1
           return; // next query
         } else {
           DCHECK_ENUM_EQ(outcome, AdmissionOutcome::CANCELLED);
@@ -2523,6 +2524,7 @@ void AdmissionController::TryDequeue() {
       if (is_cancelled) {
         VLOG_QUERY << "Dequeued cancelled query=" << PrintId(query_id);
         std::cout   << "Dequeued cancelled query=" <<  PrintId(query_id) << std::endl;
+        // RETURN XXX 2
         return; // next query
       }
 

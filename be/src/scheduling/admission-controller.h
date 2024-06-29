@@ -790,7 +790,7 @@ class AdmissionController {
     FRIEND_TEST(AdmissionControllerTest, AggregatedUserLoads);
     FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestCount);
     FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestMemory);
-    FRIEND_TEST(AdmissionControllerTest, DequueLoop);
+    FRIEND_TEST(AdmissionControllerTest, DequeueLoop);
     FRIEND_TEST(AdmissionControllerTest, GetMaxToDequeue);
     FRIEND_TEST(AdmissionControllerTest, PoolStats);
     FRIEND_TEST(AdmissionControllerTest, QueryRejection);

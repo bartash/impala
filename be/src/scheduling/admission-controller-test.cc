@@ -1307,7 +1307,6 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   AdmissionController::QueueNode* queue_node = makeQueueNode(
       admission_controller, coord_id, &admit_outcome, config_c,  QUEUE_C);
 
-
   queue_c.Enqueue(queue_node);
   stats_c->Queue();
   stats_c->IncrementPerUser(USER1);
@@ -1316,17 +1315,22 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   // Check we put it in the queue
   max_to_dequeue = admission_controller->GetMaxToDequeue(queue_c, stats_c, config_c);
   ASSERT_EQ(1, max_to_dequeue);
-
   admission_controller->pool_config_map_[queue_node->pool_name] = queue_node->pool_cfg;
 
+  // Dequeue a query which is rejected.
   admission_controller->TryDequeue();
   ASSERT_TRUE(queue_c.empty());
   // The pool max_requests is 0 so query will be rejected.
   ASSERT_EQ(AdmissionOutcome::REJECTED, queue_node->admit_outcome->Get());
   ASSERT_EQ("disabled by requests limit set to 0", queue_node->not_admitted_reason);
 
+  // Check that user stats reflect the rejected query
+  ASSERT_EQ(0, stats_c->local_stats_.user_loads[USER1]);
+  ASSERT_EQ(0, stats_c->agg_user_loads_.get(USER1));
+  ASSERT_EQ("[]", stats_c->metrics()->agg_current_users->ToHumanReadable());
+  ASSERT_EQ("[]", stats_c->metrics()->local_current_users->ToHumanReadable());
 
-
+  // Queue another query.
   Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER> canceled_outcome;
   // Mark the outcome as cancelled to force execution through the cancellation path in
   // AdmissionController::TryDequeue()
@@ -1337,7 +1341,6 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   queue_node->pool_cfg.__set_max_mem_resources(2 * GIGABYTE);
   admission_controller->pool_config_map_[queue_node->pool_name] = queue_node->pool_cfg;
 
-
   queue_c.Enqueue(queue_node);
   stats_c->Queue();
   stats_c->IncrementPerUser(USER1);
@@ -1347,12 +1350,11 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   ASSERT_TRUE(queue_c.empty());
   ASSERT_EQ(AdmissionOutcome::CANCELLED, queue_node->admit_outcome->Get());
 
-  std::cout  << "reason2 " << queue_node->not_admitted_reason << std::endl;
-  std::cout  << "details2 " << queue_node->not_admitted_details << std::endl;
-  std::cout  << "outcome2 " << Outcome(queue_node->admit_outcome->Get()) << std::endl;
-
-
-  // FIXME add assertions to show that user stats are decremtned on rejection or cancellation
+  // Check that user stats reflect the cancelled query.
+  ASSERT_EQ(0, stats_c->local_stats_.user_loads[USER1]);
+  ASSERT_EQ(0, stats_c->agg_user_loads_.get(USER1));
+  ASSERT_EQ("[]", stats_c->metrics()->agg_current_users->ToHumanReadable());
+  ASSERT_EQ("[]", stats_c->metrics()->local_current_users->ToHumanReadable());
 }
 
 

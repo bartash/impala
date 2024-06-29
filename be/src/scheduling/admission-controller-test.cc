@@ -1278,7 +1278,8 @@ TEST_F(AdmissionControllerTest, GetMaxToDequeue) {
 
 }
 
-
+/// Test that per-user stats are correctly updated when a query is dequeued but is not
+/// admitted. The 2 cases are that is is rejected or cancelled.
 TEST_F(AdmissionControllerTest, DequeueLoop) {
   // Pass the paths of the configuration files as command line flags
   FLAGS_fair_scheduler_allocation_path = GetResourceFile("fair-scheduler-test2.xml");
@@ -1303,16 +1304,16 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   max_to_dequeue = admission_controller->GetMaxToDequeue(queue_c, stats_c, config_c);
   ASSERT_EQ(0, max_to_dequeue);
 
+  // Queue a query.
   Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER> admit_outcome;
   AdmissionController::QueueNode* queue_node = makeQueueNode(
       admission_controller, coord_id, &admit_outcome, config_c,  QUEUE_C);
-
   queue_c.Enqueue(queue_node);
   stats_c->Queue();
   stats_c->IncrementPerUser(USER1);
   ASSERT_FALSE(queue_c.empty());
 
-  // Check we put it in the queue
+  // Check we put it in the queue/
   max_to_dequeue = admission_controller->GetMaxToDequeue(queue_c, stats_c, config_c);
   ASSERT_EQ(1, max_to_dequeue);
   admission_controller->pool_config_map_[queue_node->pool_name] = queue_node->pool_cfg;
@@ -1340,12 +1341,12 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   queue_node->pool_cfg.__set_max_requests(1);
   queue_node->pool_cfg.__set_max_mem_resources(2 * GIGABYTE);
   admission_controller->pool_config_map_[queue_node->pool_name] = queue_node->pool_cfg;
-
   queue_c.Enqueue(queue_node);
   stats_c->Queue();
   stats_c->IncrementPerUser(USER1);
   ASSERT_FALSE(queue_c.empty());
 
+  // Dequeue a query which is cancelled.
   admission_controller->TryDequeue();
   ASSERT_TRUE(queue_c.empty());
   ASSERT_EQ(AdmissionOutcome::CANCELLED, queue_node->admit_outcome->Get());

@@ -787,16 +787,17 @@ class AdmissionController {
     static void AppendStatsForConsumedMemory(
       std::stringstream& ss, const TPoolStats& stats);
 
-    FRIEND_TEST(AdmissionControllerTest, Simple);
-    FRIEND_TEST(AdmissionControllerTest, PoolStats);
-    FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestMemory);
-    FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestCount);
-    FRIEND_TEST(AdmissionControllerTest, GetMaxToDequeue);
-    FRIEND_TEST(AdmissionControllerTest, QueryRejection);
-    FRIEND_TEST(AdmissionControllerTest, TopNQueryCheck);
     FRIEND_TEST(AdmissionControllerTest, AggregatedUserLoads);
-    FRIEND_TEST(AdmissionControllerTest, UserAndGroupQuotas);
+    FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestCount);
+    FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestMemory);
+    FRIEND_TEST(AdmissionControllerTest, DequueLoop);
+    FRIEND_TEST(AdmissionControllerTest, GetMaxToDequeue);
+    FRIEND_TEST(AdmissionControllerTest, PoolStats);
+    FRIEND_TEST(AdmissionControllerTest, QueryRejection);
     FRIEND_TEST(AdmissionControllerTest, QuotaExamples);
+    FRIEND_TEST(AdmissionControllerTest, Simple);
+    FRIEND_TEST(AdmissionControllerTest, TopNQueryCheck);
+    FRIEND_TEST(AdmissionControllerTest, UserAndGroupQuotas);
     friend class AdmissionControllerTest;
   };
 
@@ -1315,21 +1316,21 @@ class AdmissionController {
       const ScheduleState& state, int64 user_load, const string& user,
       string* quota_exceeded_reason, bool* key_matched);
 
-  FRIEND_TEST(AdmissionControllerTest, Simple);
-  FRIEND_TEST(AdmissionControllerTest, PoolStats);
-  FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestMemory);
+  FRIEND_TEST(AdmissionControllerTest, AggregatedUserLoads);
   FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestCount);
-  FRIEND_TEST(AdmissionControllerTest, UserAndGroupQuotas);
-  FRIEND_TEST(AdmissionControllerTest, QuotaExamples);
+  FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestMemory);
   FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestSlots);
   FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestSlotsDefault);
-  FRIEND_TEST(AdmissionControllerTest, GetMaxToDequeue);
-  FRIEND_TEST(AdmissionControllerTest, DequeueLoop);
-  FRIEND_TEST(AdmissionControllerTest, QueryRejection);
-  FRIEND_TEST(AdmissionControllerTest, DedicatedCoordScheduleState);
   FRIEND_TEST(AdmissionControllerTest, DedicatedCoordAdmissionChecks);
+  FRIEND_TEST(AdmissionControllerTest, DedicatedCoordScheduleState);
+  FRIEND_TEST(AdmissionControllerTest, DequeueLoop);
+  FRIEND_TEST(AdmissionControllerTest, GetMaxToDequeue);
+  FRIEND_TEST(AdmissionControllerTest, PoolStats);
+  FRIEND_TEST(AdmissionControllerTest, QueryRejection);
+  FRIEND_TEST(AdmissionControllerTest, QuotaExamples);
+  FRIEND_TEST(AdmissionControllerTest, Simple);
   FRIEND_TEST(AdmissionControllerTest, TopNQueryCheck);
-  FRIEND_TEST(AdmissionControllerTest, AggregatedUserLoads);
+  FRIEND_TEST(AdmissionControllerTest, UserAndGroupQuotas);
   friend class AdmissionControllerTest;
 
 };

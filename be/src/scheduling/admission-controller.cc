@@ -2496,14 +2496,14 @@ void AdmissionController::TryDequeue() {
       --max_to_dequeue;
       VLOG(3) << "Dequeueing from stats for pool " << pool_name;
       stats->Dequeue(false);
-
+      const std::string& user =
+          GetEffectiveUser(queue_node->admission_request.request.query_ctx.session);
       if (is_rejected) {
         AdmissionOutcome outcome =
             queue_node->admit_outcome->Set(AdmissionOutcome::REJECTED);
         if (outcome == AdmissionOutcome::REJECTED) {
           stats->metrics()->total_rejected->Increment(1);
-          std::cout  << "dequeue rejected" << std::endl;
-          // RETURN XXX 1
+          stats->DecrementPerUser(user);
           return; // next query
         } else {
           DCHECK_ENUM_EQ(outcome, AdmissionOutcome::CANCELLED);
@@ -2527,7 +2527,7 @@ void AdmissionController::TryDequeue() {
       if (is_cancelled) {
         VLOG_QUERY << "Dequeued cancelled query=" << PrintId(query_id);
         std::cout   << "Dequeued cancelled query=" <<  PrintId(query_id) << std::endl;
-        // RETURN XXX 2
+        stats->DecrementPerUser(user);
         return; // next query
       }
 

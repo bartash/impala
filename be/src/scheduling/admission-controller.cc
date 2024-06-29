@@ -2432,15 +2432,12 @@ void AdmissionController::DequeueLoop() {
 }
 
 void AdmissionController::TryDequeue() {
-  std::cout << "hellov" << std::endl;
   ClusterMembershipMgr::SnapshotPtr membership_snapshot =
       cluster_membership_mgr_->GetSnapshot();
-  std::cout  << "there" << std::endl;
   // If a query was queued while the cluster is still starting up but the client facing
   // services have already started to accept connections, the whole membership can still
   // be empty.
   if (membership_snapshot->executor_groups.empty()) {
-    std::cout  << "no executor_groups"<< std::endl;
     return;
   }
 
@@ -2491,7 +2488,6 @@ void AdmissionController::TryDequeue() {
       }
 
       // At this point we know that the query must be taken off the queue
-      std::cout  << "dequeue1" << std::endl;
       queue.Dequeue();
       --max_to_dequeue;
       VLOG(3) << "Dequeueing from stats for pool " << pool_name;
@@ -2507,7 +2503,6 @@ void AdmissionController::TryDequeue() {
           return; // next query
         } else {
           DCHECK_ENUM_EQ(outcome, AdmissionOutcome::CANCELLED);
-          std::cout  << "dequeue cancelled" << std::endl;
           is_cancelled = true;
         }
       }
@@ -2526,7 +2521,6 @@ void AdmissionController::TryDequeue() {
 
       if (is_cancelled) {
         VLOG_QUERY << "Dequeued cancelled query=" << PrintId(query_id);
-        std::cout   << "Dequeued cancelled query=" <<  PrintId(query_id) << std::endl;
         stats->DecrementPerUser(user);
         return; // next query
       }
@@ -2536,12 +2530,10 @@ void AdmissionController::TryDequeue() {
       DCHECK(!is_cancelled);
       DCHECK(!is_rejected);
       DCHECK(queue_node->admitted_schedule != nullptr);
-      std::cout  << "dequeue admit" << std::endl;
       AdmitQuery(queue_node, true /* was_queued */, is_trivial);
     }
     pools_for_updates_.insert(pool_name);
   }
-  std::cout << "bye" << std::endl;
 }
 
 int64_t AdmissionController::GetQueueTimeoutForPoolMs(const TPoolConfig& pool_config) {
@@ -2585,8 +2577,6 @@ void AdmissionController::LogDequeueFailed(QueueNode* node,
     const string& not_admitted_reason) {
   VLOG_QUERY << "Could not dequeue query id=" << PrintId(node->admission_request.query_id)
              << " reason: " << not_admitted_reason;
-  std::cout << "Could not dequeue query id=" << PrintId(node->admission_request.query_id)
-             << " reason: " << not_admitted_reason << std::endl;
   node->admission_request.summary_profile->AddInfoString(
       PROFILE_INFO_KEY_LAST_QUEUED_REASON, not_admitted_reason);
 }

@@ -1298,7 +1298,7 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   AdmissionController::PoolStats* stats_c = admission_controller->GetPoolStats(QUEUE_C);
   CheckPoolStatsEmpty(stats_c);
 
-  int64_t  max_to_dequeue;
+  int64_t max_to_dequeue;
   // Queue is empty, so nothing to dequeue
   ASSERT_TRUE(queue_c.empty());
   max_to_dequeue = admission_controller->GetMaxToDequeue(queue_c, stats_c, config_c);
@@ -1306,8 +1306,8 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
 
   // Queue a query.
   Promise<AdmissionOutcome, PromiseMode::MULTIPLE_PRODUCER> admit_outcome;
-  AdmissionController::QueueNode* queue_node = makeQueueNode(
-      admission_controller, coord_id, &admit_outcome, config_c,  QUEUE_C);
+  AdmissionController::QueueNode* queue_node =
+      makeQueueNode(admission_controller, coord_id, &admit_outcome, config_c, QUEUE_C);
   queue_c.Enqueue(queue_node);
   stats_c->Queue();
   stats_c->IncrementPerUser(USER1);
@@ -1336,8 +1336,8 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   // Mark the outcome as cancelled to force execution through the cancellation path in
   // AdmissionController::TryDequeue()
   canceled_outcome.Set(AdmissionOutcome::CANCELLED);
-  queue_node = makeQueueNode(
-      admission_controller,  coord_id, &canceled_outcome, config_c,  QUEUE_C);
+  queue_node =
+      makeQueueNode(admission_controller, coord_id, &canceled_outcome, config_c, QUEUE_C);
   queue_node->pool_cfg.__set_max_requests(1);
   queue_node->pool_cfg.__set_max_mem_resources(2 * GIGABYTE);
   admission_controller->pool_config_map_[queue_node->pool_name] = queue_node->pool_cfg;
@@ -1357,8 +1357,6 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   ASSERT_EQ("[]", stats_c->metrics()->agg_current_users->ToHumanReadable());
   ASSERT_EQ("[]", stats_c->metrics()->local_current_users->ToHumanReadable());
 }
-
-
 
 /// Test that RequestPoolService correctly reads configuration files.
 TEST_F(AdmissionControllerTest, Config) {

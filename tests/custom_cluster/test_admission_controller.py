@@ -1253,37 +1253,39 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     Note that some detailed checking of rule semantics is done at the unit test level in
     admission-controller-test.cc"""
 
-    USER_A = 'userA'
-    POOL = 'root.queueE'
-
-    query = "select count(*) from functional.alltypes where int_col = sleep(20000)"
-
     # The per-pool limit for userA is 3 in root.queueE.
-    impalad1 = self.cluster.impalads[0]
-    impalad2 = self.cluster.impalads[1]
-    query1 = self.execute_aync_and_wait_for_running(impalad1, query, USER_A, pool=POOL)
-    query2 = self.execute_aync_and_wait_for_running(impalad2, query, USER_A, pool=POOL)
-    query3 = self.execute_aync_and_wait_for_running(impalad2, query, USER_A, pool=POOL)
+    self.check_user_load_limits('userA', 'root.queueE', 3)
+
+  def check_user_load_limits(self, user, pool, limit):
+    query = "select count(*) from functional.alltypes where int_col = sleep(20000)"
+    query_handles = []
+    for i in range(limit):
+      impalad = self.cluster.impalads[i % 2]
+      query_handle = self.execute_aync_and_wait_for_running(impalad, query, user,
+                                                            pool=pool)
+      query_handles.append(query_handle)
 
     # Let state sync across impalads.
     sleep(STATESTORE_RPC_FREQUENCY_MS / 1000.0)
 
-    # A 4th query should be rejected
-    client = impalad1.service.create_beeswax_client()
-    client.set_configuration({'request_pool': POOL})
+    # Another  query should be rejected
+    impalad = self.cluster.impalads[limit % 2]
+    client = impalad.service.create_beeswax_client()
+    client.set_configuration({'request_pool': pool})
     try:
-      client.execute(query, user=USER_A)
+      client.execute(query, user=user)
       assert False, "query should fail"
     except Exception as e:
-      assert ("Rejected query from pool root.queueE: current per-user load 3 for user "
-              "userA is at or above the user limit 3 in pool root.queueE") in str(e)
+      assert ("Rejected query from pool {0}: current per-user load {1} for user "
+              "{2} is at or above the user limit {1} in pool {0}".
+              format(pool, limit, user)) in str(e)
 
-    query1.close()
-    query2.close()
-    query3.close()
+    for query_handle in query_handles:
+      query_handle.close()
 
   class ClientAndHandle:
     """Holder class for a client and query handle"""
+
     def __init__(self, client, handle):
       self.client = client
       self.handle = handle

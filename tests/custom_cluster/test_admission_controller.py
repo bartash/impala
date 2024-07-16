@@ -1256,10 +1256,10 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     admission-controller-test.cc"""
 
     # The per-pool limit for userA is 3 in root.queueE.
-    self.check_user_load_limits('userA', 'root.queueE', 3)
-    self.check_user_load_limits('random_user', 'root.queueE', 1)
+    self.check_user_load_limits('userA', 'root.queueE', 3, "user")
+    self.check_user_load_limits('random_user', 'root.queueE', 1, "wildcard")
 
-  def check_user_load_limits(self, user, pool, limit):
+  def check_user_load_limits(self, user, pool, limit, err_type):
     query_handles = []
     for i in range(limit):
       impalad = self.cluster.impalads[i % 2]
@@ -1279,8 +1279,8 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
       assert False, "query should fail"
     except Exception as e:
       expected = ("Rejected query from pool {0}: current per-user load {1} for user "
-             "{2} is at or above the user limit {1} in pool {0}".
-             format(pool, limit, user))
+             "{2} is at or above the {3} limit {1} in pool {0}".
+             format(pool, limit, user, err_type))
       assert expected in str(e)
 
     for query_handle in query_handles:

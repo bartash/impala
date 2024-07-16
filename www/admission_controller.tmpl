@@ -413,11 +413,11 @@ Time since last statestore update containing admission control topic state (ms):
       <td colspan='2'>{{wait_time_ms_ema}} ms</td>
     </tr>
     <tr>
-      <td>Users with queries queued or running on this coordinator</td>
+      <td>Users with queries queued or running on this coordinator (visible if pool has user quotas configured)</td>
       <td colspan='2'>{{local_current_users}}</td>
     </tr>
     <tr>
-      <td>Users with queries queued or running, aggregated across coordinators</td>
+      <td>Users with queries queued or running, aggregated across coordinators (visible if pool has user quotas configured)</td>
       <td colspan='2'>{{agg_current_users}}</td>
     </tr>
     <tr>

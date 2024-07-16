@@ -60,6 +60,8 @@ LOG = logging.getLogger('admission_test')
 # that running queries can be correlated with the thread that submitted them.
 QUERY = " union all ".join(["select * from functional.alltypesagg where id != {0}"] * 30)
 
+SLOW_QUERY = "select count(*) from functional.alltypes where int_col = sleep(20000)"
+
 # Same query but with additional unpartitioned non-coordinator fragments.
 # The unpartitioned fragments are both interior fragments that consume input
 # from a scan fragment and non-interior fragments with a constant UNION.
@@ -1255,13 +1257,13 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
 
     # The per-pool limit for userA is 3 in root.queueE.
     self.check_user_load_limits('userA', 'root.queueE', 3)
+    self.check_user_load_limits('random_user', 'root.queueE', 1)
 
   def check_user_load_limits(self, user, pool, limit):
-    query = "select count(*) from functional.alltypes where int_col = sleep(20000)"
     query_handles = []
     for i in range(limit):
       impalad = self.cluster.impalads[i % 2]
-      query_handle = self.execute_aync_and_wait_for_running(impalad, query, user,
+      query_handle = self.execute_aync_and_wait_for_running(impalad, SLOW_QUERY, user,
                                                             pool=pool)
       query_handles.append(query_handle)
 
@@ -1273,7 +1275,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     client = impalad.service.create_beeswax_client()
     client.set_configuration({'request_pool': pool})
     try:
-      client.execute(query, user=user)
+      client.execute(SLOW_QUERY, user=user)
       assert False, "query should fail"
     except Exception as e:
       assert ("Rejected query from pool {0}: current per-user load {1} for user "

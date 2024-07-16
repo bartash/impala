@@ -310,7 +310,7 @@ DEFINE_string(blacklisted_dbs, "sys,information_schema",
     " create, or drop databases which are blacklisted.");
 DEFINE_string(blacklisted_tables, "",
     "Comma separated full names (in format: <db>.<table>) of blacklisted tables. "
-    "Configure which tables to be skipped for loading (in startup and reseting metadata "
+    "Configure which tables to be skipped for loading (in startup and resetting metadata "
     "of the table). Users can't access, create, or drop tables which are blacklisted");
 
 DEFINE_double_hidden(invalidate_tables_gc_old_gen_full_threshold, 0.6, "The threshold "
@@ -352,7 +352,7 @@ DEFINE_int32(num_check_authorization_threads, 1,
     "The number of threads used to check authorization for the user when executing show "
     "tables/databases. This configuration is applicable only when authorization is "
     "enabled. A value of 1 disables multi-threaded execution for checking authorization."
-    "However, a small value of larger than 1 may limit the parallism of FE requests when "
+    "However, a small value of larger than 1 may limit the parallelism of FE requests when "
     "checking authorization with a high concurrency. The value must be in the range of "
     "1 to 128.");
 

@@ -1197,7 +1197,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     statestored_args=_STATESTORED_ARGS)
   def test_user_loads_propagate(self):
     """Test that user loads are propagated by checking metric values"""
-    self.check_user_loads(user_loads_present=True)
+    self.check_user_loads(user_loads_present=True, pool='root.queueB')
 
   @pytest.mark.execute_serially
   @CustomClusterTestSuite.with_args(
@@ -1210,7 +1210,9 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     as there are no quotas in fair-scheduler-3-groups.xml."""
     self.check_user_loads(user_loads_present=False, pool="root.tiny")
 
-  def check_user_loads(self, user_loads_present, pool='root.queueB'):
+  def check_user_loads(self, user_loads_present, pool):
+    """Fetches the metrics for user loads from the webui and checks they are as
+    expected."""
     USER_ROOT = 'root'
     USER_C = 'userC'
     query = "select count(*) from functional.alltypes where int_col = sleep(20000)"

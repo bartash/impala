@@ -1257,6 +1257,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
 
     # The per-pool limit for userA is 3 in root.queueE.
     self.check_user_load_limits('userA', 'root.queueE', 3, "user")
+    # In queueE the wildcard limit is 1
     self.check_user_load_limits('random_user', 'root.queueE', 1, "wildcard")
 
   def check_user_load_limits(self, user, pool, limit, err_type):

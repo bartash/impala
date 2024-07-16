@@ -1248,7 +1248,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
       fs_allocation_file="fair-scheduler-test2.xml",
       llama_site_file="llama-site-test2.xml"),
     statestored_args=_STATESTORED_ARGS)
-  def test_user_loads_rules(self, vector):
+  def test_user_loads_rules(self):
     """Test that rules for user loads are followed for new queries.
     Note that some detailed checking of rule semantics is done at the unit test level in
     admission-controller-test.cc"""

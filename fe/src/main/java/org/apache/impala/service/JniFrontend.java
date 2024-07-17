@@ -44,8 +44,6 @@ import org.apache.impala.catalog.FeDataSource;
 import org.apache.impala.catalog.FeDb;
 import org.apache.impala.catalog.FeTable;
 import org.apache.impala.catalog.Function;
-import org.apache.impala.catalog.StructType;
-import org.apache.impala.catalog.Type;
 import org.apache.impala.common.FileSystemUtil;
 import org.apache.impala.common.ImpalaException;
 import org.apache.impala.common.InternalException;
@@ -58,7 +56,6 @@ import org.apache.impala.thrift.TBuildTestDescriptorTableParams;
 import org.apache.impala.thrift.TCatalogObject;
 import org.apache.impala.thrift.TDatabase;
 import org.apache.impala.thrift.TDescribeDbParams;
-import org.apache.impala.thrift.TDescribeOutputStyle;
 import org.apache.impala.thrift.TDescribeResult;
 import org.apache.impala.thrift.TDescribeTableParams;
 import org.apache.impala.thrift.TDescriptorTable;
@@ -125,7 +122,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -711,7 +707,13 @@ public class JniFrontend {
   }
 
 
-  public static List<String> decodeGroups(String flags, String username) {
+  /**
+   * Evaluate the groups that the user is in when injected groups are being used.
+   * @param flags input string which is the format of the backend 'injected_group_members_debug_only' flag
+   * @param username the user name
+   * @return a list of group names
+   */
+  public static List<String> decodeInjectedGroups(String flags, String username) {
     List<String> groups = new ArrayList<>();
     if (flags == null || username == null) {
       return groups;
@@ -720,7 +722,7 @@ public class JniFrontend {
     for (String group : flags.split(";")) {
       String[] parts = group.split(":");
       if (parts.length != 2) {
-        continue;
+        throw new IllegalStateException("group " + group + " is malformed in injected groups");
       }
       String groupName = parts[0];
       for (String member : parts[1].split(",")) {
@@ -744,7 +746,7 @@ public class JniFrontend {
     String injectedGroups = BackendConfig.INSTANCE.getInjectedGroupMembersDebugOnly();
     if (injectedGroups != null) {
       LOG.info("getHadoopGroups found injected groups=" + injectedGroups);
-      List<String> groups = decodeGroups(injectedGroups, user);
+      List<String> groups = decodeInjectedGroups(injectedGroups, user);
       LOG.info("getHadoopGroups returns" + groups + " for user " + user);
       result.setGroups(groups);
     } else {

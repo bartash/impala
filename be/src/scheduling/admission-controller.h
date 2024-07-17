@@ -454,7 +454,7 @@ class AdmissionController {
   std::string GetStalenessDetail(const std::string& prefix,
       int64_t* ms_since_last_update = nullptr);
 
-  bool SetHadoopGroups(std::map<std::string, std::set<std::string>> groups);
+  static bool SetHadoopGroups(std::map<std::string, std::set<std::string>> groups);
 
  private:
   class PoolStats;

@@ -1249,7 +1249,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     impalad_args=impalad_admission_ctrl_config_args(
       fs_allocation_file="fair-scheduler-test2.xml",
       llama_site_file="llama-site-test2.xml",
-      additional_args="--injected_group_members_debug_only=g1:u1,u2"
+      additional_args="--injected_group_members_debug_only=group1:userB,userC"
     ),
     statestored_args=_STATESTORED_ARGS)
   def test_user_loads_rules(self):
@@ -1261,6 +1261,8 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     self.check_user_load_limits('userA', 'root.queueE', 3, "user")
     # In queueE the wildcard limit is 1
     self.check_user_load_limits('random_user', 'root.queueE', 1, "wildcard")
+
+    self.check_user_load_limits('userB', 'root.queueE', 2, "xxx")
 
   def check_user_load_limits(self, user, pool, limit, err_type):
     query_handles = []

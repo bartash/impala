@@ -717,6 +717,13 @@ public class JniFrontend {
     TGetHadoopGroupsRequest request = new TGetHadoopGroupsRequest();
     JniUtil.deserializeThrift(protocolFactory_, request, serializedRequest);
     TGetHadoopGroupsResponse result = new TGetHadoopGroupsResponse();
+
+    String injectedGroups = BackendConfig.INSTANCE.getInjectedGroupMembersDebugOnly();
+    LOG.info("injected groups=" + injectedGroups);
+    if (injectedGroups != null) {
+      LOG.info("getHadoopGroups found injected groups=" + injectedGroups);
+    }
+
     try {
       result.setGroups(GROUPS.getGroups(request.getUser()));
     } catch (IOException e) {

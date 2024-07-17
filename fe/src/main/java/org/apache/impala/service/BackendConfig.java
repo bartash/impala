@@ -525,4 +525,6 @@ public class BackendConfig {
   public boolean isReleaseBuild() {
     return backendCfg_.is_release_build;
   }
+
+  public String getInjectedGroupMembersDebugOnly() {return backendCfg_.injected_group_members_debug_only;}
 }

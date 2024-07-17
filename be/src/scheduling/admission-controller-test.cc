@@ -437,18 +437,7 @@ class AdmissionControllerTest : public testing::Test {
     }
   }
 
-  // For testing purposes, set the groups that will be used by
-  // org.apache.hadoop.security.Groups
-  static bool SetHadoopGroups(std::map<std::string, std::set<std::string>> groups) {
-    TSetHadoopGroupsRequest req;
-    req.__set_groups(groups);
-    TSetHadoopGroupsResponse res;
-    Status status = ExecEnv::GetInstance()->frontend()->SetHadoopGroups(req, &res);
-    if (!status.ok()) {
-      return false;
-    }
-    return true;
-  }
+
 
   // Set the per-user loads for a pool. Used only for testing.
   static void set_user_loads(AdmissionController* admission_controller, const char* user,
@@ -944,7 +933,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
 
   // Clean up
   groups.clear();
-  ASSERT_TRUE(SetHadoopGroups(groups));
+  ASSERT_TRUE(AdmissionController::SetHadoopGroups(groups));
 }
 
 /// Test CanAdmitRequest in the context of user and group quotas.
@@ -961,7 +950,7 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   groups.insert({"it", it_group});
   std::set<std::string> support_group{"claire", "geeta", "howard"};
   groups.insert({"support", support_group});
-  ASSERT_TRUE(SetHadoopGroups(groups));
+  ASSERT_TRUE(AdmissionController::SetHadoopGroups(groups));
 
   string not_admitted_reason;
 
@@ -983,7 +972,7 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
 
   // Clean up
   groups.clear();
-  ASSERT_TRUE(SetHadoopGroups(groups));
+  ASSERT_TRUE(AdmissionController::SetHadoopGroups(groups));
 }
 
 /// Test CanAdmitRequest() using the slots mechanism that is enabled with non-default

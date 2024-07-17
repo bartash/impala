@@ -78,6 +78,10 @@ DEFINE_bool(clamp_query_mem_limit_backend_mem_limit, true, "Caps query memory li
     "admitted with backend's memory limit and could succeed if the memory request was "
     "over estimated and could fail if query really needs more memory.");
 
+DEFINE_string(injected_group_members_debug_only, "",
+    "For testing only. Set to a semicolon separated list of groups, each of which "
+    "consists of a name followed by a colon and a comma separated list of group members");
+
 DECLARE_bool(is_coordinator);
 DECLARE_bool(is_executor);
 
@@ -698,6 +702,47 @@ AdmissionController::~AdmissionController() {
   dequeue_thread_->Join();
 }
 
+// For testing purposes, set the groups that will be used by
+// org.apache.hadoop.security.Groups
+static bool SetHadoopGroups(std::map<std::string, std::set<std::string>> groups) {
+  TSetHadoopGroupsRequest req;
+  req.__set_groups(groups);
+  TSetHadoopGroupsResponse res;
+  Status status = ExecEnv::GetInstance()->frontend()->SetHadoopGroups(req, &res);
+  if (!status.ok()) {
+    return false;
+  }
+  return true;
+}
+
+static std::map<std::string, std::set<std::string>> decodeGroups(const std::string& encodedGroups) {
+  std::map<std::string, std::set<std::string>> groups;
+  std::stringstream ss(encodedGroups);
+  std::string group;
+
+  while (std::getline(ss, group, ';')) {
+    // Split group name and members
+    std::size_t pos = group.find(':');
+    if (pos == std::string::npos) {
+      // Invalid format, skip this group
+      continue;
+    }
+    std::string groupName = group.substr(0, pos);
+    std::string members = group.substr(pos + 1);
+
+    // Add members to the set for this group
+    std::set<std::string> memberSet;
+    std::stringstream memberStream(members);
+    std::string member;
+    while (std::getline(memberStream, member, ',')) {
+      memberSet.insert(member);
+    }
+    groups[groupName] = memberSet;
+  }
+  return groups;
+}
+
+
 Status AdmissionController::Init() {
   RETURN_IF_ERROR(Thread::Create("scheduling", "admission-thread",
       &AdmissionController::DequeueLoop, this, &dequeue_thread_));
@@ -716,9 +761,16 @@ Status AdmissionController::Init() {
     status.AddDetail("AdmissionController failed to register request queue topic");
   }
 
-  flkjsdflkjfdlfdjs
+  if (FLAGS_injected_group_members_debug_only.size() > 0) {
+      auto groups = decodeGroups(FLAGS_injected_group_members_debug_only);
+      SetHadoopGroups(groups);
+      // FIXME check return status from SetHadoopGroups
+  }
   return status;
 }
+
+
+
 
 void AdmissionController::PoolStats::AdmitQueryAndMemory(const ScheduleState& state,
     const std::string& user, bool was_queued, bool is_trivial, bool track_per_user) {
@@ -2311,7 +2363,7 @@ bool AdmissionController::FindGroupToAdmitOrReject(
       return false;
     }
 
-    // Query is rejected if user quotas are in place and quoya is exceeded.
+    // Query is rejected if user quotas are in place and quota is exceeded.
     if (!CanAdmitQuota(
             *state, pool_config, root_cfg, admit_from_queue, &rejection_reason)) {
       DCHECK(!rejection_reason.empty());

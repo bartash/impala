@@ -109,9 +109,6 @@ DEFINE_int32(dbcp_max_wait_millis_for_conn, -1,
 DEFINE_int32(dbcp_data_source_idle_timeout_s, 300,
     "Timeout value in seconds for idle DBCP DataSource objects in cache. It only takes "
     "effect when query option 'clean_dbcp_ds_cache' is set as false.");
-DEFINE_string(injected_group_members_debug_only, "",
-    "For testing only. Set to a semicolon separated list of groups, each of which "
-    "consists of a name followed by a colon and comma separated list of group members");
 
 Frontend::Frontend() {
   JniMethodDescriptor methods[] = {

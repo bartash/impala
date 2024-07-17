@@ -1266,11 +1266,8 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
 
   def check_user_load_limits(self, user, pool, limit, err_type, group_name=""):
     query_handles = []
-    type = "user"
-    group_description = ""
-    if group_name:
-      type="group"
-      group_description = " in group " + group_name
+    type = "group" if group_name else "user"
+    group_description = " in group " + group_name if group_name else ""
     for i in range(limit):
       impalad = self.cluster.impalads[i % 2]
       query_handle = self.execute_aync_and_wait_for_running(impalad, SLOW_QUERY, user,
@@ -1280,7 +1277,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     # Let state sync across impalads.
     sleep(STATESTORE_RPC_FREQUENCY_MS / 1000.0)
 
-    # Another  query should be rejected
+    # Another query should be rejected
     impalad = self.cluster.impalads[limit % 2]
     client = impalad.service.create_beeswax_client()
     client.set_configuration({'request_pool': pool})

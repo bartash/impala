@@ -1262,10 +1262,15 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     # In queueE the wildcard limit is 1
     self.check_user_load_limits('random_user', 'root.queueE', 1, "wildcard")
 
-    self.check_user_load_limits('userB', 'root.queueE', 2, "xxx")
+    self.check_user_load_limits('userB', 'root.queueE', 2, "group", group_name="group1")
 
-  def check_user_load_limits(self, user, pool, limit, err_type):
+  def check_user_load_limits(self, user, pool, limit, err_type, group_name=""):
     query_handles = []
+    type = "user"
+    group_description = ""
+    if group_name:
+      type="group"
+      group_description = " in group " + group_name
     for i in range(limit):
       impalad = self.cluster.impalads[i % 2]
       query_handle = self.execute_aync_and_wait_for_running(impalad, SLOW_QUERY, user,
@@ -1283,9 +1288,14 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
       client.execute(SLOW_QUERY, user=user)
       assert False, "query should fail"
     except Exception as e:
-      expected = ("Rejected query from pool {0}: current per-user load {1} for user "
-             "{2} is at or above the {3} limit {1} in pool {0}".
-             format(pool, limit, user, err_type))
+      # expected = ("Rejected query from pool {0}: current per-user load {1} for user "
+      #        "{2} is at or above the {3} limit {1} in pool {0}".
+      #             format(pool, limit, user, err_type))
+      """           Rejected query from pool root.queueE: current per-group load 2 for user 
+            userB in group group1 is at or above the group limit 2 in pool root.queueE"""
+      expected = ("Rejected query from pool {0}: current per-{4} load {1} for user "
+             "{2}{6} is at or above the {3} limit {1} in pool {0}".
+             format(pool, limit, user, err_type, type, group_name, group_description))
       assert expected in str(e)
 
     for query_handle in query_handles:

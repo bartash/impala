@@ -702,19 +702,6 @@ AdmissionController::~AdmissionController() {
   dequeue_thread_->Join();
 }
 
-// For testing purposes, set the groups that will be used by
-// org.apache.hadoop.security.Groups
-static bool SetHadoopGroups(std::map<std::string, std::set<std::string>> groups) {
-  TSetHadoopGroupsRequest req;
-  req.__set_groups(groups);
-  TSetHadoopGroupsResponse res;
-  Status status = ExecEnv::GetInstance()->frontend()->SetHadoopGroups(req, &res);
-  if (!status.ok()) {
-    return false;
-  }
-  return true;
-}
-
 static std::map<std::string, std::set<std::string>> decodeGroups(const std::string& encodedGroups) {
   std::map<std::string, std::set<std::string>> groups;
   std::stringstream ss(encodedGroups);
@@ -3134,6 +3121,20 @@ int64_t AdmissionController::GetExecGroupQueryLoad(const string& grp_name) {
     return entry->second->GetValue();
   }
   return 0;
+}
+
+// For testing purposes, set the groups that will be used by
+// org.apache.hadoop.security.Groups
+bool AdmissionController::SetHadoopGroups(
+    std::map<std::string, std::set<std::string>> groups) {
+  TSetHadoopGroupsRequest req;
+  req.__set_groups(groups);
+  TSetHadoopGroupsResponse res;
+  Status status = ExecEnv::GetInstance()->frontend()->SetHadoopGroups(req, &res);
+  if (!status.ok()) {
+    return false;
+  }
+  return true;
 }
 
 } // namespace impala

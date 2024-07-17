@@ -920,7 +920,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   group1_set.insert(USER1);
   group1_set.insert(USER3);
   groups.insert({"group1", group1_set});
-  ASSERT_TRUE(SetHadoopGroups(groups));
+  ASSERT_TRUE(AdmissionController::SetHadoopGroups(groups));
 
   pool_stats->agg_user_loads_.insert(USER3, 2);
   ASSERT_FALSE(admission_controller->CanAdmitQuota(

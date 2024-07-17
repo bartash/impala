@@ -1288,14 +1288,13 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
       client.execute(SLOW_QUERY, user=user)
       assert False, "query should fail"
     except Exception as e:
-      # expected = ("Rejected query from pool {0}: current per-user load {1} for user "
-      #        "{2} is at or above the {3} limit {1} in pool {0}".
-      #             format(pool, limit, user, err_type))
-      """           Rejected query from pool root.queueE: current per-group load 2 for user 
-            userB in group group1 is at or above the group limit 2 in pool root.queueE"""
-      expected = ("Rejected query from pool {0}: current per-{4} load {1} for user "
-             "{2}{6} is at or above the {3} limit {1} in pool {0}".
-             format(pool, limit, user, err_type, type, group_name, group_description))
+      expected2 = ("Rejected query from pool {0}: current per-{4} load {1} for user "
+             "{2}{5} is at or above the {3} limit {1} in pool {0}".
+             format(pool, limit, user, err_type, type, group_description))
+      expected = ("Rejected query from pool {pool}: current per-{type} load {limit} for user "
+             "{user}{group_description} is at or above the {err_type} limit {limit} in pool {pool}".
+             format(pool=pool, limit=limit, user=user, err_type=err_type, type=type, group_description=group_description))
+      assert expected == expected2
       assert expected in str(e)
 
     for query_handle in query_handles:

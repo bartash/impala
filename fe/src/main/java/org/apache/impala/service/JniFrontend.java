@@ -710,6 +710,29 @@ public class JniFrontend {
     }
   }
 
+
+  public static List<String> decodeGroups(String flags, String username) {
+    List<String> groups = new ArrayList<>();
+    if (flags == null || username == null) {
+      return groups;
+    }
+
+    for (String group : flags.split(";")) {
+      String[] parts = group.split(":");
+      if (parts.length != 2) {
+        continue;
+      }
+      String groupName = parts[0];
+      for (String member : parts[1].split(",")) {
+        if (member.equals(username)) {
+          groups.add(groupName);
+          break; // Skip to the next group after finding the user
+        }
+      }
+    }
+    return groups;
+  }
+
   /**
    * Returns the list of Hadoop groups for the given user name.
    */
@@ -717,35 +740,33 @@ public class JniFrontend {
     TGetHadoopGroupsRequest request = new TGetHadoopGroupsRequest();
     JniUtil.deserializeThrift(protocolFactory_, request, serializedRequest);
     TGetHadoopGroupsResponse result = new TGetHadoopGroupsResponse();
-
+    String user  = request.getUser();
     String injectedGroups = BackendConfig.INSTANCE.getInjectedGroupMembersDebugOnly();
-    LOG.info("injected groups=" + injectedGroups);
     if (injectedGroups != null) {
       LOG.info("getHadoopGroups found injected groups=" + injectedGroups);
-    }
-
-    try {
-      result.setGroups(GROUPS.getGroups(request.getUser()));
-    } catch (IOException e) {
-      // HACK: https://issues.apache.org/jira/browse/HADOOP-15505
-      // There is no easy way to know if no groups found for a user
-      // other than reading the exception message.
-      if (e.getMessage().startsWith("No groups found for user")) {
-        result.setGroups(Collections.<String>emptyList());
-      } else {
-        LOG.error("Error getting Hadoop groups for user: " + request.getUser(), e);
-        throw new InternalException(e.getMessage());
+      List<String> groups = decodeGroups(injectedGroups, user);
+      LOG.info("getHadoopGroups returns" + groups + " for user " + user);
+      result.setGroups(groups);
+    } else {
+      try {
+        result.setGroups(GROUPS.getGroups(user));
+      } catch (IOException e) {
+        // HACK: https://issues.apache.org/jira/browse/HADOOP-15505
+        // There is no easy way to know if no groups found for a user
+        // other than reading the exception message.
+        if (e.getMessage().startsWith("No groups found for user")) {
+          result.setGroups(Collections.<String>emptyList());
+        } else {
+          LOG.error("Error getting Hadoop groups for user: " + request.getUser(), e);
+          throw new InternalException(e.getMessage());
+        }
       }
     }
     try {
       TSerializer serializer = new TSerializer(protocolFactory_);
       return serializer.serialize(result);
-    } catch (TException e) {
-      throw new InternalException(e.getMessage());
-    }
+    } catch (TException e) { throw new InternalException(e.getMessage()); }
   }
-
-
 
   /**
    * Set Hadoop groups on the Java side. This causes the UserToGroupsMappingService

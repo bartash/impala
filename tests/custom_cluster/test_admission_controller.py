@@ -1318,7 +1318,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     client.set_configuration({'request_pool': pool})
     handle = client.execute_async(query, user=user)
     timeout_s = 10
-    # Make sure the first query has been admitted.
+    # Make sure the query has been admitted and is running.
     self.wait_for_state(
       handle, client.QUERY_STATES['RUNNING'], timeout_s, client=client)
     return self.ClientAndHandle(client, handle)

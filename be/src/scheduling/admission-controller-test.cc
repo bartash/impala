@@ -844,7 +844,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   CheckPoolStatsEmpty(pool_stats);
 
   // Create a ScheduleState to run on QUEUE_E on 12 hosts.
-  int64_t host_count = 12;
+  int host_count = 12;
   ScheduleState* schedule_state = MakeScheduleState(QUEUE_E, config_e, host_count,
       30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, USER_A);
   string not_admitted_reason;

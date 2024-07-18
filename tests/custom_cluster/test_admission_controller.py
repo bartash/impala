@@ -1304,7 +1304,6 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
 
   class ClientAndHandle:
     """Holder class for a client and query handle"""
-
     def __init__(self, client, handle):
       self.client = client
       self.handle = handle

@@ -1262,12 +1262,17 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     # In queueE the wildcard limit is 1
     self.check_user_load_limits('random_user', 'root.queueE', 1, "wildcard")
 
+    # userB is in the injected group1, so the limit is 2.
     self.check_user_load_limits('userB', 'root.queueE', 2, "group", group_name="group1")
 
-  def check_user_load_limits(self, user, pool, limit, err_type, group_name=""):
+    # userD had a limit at the pool level, run it in queueD which has no wildcard limit.
+    self.check_user_load_limits('userD', 'root.queueD', 2, "user", pool_to_fail="root")
+
+  def check_user_load_limits(self, user, pool, limit, err_type, group_name="", pool_to_fail=None):
     query_handles = []
     type = "group" if group_name else "user"
     group_description = " in group " + group_name if group_name else ""
+    pool_that_fails = pool_to_fail if pool_to_fail else pool
     for i in range(limit):
       impalad = self.cluster.impalads[i % 2]
       query_handle = self.execute_aync_and_wait_for_running(impalad, SLOW_QUERY, user,
@@ -1287,9 +1292,10 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     except Exception as e:
       expected = ("Rejected query from pool {pool}: current per-{type} load {limit} for "
                   "user {user}{group_description} is at or above the {err_type} limit "
-                  "{limit} in pool {pool}".
+                  "{limit} in pool {pool_that_fails}".
                   format(pool=pool, type=type, limit=limit, user=user,
-                         group_description=group_description, err_type=err_type))
+                         group_description=group_description, err_type=err_type,
+                         pool_that_fails=pool_that_fails))
       assert expected in str(e)
 
     for query_handle in query_handles:

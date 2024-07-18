@@ -39,6 +39,7 @@
 // Access the flags that are defined in RequestPoolService.
 DECLARE_string(fair_scheduler_allocation_path);
 DECLARE_string(llama_site_path);
+DECLARE_string(injected_group_members_debug_only);
 DECLARE_bool(clamp_query_mem_limit_backend_mem_limit);
 
 namespace impala {
@@ -94,6 +95,12 @@ class AdmissionControllerTest : public testing::Test {
   std::unique_ptr<google::FlagSaver> flag_saver_;
 
   virtual void SetUp() {
+    // Setup injected groups that will be visible to all tests.
+    FLAGS_injected_group_members_debug_only = "group0:userA;"
+                                              "group1:user1,user3;"
+                                              "dev:alice,deborah;"
+                                              "it:bob,fiona;"
+                                              "support:claire,geeta,howard;";
     // Establish a TestEnv so that ExecEnv works in tests.
     test_env_.reset(new TestEnv);
     flag_saver_.reset(new google::FlagSaver());
@@ -436,8 +443,6 @@ class AdmissionControllerTest : public testing::Test {
       ResetMemConsumed(child);
     }
   }
-
-
 
   // Set the per-user loads for a pool. Used only for testing.
   static void set_user_loads(AdmissionController* admission_controller, const char* user,
@@ -894,34 +899,24 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   ASSERT_TRUE(admission_controller->CanAdmitQuota(
       *schedule_state, config_e, config_root, false, &not_admitted_reason));
 
-  // Test wildcards with User3
+  // Test wildcards with User2.
   schedule_state = MakeScheduleState(QUEUE_E, config_e, host_count, 30L * MEGABYTE,
-      ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, USER3);
+      ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, USER2);
   ASSERT_TRUE(admission_controller->CanAdmitQuota(
       *schedule_state, config_e, config_root, false, &not_admitted_reason));
-  pool_stats->agg_user_loads_.insert(USER3, 3);
+  pool_stats->agg_user_loads_.insert(USER2, 3);
   ASSERT_FALSE(admission_controller->CanAdmitQuota(
       *schedule_state, config_e, config_root, false, &not_admitted_reason));
   EXPECT_STR_CONTAINS(not_admitted_reason,
-      "current per-user load 3 for user user3 is at or above the wildcard limit 1");
+      "current per-user load 3 for user user2 is at or above the wildcard limit 1");
 
-  pool_stats->agg_user_loads_.clear_key(USER3);
+  pool_stats->agg_user_loads_.clear_key(USER2);
   ASSERT_TRUE(admission_controller->CanAdmitQuota(
       *schedule_state, config_e, config_root, false, &not_admitted_reason));
 
   // Test group quotas
-
-  // Set up some groups. Note that USER3 is in a group with a quota.
-  std::map<std::string, std::set<std::string>> groups;
-  std::set<std::string> group0_set;
-  group0_set.insert(USER_A);
-  groups.insert({"group0", group0_set});
-  std::set<std::string> group1_set;
-  group1_set.insert(USER1);
-  group1_set.insert(USER3);
-  groups.insert({"group1", group1_set});
-  ASSERT_TRUE(AdmissionController::SetHadoopGroups(groups));
-
+  schedule_state = MakeScheduleState(QUEUE_E, config_e, host_count, 30L * MEGABYTE,
+      ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, USER3);
   pool_stats->agg_user_loads_.insert(USER3, 2);
   ASSERT_FALSE(admission_controller->CanAdmitQuota(
       *schedule_state, config_e, config_root, false, &not_admitted_reason));
@@ -930,10 +925,6 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
       "limit 2");
 
   // FIXME add test where quota is set to 0 as that might be useful
-
-  // Clean up
-  groups.clear();
-  ASSERT_TRUE(AdmissionController::SetHadoopGroups(groups));
 }
 
 /// Test CanAdmitRequest in the context of user and group quotas.
@@ -941,17 +932,6 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   // Pass the paths of the configuration files as command line flags.
   FLAGS_fair_scheduler_allocation_path = GetResourceFile("fair-scheduler-test3.xml");
   FLAGS_llama_site_path = GetResourceFile("llama-site-test2.xml");
-
-  // Set up some groups.
-  std::map<std::string, std::set<std::string>> groups;
-  std::set<std::string> dev_group{"alice", "deborah"};
-  groups.insert({"dev", dev_group});
-  std::set<std::string> it_group{"bob", "fiona"};
-  groups.insert({"it", it_group});
-  std::set<std::string> support_group{"claire", "geeta", "howard"};
-  groups.insert({"support", support_group});
-  ASSERT_TRUE(AdmissionController::SetHadoopGroups(groups));
-
   string not_admitted_reason;
 
   ASSERT_TRUE(can_queue("bob", 1, 1, true, &not_admitted_reason));
@@ -969,10 +949,6 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
       "current per-user load 1 for user iris is at or above the wildcard limit 1 in pool "
           + QUEUE_LARGE,
       not_admitted_reason);
-
-  // Clean up
-  groups.clear();
-  ASSERT_TRUE(AdmissionController::SetHadoopGroups(groups));
 }
 
 /// Test CanAdmitRequest() using the slots mechanism that is enabled with non-default

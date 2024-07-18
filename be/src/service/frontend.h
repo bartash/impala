@@ -187,10 +187,6 @@ class Frontend {
   Status GetHadoopGroups(const TGetHadoopGroupsRequest& request,
       TGetHadoopGroupsResponse* response);
 
-  /// Sets the list of groups for the given user for white box testing only
-  Status SetHadoopGroups(const TSetHadoopGroupsRequest& request,
-      TSetHadoopGroupsResponse* response);
-
   /// Loads a single file or set of files into a table or partition. Saves the RPC
   /// response in the TLoadDataResp output parameter. Returns OK if the operation
   /// completed successfully.

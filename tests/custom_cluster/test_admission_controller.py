@@ -1290,6 +1290,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
       client.execute(SLOW_QUERY, user=user)
       assert False, "query should fail"
     except Exception as e:
+      # Construct the expected error message.
       expected = ("Rejected query from pool {pool}: current per-{type} load {limit} for "
                   "user {user}{group_description} is at or above the {err_type} limit "
                   "{limit} in pool {pool_that_fails}".

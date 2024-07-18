@@ -722,7 +722,7 @@ public class JniFrontend {
     for (String group : flags.split(";")) {
       String[] parts = group.split(":");
       if (parts.length != 2) {
-        throw new IllegalStateException("group " + group + " is malformed in injected groups");
+        throw new IllegalStateException("group " + group + " is malformed in injected groups string '" + flags + "'");
       }
       String groupName = parts[0];
       for (String member : parts[1].split(",")) {
@@ -744,7 +744,7 @@ public class JniFrontend {
     TGetHadoopGroupsResponse result = new TGetHadoopGroupsResponse();
     String user  = request.getUser();
     String injectedGroups = BackendConfig.INSTANCE.getInjectedGroupMembersDebugOnly();
-    if (injectedGroups != null) {
+    if (injectedGroups != null && !injectedGroups.isEmpty()) {
       LOG.info("getHadoopGroups found injected groups=" + injectedGroups);
       List<String> groups = decodeInjectedGroups(injectedGroups, user);
       LOG.info("getHadoopGroups returns" + groups + " for user " + user);

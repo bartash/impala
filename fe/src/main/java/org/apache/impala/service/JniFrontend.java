@@ -21,6 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.fs.CommonConfigurationKeys;
@@ -708,7 +709,7 @@ public class JniFrontend {
     TGetHadoopGroupsResponse result = new TGetHadoopGroupsResponse();
     String user  = request.getUser();
     String injectedGroups = BackendConfig.INSTANCE.getInjectedGroupMembersDebugOnly();
-    if (injectedGroups == null || injectedGroups.isEmpty()) {
+    if (StringUtils.isEmpty(injectedGroups)) {
       try {
         result.setGroups(GROUPS.getGroups(user));
       } catch (IOException e) {

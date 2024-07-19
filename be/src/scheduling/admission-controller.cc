@@ -22,6 +22,7 @@
 #include <gutil/strings/substitute.h>
 
 #include "common/logging.h"
+#include "common/names.h"
 #include "runtime/bufferpool/reservation-util.h"
 #include "runtime/exec-env.h"
 #include "runtime/mem-tracker.h"
@@ -42,8 +43,6 @@
 #include "util/thread.h"
 #include "util/time.h"
 #include "util/uid-util.h"
-
-#include "common/names.h"
 
 using std::make_pair;
 using std::pair;
@@ -722,9 +721,6 @@ Status AdmissionController::Init() {
   return status;
 }
 
-
-
-
 void AdmissionController::PoolStats::AdmitQueryAndMemory(const ScheduleState& state,
     const std::string& user, bool was_queued, bool is_trivial, bool track_per_user) {
   int64_t cluster_mem_admitted = state.GetClusterMemoryToAdmit();
@@ -1033,8 +1029,8 @@ bool AdmissionController::CanAccommodateMaxInitialReservation(const ScheduleStat
              state.per_backend_mem_to_admit_source(), executor_min_reservation,
              state.request_pool(), mem_unavailable_reason)
       && CanMemLimitAccommodateReservation(coord_mem_limit,
-             state.coord_backend_mem_to_admit_source(), coord_min_reservation,
-             state.request_pool(), mem_unavailable_reason);
+          state.coord_backend_mem_to_admit_source(), coord_min_reservation,
+          state.request_pool(), mem_unavailable_reason);
 }
 
 bool AdmissionController::HasAvailableMemResources(const ScheduleState& state,
@@ -1286,7 +1282,7 @@ bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
   }
   if (!default_group && !default_coordinator_only
       && !HasAvailableSlots(
-             state, pool_cfg, not_admitted_reason, coordinator_resource_limited)) {
+          state, pool_cfg, not_admitted_reason, coordinator_resource_limited)) {
     // All non-default executor groups are also limited by the number of running queries
     // per executor.
     // TODO(IMPALA-8757): Extend slot based admission to default executor group
@@ -2460,9 +2456,9 @@ void AdmissionController::TryDequeue() {
       bool is_trivial = false;
       bool is_rejected = !is_cancelled
           && !FindGroupToAdmitOrReject(membership_snapshot, pool_config,
-                 queue_node->root_cfg,
-                 /* admit_from_queue=*/true, stats, queue_node,
-                 coordinator_resource_limited, &is_trivial);
+              queue_node->root_cfg,
+              /* admit_from_queue=*/true, stats, queue_node, coordinator_resource_limited,
+              &is_trivial);
 
       if (!is_cancelled && !is_rejected
           && queue_node->admitted_schedule.get() == nullptr) {

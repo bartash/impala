@@ -19,6 +19,7 @@ package org.apache.impala.util;
 
 import static org.apache.impala.common.JniUtil.decodeInjectedGroups;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.apache.impala.common.ImpalaException;
 import org.apache.impala.common.JniUtil;
@@ -51,6 +52,9 @@ public class JniUtilTest {
    */
   @Test
   public void testDecodeInjectedGroups() {
-    decodeInjectedGroups(null, "andrew");
+    assertTrue(decodeInjectedGroups(null, "andrew").isEmpty());
+    assertTrue(decodeInjectedGroups("a_group", null).isEmpty());
+
+
   }
 }

@@ -930,6 +930,9 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
 }
 
 /// Test CanAdmitRequest in the context of user and group quotas.
+// Group membership is injected in AdmissionControllerTest::Setup().
+// The user 'bob' is in group 'it'.
+// The user 'howard' is in group 'support'.
 TEST_F(AdmissionControllerTest, QuotaExamples) {
   // Pass the paths of the configuration files as command line flags.
   FLAGS_fair_scheduler_allocation_path = GetResourceFile("fair-scheduler-test3.xml");

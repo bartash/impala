@@ -85,8 +85,6 @@ import org.apache.impala.thrift.TMetadataOpRequest;
 import org.apache.impala.thrift.TQueryCompleteContext;
 import org.apache.impala.thrift.TQueryCtx;
 import org.apache.impala.thrift.TResultSet;
-import org.apache.impala.thrift.TSetHadoopGroupsRequest;
-import org.apache.impala.thrift.TSetHadoopGroupsResponse;
 import org.apache.impala.thrift.TShowFilesParams;
 import org.apache.impala.thrift.TShowGrantPrincipalParams;
 import org.apache.impala.thrift.TShowRolesParams;
@@ -768,80 +766,6 @@ public class JniFrontend {
       TSerializer serializer = new TSerializer(protocolFactory_);
       return serializer.serialize(result);
     } catch (TException e) { throw new InternalException(e.getMessage()); }
-  }
-
-  /**
-   * Set Hadoop groups on the Java side. This causes the UserToGroupsMappingService
-   * implementation to be replaced with a custom class which will return the groups
-   * passed to this function.
-   */
-  public byte[] setHadoopGroups(byte[] serializedRequest) throws ImpalaException {
-    TSetHadoopGroupsRequest request = new TSetHadoopGroupsRequest();
-    JniUtil.deserializeThrift(protocolFactory_, request, serializedRequest);
-    TSetHadoopGroupsResponse result = new TSetHadoopGroupsResponse();
-
-    // Key is group name, value is members of the group.
-    Map<String, Set<String>> groups = request.getGroups();
-
-    if (!groups.isEmpty()) {
-      // There is currently no synchronization here as this is just for testing.
-      groupsToUsers_ = groups;
-      Configuration conf = new Configuration();
-      conf.set(CommonConfigurationKeys.HADOOP_SECURITY_GROUP_MAPPING,
-          GroupHack.class.getName());
-      GROUPS = Groups.getUserToGroupsMappingServiceWithLoadedConfiguration(conf);
-    } else {
-      // Undo the use of GroupHack
-      groupsToUsers_ = null;
-      Configuration conf = new Configuration();
-      GROUPS = Groups.getUserToGroupsMappingServiceWithLoadedConfiguration(conf);
-    }
-
-    result.setStatus(new TStatus(TErrorCode.OK, Lists.newArrayList()));
-      try {
-      TSerializer serializer = new TSerializer(protocolFactory_);
-      return serializer.serialize(result);
-    } catch (TException e) {
-      throw new InternalException(e.getMessage());
-    }
-  }
-
-  /**
-   * A custom GroupMappingServiceProvider used only for testing.
-   * This class returns groups for a user based on the values in groupsToUsers_.
-   */
-  public static class GroupHack implements GroupMappingServiceProvider {
-
-    public GroupHack() {
-    }
-
-    @Override
-    public List<String> getGroups(String userName) throws IOException {
-      return new ArrayList<>(this.getGroupsSet(userName));
-    }
-
-    @Override
-    public void cacheGroupsRefresh() throws IOException {
-    }
-
-    @Override
-    public void cacheGroupsAdd(List<String> list) throws IOException {
-    }
-
-    @Override
-    public Set<String> getGroupsSet(String userName) throws IOException {
-      Set<String>  ret = new HashSet<>();
-      if (JniFrontend.groupsToUsers_  != null) {
-        Set<String> groups = JniFrontend.groupsToUsers_.keySet();
-        for (String group : groups) {
-          Set<String> users = JniFrontend.groupsToUsers_.get(group);
-          if (users.contains(userName)) {
-            ret.add(group);
-          }
-        }
-      }
-      return ret;
-    }
   }
 
   /**

@@ -53,9 +53,7 @@ public class JniUtilTest {
     assertEquals(group, list.get(0));
   }
 
-  static private void assertEmpty(List<String> list) {
-    assertTrue(list.isEmpty());
-  }
+  static private void assertEmpty(List<String> list) { assertTrue(list.isEmpty()); }
 
   /**
    * Unit test for {@link JniUtil#decodeInjectedGroups(String, String)}
@@ -65,24 +63,26 @@ public class JniUtilTest {
     assertEmpty(decodeInjectedGroups(null, "andrew"));
     assertEmpty(decodeInjectedGroups("a_group", null));
 
-    String admissionTestFlags = "group0:userA;" +
-        "group1:user1,user3;" +
-        "dev:alice,deborah;" +
-        "it:bob,fiona;" +
-        "support:claire,geeta,howard;";
+    String admissionTestFlags = "group0:userA;"
+        + "group1:user1,user3;"
+        + "dev:alice,deborah;"
+        + "it:bob,fiona;"
+        + "support:claire,geeta,howard;";
+
     assertEmpty(decodeInjectedGroups(admissionTestFlags, "boris"));
 
-    assertSingleGroup("group1", decodeInjectedGroups(admissionTestFlags,"user1"));
-    assertSingleGroup("group1", decodeInjectedGroups(admissionTestFlags,"user3"));
-    assertSingleGroup("dev", decodeInjectedGroups(admissionTestFlags,"deborah"));
-    assertSingleGroup("dev", decodeInjectedGroups(admissionTestFlags,"alice"));
-    assertSingleGroup("it", decodeInjectedGroups(admissionTestFlags,"fiona"));
-    assertSingleGroup("it", decodeInjectedGroups(admissionTestFlags,"bob"));
-    assertSingleGroup("support", decodeInjectedGroups(admissionTestFlags,"claire"));
-    assertSingleGroup("support", decodeInjectedGroups(admissionTestFlags,"geeta"));
-    assertSingleGroup("support", decodeInjectedGroups(admissionTestFlags,"howard"));
+    assertSingleGroup("group1", decodeInjectedGroups(admissionTestFlags, "user1"));
+    assertSingleGroup("group1", decodeInjectedGroups(admissionTestFlags, "user3"));
+    assertSingleGroup("dev", decodeInjectedGroups(admissionTestFlags, "deborah"));
+    assertSingleGroup("dev", decodeInjectedGroups(admissionTestFlags, "alice"));
+    assertSingleGroup("it", decodeInjectedGroups(admissionTestFlags, "fiona"));
+    assertSingleGroup("it", decodeInjectedGroups(admissionTestFlags, "bob"));
+    assertSingleGroup("support", decodeInjectedGroups(admissionTestFlags, "claire"));
+    assertSingleGroup("support", decodeInjectedGroups(admissionTestFlags, "geeta"));
+    assertSingleGroup("support", decodeInjectedGroups(admissionTestFlags, "howard"));
 
-    List<String> groups = decodeInjectedGroups("group1:user1;group2:user1,user2,user3", "user1");
+    String multiGroupString = "group1:user1;group2:user1,user2,user3";
+    List<String> groups = decodeInjectedGroups(multiGroupString, "user1");
     assertEquals(2, groups.size());
     assertTrue(groups.contains("group1"));
     assertTrue(groups.contains("group2"));

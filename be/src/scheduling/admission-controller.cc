@@ -702,34 +702,6 @@ AdmissionController::~AdmissionController() {
   dequeue_thread_->Join();
 }
 
-static std::map<std::string, std::set<std::string>> decodeGroups(const std::string& encodedGroups) {
-  std::map<std::string, std::set<std::string>> groups;
-  std::stringstream ss(encodedGroups);
-  std::string group;
-
-  while (std::getline(ss, group, ';')) {
-    // Split group name and members
-    std::size_t pos = group.find(':');
-    if (pos == std::string::npos) {
-      // Invalid format, skip this group
-      continue;
-    }
-    std::string groupName = group.substr(0, pos);
-    std::string members = group.substr(pos + 1);
-
-    // Add members to the set for this group
-    std::set<std::string> memberSet;
-    std::stringstream memberStream(members);
-    std::string member;
-    while (std::getline(memberStream, member, ',')) {
-      memberSet.insert(member);
-    }
-    groups[groupName] = memberSet;
-  }
-  return groups;
-}
-
-
 Status AdmissionController::Init() {
   RETURN_IF_ERROR(Thread::Create("scheduling", "admission-thread",
       &AdmissionController::DequeueLoop, this, &dequeue_thread_));

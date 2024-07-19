@@ -27,6 +27,8 @@ import org.apache.impala.thrift.TCacheJarParams;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.junit.Test;
 
+import java.util.List;
+
 /**
  * Unit tests for JniUtil functions.
  */
@@ -47,13 +49,40 @@ public class JniUtilTest {
   }
 
 
+  static private void assertSingleGroup(String group, List<String> list) {
+    assertEquals(1, list.size());
+    assertEquals(group, list.get(0));
+  }
+
+  static private void assertEmpty(List<String> list) {
+    assertTrue(list.isEmpty());
+  }
+
   /**
    * Unit test for {@link JniUtil#decodeInjectedGroups(String, String)}
    */
   @Test
   public void testDecodeInjectedGroups() {
-    assertTrue(decodeInjectedGroups(null, "andrew").isEmpty());
-    assertTrue(decodeInjectedGroups("a_group", null).isEmpty());
+    assertEmpty(decodeInjectedGroups(null, "andrew"));
+    assertEmpty(decodeInjectedGroups("a_group", null));
+
+    String admissionTestFlags = "group0:userA;" +
+        "group1:user1,user3;" +
+        "dev:alice,deborah;" +
+        "it:bob,fiona;" +
+        "support:claire,geeta,howard;";
+    assertEmpty(decodeInjectedGroups(admissionTestFlags, "boris"));
+
+    assertSingleGroup("group1", decodeInjectedGroups(admissionTestFlags,"user1"));
+    assertSingleGroup("group1", decodeInjectedGroups(admissionTestFlags,"user3"));
+    assertSingleGroup("dev", decodeInjectedGroups(admissionTestFlags,"deborah"));
+    assertSingleGroup("dev", decodeInjectedGroups(admissionTestFlags,"alice"));
+    assertSingleGroup("it", decodeInjectedGroups(admissionTestFlags,"fiona"));
+    assertSingleGroup("it", decodeInjectedGroups(admissionTestFlags,"bob"));
+    assertSingleGroup("support", decodeInjectedGroups(admissionTestFlags,"claire"));
+    assertSingleGroup("support", decodeInjectedGroups(admissionTestFlags,"geeta"));
+    assertSingleGroup("support", decodeInjectedGroups(admissionTestFlags,"howard"));
+
 
 
   }

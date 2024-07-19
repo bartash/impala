@@ -98,9 +98,8 @@ public class AllocationFileLoaderService extends AbstractService {
   public AllocationFileLoaderService(Clock clock) {
     super(AllocationFileLoaderService.class.getName());
     this.clock = clock;
-    
   }
-  
+
   @Override
   public void serviceInit(Configuration conf) throws Exception {
     this.allocFile = getAllocationFile(conf);
@@ -144,7 +143,7 @@ public class AllocationFileLoaderService extends AbstractService {
     }
     super.serviceInit(conf);
   }
-  
+
   @Override
   public void serviceStart() throws Exception {
     if (reloadThread != null) {
@@ -152,7 +151,7 @@ public class AllocationFileLoaderService extends AbstractService {
     }
     super.serviceStart();
   }
-  
+
   @Override
   public void serviceStop() throws Exception {
     running = false;
@@ -166,7 +165,7 @@ public class AllocationFileLoaderService extends AbstractService {
     }
     super.serviceStop();
   }
-  
+
   /**
    * Path to XML file containing allocations. If the
    * path is relative, it is searched for in the
@@ -191,20 +190,20 @@ public class AllocationFileLoaderService extends AbstractService {
     }
     return allocFile;
   }
-  
+
   public synchronized void setReloadListener(Listener reloadListener) {
     this.reloadListener = reloadListener;
   }
 
   /**
-   * Parse the 'inputText' parameter to find mappings of names to numbers for different queues.
+   * Parse the 'inputText' parameter to find mappings of names to numbers for different
+   * queues.
    */
   @VisibleForTesting
   public static void addQueryLimits(Map<String, Map<String, Integer>> allLimits,
-      String queueName, String inputText)
-      throws AllocationConfigurationException {
-    Map<String, Integer> limits = allLimits.computeIfAbsent(queueName,
-        k -> new HashMap<>());
+      String queueName, String inputText) throws AllocationConfigurationException {
+    Map<String, Integer> limits =
+        allLimits.computeIfAbsent(queueName, k -> new HashMap<>());
     Pattern pattern = Pattern.compile("(\\S+) +(\\d+)");
     Matcher matcher = pattern.matcher(inputText);
 
@@ -233,7 +232,7 @@ public class AllocationFileLoaderService extends AbstractService {
           "Cannot parse " + inputText + " into a name and number");
     }
   }
-  
+
   /**
    * Updates the allocation list from the allocation config file. This file is
    * expected to be in the XML format specified in the design doc.
@@ -393,8 +392,8 @@ public class AllocationFileLoaderService extends AbstractService {
       loadQueue(parent, element, minQueueResources, maxQueueResources,
           maxChildQueueResources, queueMaxApps, userMaxApps, queueMaxAMShares,
           queueWeights, queuePolicies, minSharePreemptionTimeouts,
-          fairSharePreemptionTimeouts, fairSharePreemptionThresholds,
-          queueAcls, userQueryLimits, groupQueryLimits, configuredQueues, nonPreemptableQueues);
+          fairSharePreemptionTimeouts, fairSharePreemptionThresholds, queueAcls,
+          userQueryLimits, groupQueryLimits, configuredQueues, nonPreemptableQueues);
     }
 
     // Load placement policy and pass it configured queues
@@ -423,14 +422,13 @@ public class AllocationFileLoaderService extends AbstractService {
           defaultFairSharePreemptionThreshold);
     }
 
-    AllocationConfiguration info =
-        new AllocationConfiguration(minQueueResources, maxQueueResources,
-        maxChildQueueResources, queueMaxApps, userMaxApps, queueWeights,
-        queueMaxAMShares, userMaxAppsDefault, queueMaxAppsDefault,
+    AllocationConfiguration info = new AllocationConfiguration(minQueueResources,
+        maxQueueResources, maxChildQueueResources, queueMaxApps, userMaxApps,
+        queueWeights, queueMaxAMShares, userMaxAppsDefault, queueMaxAppsDefault,
         queueMaxResourcesDefault, queueMaxAMShareDefault, queuePolicies,
-        defaultSchedPolicy, minSharePreemptionTimeouts,
-        fairSharePreemptionTimeouts, fairSharePreemptionThresholds, queueAcls,
-            userQueryLimits, groupQueryLimits, newPlacementPolicy, configuredQueues, nonPreemptableQueues);
+        defaultSchedPolicy, minSharePreemptionTimeouts, fairSharePreemptionTimeouts,
+        fairSharePreemptionThresholds, queueAcls, userQueryLimits, groupQueryLimits,
+        newPlacementPolicy, configuredQueues, nonPreemptableQueues);
     lastSuccessfulReload = clock.getTime();
     lastReloadAttemptFailed = false;
 
@@ -458,7 +456,6 @@ public class AllocationFileLoaderService extends AbstractService {
       Map<FSQueueType, Set<String>> configuredQueues,
       Set<String> nonPreemptableQueues)
       throws AllocationConfigurationException {
-
     String queueName = CharMatcher.whitespace().trimFrom(element.getAttribute("name"));
 
     if (queueName.contains(".")) {
@@ -553,8 +550,8 @@ public class AllocationFileLoaderService extends AbstractService {
         loadQueue(queueName, field, minQueueResources, maxQueueResources,
             maxChildQueueResources, queueMaxApps, userMaxApps, queueMaxAMShares,
             queueWeights, queuePolicies, minSharePreemptionTimeouts,
-            fairSharePreemptionTimeouts, fairSharePreemptionThresholds,
-            queueAcls, userQueryLimits,groupQueryLimits, configuredQueues, nonPreemptableQueues);
+            fairSharePreemptionTimeouts, fairSharePreemptionThresholds, queueAcls,
+            userQueryLimits, groupQueryLimits, configuredQueues, nonPreemptableQueues);
         configuredQueues.get(FSQueueType.PARENT).add(queueName);
         isLeaf = false;
       }

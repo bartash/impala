@@ -95,15 +95,15 @@ class AdmissionControllerTest : public testing::Test {
   std::unique_ptr<google::FlagSaver> flag_saver_;
 
   virtual void SetUp() {
+    // Establish a TestEnv so that ExecEnv works in tests.
+    test_env_.reset(new TestEnv);
+    flag_saver_.reset(new google::FlagSaver());
     // Setup injected groups that will be visible to all tests.
     FLAGS_injected_group_members_debug_only = "group0:userA;"
                                               "group1:user1,user3;"
                                               "dev:alice,deborah;"
                                               "it:bob,fiona;"
                                               "support:claire,geeta,howard;";
-    // Establish a TestEnv so that ExecEnv works in tests.
-    test_env_.reset(new TestEnv);
-    flag_saver_.reset(new google::FlagSaver());
     ASSERT_OK(test_env_->Init());
   }
 

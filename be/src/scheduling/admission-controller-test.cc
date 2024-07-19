@@ -99,6 +99,7 @@ class AdmissionControllerTest : public testing::Test {
     test_env_.reset(new TestEnv);
     flag_saver_.reset(new google::FlagSaver());
     // Setup injected groups that will be visible to all tests.
+    // This is done here as the flags are copied to Java space at Jni initiation time.
     FLAGS_injected_group_members_debug_only = "group0:userA;"
                                               "group1:user1,user3;"
                                               "dev:alice,deborah;"
@@ -914,7 +915,8 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   ASSERT_TRUE(admission_controller->CanAdmitQuota(
       *schedule_state, config_e, config_root, false, &not_admitted_reason));
 
-  // Test group quotas
+  // Test group quotas. Group membership is injected in AdmissionControllerTest::Setup().
+  // The user USER3 is in group 'group1'.
   schedule_state = MakeScheduleState(QUEUE_E, config_e, host_count, 30L * MEGABYTE,
       ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, USER3);
   pool_stats->agg_user_loads_.insert(USER3, 2);
@@ -971,9 +973,9 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestSlots) {
 
   // Create ScheduleStates to run on QUEUE_D on 12 hosts.
   // Running in both default and non-default executor groups is simulated.
-  int64_t host_count = 12;
-  int64_t slots_per_host = 16;
-  int64_t slots_per_query = 4;
+  int host_count = 12;
+  int slots_per_host = 16;
+  int slots_per_query = 4;
   ScheduleState* default_group_schedule =
       MakeScheduleState(QUEUE_D, config_d, host_count, 30L * MEGABYTE);
   ScheduleState* other_group_schedule =

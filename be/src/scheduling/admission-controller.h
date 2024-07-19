@@ -507,7 +507,6 @@ class AdmissionController {
   /// executor groups).
   IntCounter* total_dequeue_failed_coordinator_limited_ = nullptr;
 
-
   /// A Holder for per-user loads.
   /// Contains a mapping of user names to number of queries running.
   /// This matches the generated type of user_loads in TPoolStats.
@@ -528,7 +527,8 @@ class AdmissionController {
     /// Inserts a new key-value pair into the map.
     void insert(const std::string& key, int64 value);
 
-    /// Returns the integer value corresponding to the given key, or 0 if the key does not exist.
+    /// Returns the integer value corresponding to the given key, or 0 if the key does not
+    /// exist.
     int64 get(const std::string& key);
 
     /// Increments the value associated with the given key by 1.
@@ -585,7 +585,6 @@ class AdmissionController {
       IntGauge* agg_mem_reserved;
       SetMetric<string>* agg_current_users;
       IntGauge* local_mem_admitted;
-
 
       /// The following mirror the current values of local_stats_.
       /// TODO: As above, consolidate the metrics and local_stats_.
@@ -674,7 +673,7 @@ class AdmissionController {
 
     // A map from the id of a host to the TPoolStats about that host.
     typedef boost::unordered_map<std::string, TPoolStats> RemoteStatsMap;
-    const RemoteStatsMap& remote_stats() const { return  remote_stats_; }
+    const RemoteStatsMap& remote_stats() const { return remote_stats_; }
 
     /// Return the TPoolStats for a remote host in remote_stats_ if it can be found.
     /// Return nullptr otherwise.
@@ -706,7 +705,7 @@ class AdmissionController {
 
     const std::string& name() const { return name_; }
 
-    [[nodiscard]] AggregatedUserLoads& get_aggregated_user_loads()  {
+    [[nodiscard]] AggregatedUserLoads& get_aggregated_user_loads() {
       return agg_user_loads_;
     }
 
@@ -734,7 +733,7 @@ class AdmissionController {
     // Aggregate  (across all coordinators) per-user loads in this pool.
     // Updated by UpdateAggregates(), and kept up to date by IncrememtPerUser and
     // DecrementPerUser().
-    AdmissionController::AggregatedUserLoads  agg_user_loads_;
+    AdmissionController::AggregatedUserLoads agg_user_loads_;
 
     /// Number of running trivial queries in this pool that have been admitted by this
     /// local coordinator. The purpose of it is to control the concurrency of running
@@ -784,7 +783,7 @@ class AdmissionController {
 
     // Append a string about the memory consumption part of a TPoolStats object to 'ss'.
     static void AppendStatsForConsumedMemory(
-      std::stringstream& ss, const TPoolStats& stats);
+        std::stringstream& ss, const TPoolStats& stats);
 
     FRIEND_TEST(AdmissionControllerTest, AggregatedUserLoads);
     FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestCount);
@@ -822,7 +821,7 @@ class AdmissionController {
 
   /// User loads aggregated across all pools. Updated by UpdateClusterAggregates().
   /// Protected by admission_ctrl_lock_.
-  AggregatedUserLoads  root_agg_user_loads_;
+  AggregatedUserLoads root_agg_user_loads_;
 
   /// This struct groups together a schedule and the executor group that it was scheduled
   /// on. It is used to attempt admission without rescheduling the query in case the
@@ -1006,8 +1005,7 @@ class AdmissionController {
   /// Statestore subscriber callback that sends outgoing topic deltas (see
   /// AddPoolAndPerHostStatsUpdates()) and processes incoming topic deltas, updating the
   /// PoolStats state.
-  void UpdatePoolStats(
-      const StatestoreSubscriber::TopicDeltaMap& incoming_topic_deltas,
+  void UpdatePoolStats(const StatestoreSubscriber::TopicDeltaMap& incoming_topic_deltas,
       std::vector<TTopicDelta>* subscriber_topic_updates);
 
   /// Adds outgoing topic updates to subscriber_topic_updates for pools that have changed
@@ -1331,7 +1329,6 @@ class AdmissionController {
   FRIEND_TEST(AdmissionControllerTest, TopNQueryCheck);
   FRIEND_TEST(AdmissionControllerTest, UserAndGroupQuotas);
   friend class AdmissionControllerTest;
-
 };
 
 } // namespace impala

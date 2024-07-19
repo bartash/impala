@@ -749,7 +749,7 @@ public class JniFrontend {
         // There is no easy way to know if no groups found for a user
         // other than reading the exception message.
         if (e.getMessage().startsWith("No groups found for user")) {
-          result.setGroups(Collections.<String>emptyList());
+          result.setGroups(Collections.emptyList());
         } else {
           LOG.error("Error getting Hadoop groups for user: " + request.getUser(), e);
           throw new InternalException(e.getMessage());

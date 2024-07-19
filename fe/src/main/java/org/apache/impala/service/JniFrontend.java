@@ -28,7 +28,6 @@ import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.client.HdfsClientConfigKeys;
-import org.apache.hadoop.security.GroupMappingServiceProvider;
 import org.apache.hadoop.security.Groups;
 import org.apache.hadoop.security.JniBasedUnixGroupsMappingWithFallback;
 import org.apache.hadoop.security.JniBasedUnixGroupsNetgroupMappingWithFallback;
@@ -59,7 +58,6 @@ import org.apache.impala.thrift.TDescribeDbParams;
 import org.apache.impala.thrift.TDescribeResult;
 import org.apache.impala.thrift.TDescribeTableParams;
 import org.apache.impala.thrift.TDescriptorTable;
-import org.apache.impala.thrift.TErrorCode;
 import org.apache.impala.thrift.TExecRequest;
 import org.apache.impala.thrift.TFunctionCategory;
 import org.apache.impala.thrift.TGetAllHadoopConfigsResponse;
@@ -92,7 +90,6 @@ import org.apache.impala.thrift.TShowStatsOp;
 import org.apache.impala.thrift.TShowStatsParams;
 import org.apache.impala.thrift.TStringLiteral;
 import org.apache.impala.thrift.TDescribeHistoryParams;
-import org.apache.impala.thrift.TStatus;
 import org.apache.impala.thrift.TSessionState;
 import org.apache.impala.thrift.TTableName;
 import org.apache.impala.thrift.TUniqueId;
@@ -116,10 +113,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.lang.IllegalArgumentException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -705,34 +700,6 @@ public class JniFrontend {
   }
 
   /**
-   * Evaluate the groups that the user is in when injected groups are being used.
-   * @param flags input string which is the format of the backend
-   *     'injected_group_members_debug_only' flag
-   * @param username the username
-   * @return a list of group names
-   */
-  public static List<String> decodeInjectedGroups(String flags, String username) {
-    List<String> groups = new ArrayList<>();
-    if (flags == null || username == null) { return groups; }
-
-    for (String group : flags.split(";")) {
-      String[] parts = group.split(":");
-      if (parts.length != 2) {
-        throw new IllegalStateException(
-            "group " + group + " is malformed in injected groups string '" + flags + "'");
-      }
-      String groupName = parts[0];
-      for (String member : parts[1].split(",")) {
-        if (member.equals(username)) {
-          groups.add(groupName);
-          break; // Skip to the next group after finding the user.
-        }
-      }
-    }
-    return groups;
-  }
-
-  /**
    * Returns the list of Hadoop groups for the given user name.
    */
   public byte[] getHadoopGroups(byte[] serializedRequest) throws ImpalaException {
@@ -756,7 +723,7 @@ public class JniFrontend {
         }
       }
     } else {
-      List<String> groups = decodeInjectedGroups(injectedGroups, user);
+      List<String> groups = JniUtil.decodeInjectedGroups(injectedGroups, user);
       LOG.info("getHadoopGroups returns injected groups " + groups + " for user " + user);
       result.setGroups(groups);
     }

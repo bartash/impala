@@ -17,6 +17,7 @@
 
 package org.apache.impala.util;
 
+import static org.apache.impala.common.JniUtil.decodeInjectedGroups;
 import static org.junit.Assert.assertEquals;
 
 import org.apache.impala.common.ImpalaException;
@@ -42,5 +43,14 @@ public class JniUtilTest {
     TCacheJarParams deserializedTestObj = new TCacheJarParams();
     JniUtil.deserializeThrift(protocolFactory_, deserializedTestObj, testObjBytes);
     assertEquals(deserializedTestObj.hdfs_location, "test string");
+  }
+
+
+  /**
+   * Unit test for {@link JniUtil#decodeInjectedGroups(String, String)}
+   */
+  @Test
+  public void testDecodeInjectedGroups() {
+    decodeInjectedGroups(null, "andrew");
   }
 }

@@ -148,12 +148,4 @@ public class JniFrontendTest {
           String.format(JniFrontend.KEYSTORE_ERROR_MSG, secretKey.getValue()));
     }
   }
-
-  /**
-   * Unit test for {@link JniFrontend#decodeInjectedGroups(String, String)}
-   */
-  @Test
-  public void testDecodeInjectedGroups() {
-    // FIXME add tests
-  }
 }

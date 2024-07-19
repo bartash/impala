@@ -52,6 +52,7 @@ public class AllocationConfiguration {
   // ACL's for each queue. Only specifies non-default ACL's from configuration.
   private final Map<String, Map<QueueACL, AccessControlList>> queueAcls;
 
+  // AdmissionControl quotas at user and group level.
   private final Map<String, Map<String, Integer>> userQueryLimits;
   private final Map<String, Map<String, Integer>> groupQueryLimits;
 

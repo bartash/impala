@@ -704,29 +704,28 @@ public class JniFrontend {
     }
   }
 
-
   /**
    * Evaluate the groups that the user is in when injected groups are being used.
-   * @param flags input string which is the format of the backend 'injected_group_members_debug_only' flag
-   * @param username the user name
+   * @param flags input string which is the format of the backend
+   *     'injected_group_members_debug_only' flag
+   * @param username the username
    * @return a list of group names
    */
   public static List<String> decodeInjectedGroups(String flags, String username) {
     List<String> groups = new ArrayList<>();
-    if (flags == null || username == null) {
-      return groups;
-    }
+    if (flags == null || username == null) { return groups; }
 
     for (String group : flags.split(";")) {
       String[] parts = group.split(":");
       if (parts.length != 2) {
-        throw new IllegalStateException("group " + group + " is malformed in injected groups string '" + flags + "'");
+        throw new IllegalStateException(
+            "group " + group + " is malformed in injected groups string '" + flags + "'");
       }
       String groupName = parts[0];
       for (String member : parts[1].split(",")) {
         if (member.equals(username)) {
           groups.add(groupName);
-          break; // Skip to the next group after finding the user
+          break; // Skip to the next group after finding the user.
         }
       }
     }
@@ -742,12 +741,7 @@ public class JniFrontend {
     TGetHadoopGroupsResponse result = new TGetHadoopGroupsResponse();
     String user  = request.getUser();
     String injectedGroups = BackendConfig.INSTANCE.getInjectedGroupMembersDebugOnly();
-    if (injectedGroups != null && !injectedGroups.isEmpty()) {
-      LOG.info("getHadoopGroups found injected groups=" + injectedGroups);
-      List<String> groups = decodeInjectedGroups(injectedGroups, user);
-      LOG.info("getHadoopGroups returns" + groups + " for user " + user);
-      result.setGroups(groups);
-    } else {
+    if (injectedGroups == null || injectedGroups.isEmpty()) {
       try {
         result.setGroups(GROUPS.getGroups(user));
       } catch (IOException e) {
@@ -761,6 +755,10 @@ public class JniFrontend {
           throw new InternalException(e.getMessage());
         }
       }
+    } else {
+      List<String> groups = decodeInjectedGroups(injectedGroups, user);
+      LOG.info("getHadoopGroups returns injected groups " + groups + " for user " + user);
+      result.setGroups(groups);
     }
     try {
       TSerializer serializer = new TSerializer(protocolFactory_);

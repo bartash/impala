@@ -76,7 +76,7 @@ STATESTORE_RPC_FREQUENCY_MS = 100
 
 # Time to sleep (in milliseconds) between issuing queries. When the delay is at least
 # the statestore heartbeat frequency, all state should be visible by every impalad by
-# the time the next query is submitted. Otherwise the different impalads will see stale
+# the time the next query is submitted. Otherwise, the different impalads will see stale
 # state for some admission decisions.
 SUBMISSION_DELAY_MS = \
     [0, STATESTORE_RPC_FREQUENCY_MS // 2, STATESTORE_RPC_FREQUENCY_MS * 3 // 2]
@@ -608,7 +608,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     self.client.close_query(handle)
 
     # Make sure query execution works perfectly for a query that does not have any
-    # fragments schdeuled on the coordinator, but has runtime-filters that need to be
+    # fragments scheduled on the coordinator, but has runtime-filters that need to be
     # aggregated at the coordinator.
     exec_options = vector.get_value('exec_option')
     exec_options['RUNTIME_FILTER_WAIT_TIME_MS'] = 30000
@@ -1198,7 +1198,8 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
       llama_site_file="llama-site-test2.xml"),
     statestored_args=_STATESTORED_ARGS)
   def test_user_loads_propagate(self):
-    """Test that user loads are propagated by checking metric values"""
+    """Test that user loads are propagated between impalads by checking
+    metric values"""
     self.check_user_loads(user_loads_present=True, pool='root.queueB')
 
   @pytest.mark.execute_serially
@@ -1208,8 +1209,9 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
       llama_site_file="llama-site-3-groups.xml"),
     statestored_args=_STATESTORED_ARGS)
   def test_user_loads_do_not_propagate(self):
-    """Test that user loads are not propagated if user quotas are not configured
-    as there are no quotas in fair-scheduler-3-groups.xml."""
+    """Test that user loads are not propagated between impalads if user
+    quotas are not configured. There are no user quotas configured in
+    fair-scheduler-3-groups.xml."""
     self.check_user_loads(user_loads_present=False, pool="root.tiny")
 
   def check_user_loads(self, user_loads_present, pool):
@@ -1217,11 +1219,10 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     expected."""
     USER_ROOT = 'root'
     USER_C = 'userC'
-    query = "select count(*) from functional.alltypes where int_col = sleep(20000)"
     impalad1 = self.cluster.impalads[0]
     impalad2 = self.cluster.impalads[1]
-    query1 = self.execute_aync_and_wait_for_running(impalad1, query, USER_C, pool=pool)
-    query2 = self.execute_aync_and_wait_for_running(impalad2, query, USER_ROOT, pool=pool)
+    query1 = self.execute_async_and_wait_for_running(impalad1, SLOW_QUERY, USER_C, pool=pool)
+    query2 = self.execute_async_and_wait_for_running(impalad2, SLOW_QUERY, USER_ROOT, pool=pool)
     keys = [
       "admission-controller.agg-current-users.root.queueB",
       "admission-controller.local-current-users.root.queueB",
@@ -1275,8 +1276,8 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     pool_that_fails = pool_to_fail if pool_to_fail else pool
     for i in range(limit):
       impalad = self.cluster.impalads[i % 2]
-      query_handle = self.execute_aync_and_wait_for_running(impalad, SLOW_QUERY, user,
-                                                            pool=pool)
+      query_handle = self.execute_async_and_wait_for_running(impalad, SLOW_QUERY, user,
+                                                             pool=pool)
       query_handles.append(query_handle)
 
     # Let state sync across impalads.
@@ -1312,7 +1313,8 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
       """close the query"""
       self.client.close_query(self.handle)
 
-  def execute_aync_and_wait_for_running(self, impalad, query, user, pool):
+  def execute_async_and_wait_for_running(self, impalad, query, user, pool):
+    # Execute a query asynchronously, and wait for it to be running.
     # Use beeswax client as it allows specifying the user that runs the query.
     client = impalad.service.create_beeswax_client()
     client.set_configuration({'request_pool': pool})
@@ -1330,7 +1332,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
       llama_site_file="mem-limit-test-llama-site.xml",
       additional_args="-default_pool_max_requests 1", make_copy=True),
     statestored_args=_STATESTORED_ARGS)
-  def test_pool_config_change_while_queued(self, vector):
+  def test_pool_config_change_while_queued(self):
     """Tests that the invalid checks work even if the query is queued. Makes sure that a
     queued query is dequeued and rejected if the config is invalid."""
     # IMPALA-9856: This test modify request pool max-query-mem-limit. Therefore, we
@@ -1374,7 +1376,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     queued_query_handle = self.client.execute_async(
       "select * from functional_parquet.alltypes limit 1")
     self._wait_for_change_to_profile(queued_query_handle, "Admission result: Queued")
-    # Change config to something less than the what is required to accommodate the
+    # Change config to something less than what is required to accommodate the
     # largest min_reservation (which in this case is 32.09 MB.
     config.set_config_value(pool_name, config_str, 25 * 1024 * 1024)
     # Close running query so the queued one gets a chance.
@@ -1470,7 +1472,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     threads = []
     # Test mixed trivial and non-trivial queries workload, and should successfully run
     # for all.
-    # Test the case when the number of trivial queries is over the maximum pallelism,
+    # Test the case when the number of trivial queries is over the maximum parallelism,
     # which is three.
     for i in range(5):
       thread_instance = self.MultiTrivialRunThread(self, "select 1")
@@ -1494,7 +1496,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     statestored_args=_STATESTORED_ARGS)
   def test_trivial_query_multi_runs_fallback(self):
     threads = []
-    # Test the case when the number of trivial queries is over the maximum pallelism,
+    # Test the case when the number of trivial queries is over the maximum parallelism,
     # which is three, other trivial queries should fall back to normal process and
     # blocked by the long sleep query in our testcase, then leads to a timeout error.
     long_query_handle = self.client.execute_async("select sleep(100000)")
@@ -1574,7 +1576,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     """Test to verify that the HS2 client's GetLog() call and the ExecSummary expose
     the query's queuing status, that is, whether the query was queued and what was the
     latest queuing reason."""
-    # Start a long running query.
+    # Start a long-running query.
     long_query_resp = self.execute_statement("select sleep(10000)")
     # Ensure that the query has started executing.
     self.wait_for_admission_control(long_query_resp.operationHandle)
@@ -2030,7 +2032,8 @@ class TestAdmissionControllerStress(TestAdmissionControllerBase):
         return metrics
       LOG.info("Got inconsistent metrics {0}".format(metrics))
     assert False, "Could not get consistent metrics for {0} queries after {1} attempts: "\
-        "{2}".format(num_submitted, ATTEMPTS, metrics)
+        "{2}".format(num_submitted, ATTEMPTS,
+                     metrics)
 
   def wait_for_metric_changes(self, metric_names, initial, expected_delta):
     """
@@ -2180,7 +2183,7 @@ class TestAdmissionControllerStress(TestAdmissionControllerBase):
           exec_options = self.vector.get_value('exec_option')
           exec_options.update(self.additional_query_options)
           # Turning off result spooling allows us to better control query execution by
-          # controlling the number or rows fetched. This allows us to maintain resource
+          # controlling the number of rows fetched. This allows us to maintain resource
           # usage among backends.
           exec_options['spool_query_results'] = 0
           query = QUERY.format(self.query_num)
@@ -2397,7 +2400,7 @@ class TestAdmissionControllerStress(TestAdmissionControllerBase):
       assert metric_deltas['timed-out'] == 0
       self.wait_for_admitted_threads(metric_deltas['admitted'])
       # Wait a few topic updates to ensure the admission controllers have reached a steady
-      # state or we may find an impalad dequeue more requests after we capture metrics.
+      # state, or we may find an impalad dequeue more requests after we capture metrics.
       self.wait_for_statestore_updates(10)
 
     final_metrics = self.get_consistent_admission_metrics(num_queries)
@@ -2414,7 +2417,7 @@ class TestAdmissionControllerStress(TestAdmissionControllerBase):
       assert metric_deltas['queued'] == initial_metric_deltas['queued']
       assert metric_deltas['rejected'] == initial_metric_deltas['rejected']
     else:
-      # We shouldn't go over the max number of queries or queue size so we can compute
+      # We shouldn't go over the max number of queries or queue size, so we can compute
       # the expected number of queries that should have been admitted (which includes the
       # number queued as they eventually get admitted as well), queued, and rejected
       expected_admitted = MAX_NUM_CONCURRENT_QUERIES + MAX_NUM_QUEUED_QUERIES

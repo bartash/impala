@@ -48,7 +48,6 @@ public class JniUtilTest {
     assertEquals(deserializedTestObj.hdfs_location, "test string");
   }
 
-
   static private void assertSingleGroup(String group, List<String> list) {
     assertEquals(1, list.size());
     assertEquals(group, list.get(0));
@@ -83,7 +82,9 @@ public class JniUtilTest {
     assertSingleGroup("support", decodeInjectedGroups(admissionTestFlags,"geeta"));
     assertSingleGroup("support", decodeInjectedGroups(admissionTestFlags,"howard"));
 
-
-
+    List<String> groups = decodeInjectedGroups("group1:user1;group2:user1,user2,user3", "user1");
+    assertEquals(2, groups.size());
+    assertTrue(groups.contains("group1"));
+    assertTrue(groups.contains("group2"));
   }
 }

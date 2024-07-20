@@ -735,10 +735,6 @@ class RuntimeProfile : public RuntimeProfileBase {
   /// Print all the event timers as timeline into output.
   void GetTimeline(std::string* output) const;
 
-  /// Constructor used by Create().
-  RuntimeProfile(
-      ObjectPool* pool, const std::string& name, bool add_default_counters = true);
-
  protected:
   virtual int GetNumInputProfiles() const override { return 1; }
 
@@ -812,6 +808,9 @@ class RuntimeProfile : public RuntimeProfileBase {
   /// Protects exec_summary.
   mutable SpinLock t_exec_summary_lock_;
 
+  /// Constructor used by Create().
+  RuntimeProfile(
+      ObjectPool* pool, const std::string& name, bool add_default_counters = true);
 
   /// Update a subtree of profiles from nodes, rooted at *idx.
   /// On return, *idx points to the node immediately following this subtree.

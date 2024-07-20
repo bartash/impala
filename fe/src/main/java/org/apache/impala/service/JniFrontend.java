@@ -132,10 +132,6 @@ public class JniFrontend {
   public final static String KEYSTORE_ERROR_MSG = "Failed to get password from" +
       "keystore, error: invalid key '%s' or password doesn't exist";
 
-  // For testing only, groups to return from getHadoopGroups().
-  // Key is group name, value is members of the group.
-  static     Map<String, Set<String>> groupsToUsers_;
-
   /**
    * Create a new instance of the Jni Frontend.
    */
@@ -658,7 +654,7 @@ public class JniFrontend {
 
   // Caching this saves ~50ms per call to getHadoopConfig
   private static final Configuration CONF = new Configuration();
-  private static Groups GROUPS = Groups.getUserToGroupsMappingService(CONF);
+  private static final Groups GROUPS = Groups.getUserToGroupsMappingService(CONF);
 
   // Caching this saves ~50ms per call to getAllHadoopConfigs
   // org.apache.hadoop.hive.conf.HiveConf inherrits org.apache.hadoop.conf.Configuration
@@ -731,7 +727,9 @@ public class JniFrontend {
     try {
       TSerializer serializer = new TSerializer(protocolFactory_);
       return serializer.serialize(result);
-    } catch (TException e) { throw new InternalException(e.getMessage()); }
+    } catch (TException e) {
+      throw new InternalException(e.getMessage());
+    }
   }
 
   /**
@@ -849,7 +847,6 @@ public class JniFrontend {
     return frontend_.getSaml2Client().validateBearer(webContext);
   }
 
-  /**
   /**
    * Aborts a Kudu transaction.
    * @param queryId the id of the query.

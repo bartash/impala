@@ -222,7 +222,7 @@ struct TPoolConfig {
   // 0 indicates no limit. Default value is set as 0.
   11: required i64 max_query_cpu_core_coordinator_limit = 0;
 
-  // A map is from user name to a per user limit on the number of queries.
+  // Map from user name to a per user limit on the number of queries.
   // A user name of "*" can be used as a wildcard to limit the number of concurrent
   // queries that can be queued by any user.
   // If a user name is present this overrides any wildcard limit.
@@ -230,7 +230,7 @@ struct TPoolConfig {
 
   // A map is from group name to a per user limit on the number of queries.
   // If a rule for the user is not present in user_query_limits, then these rules
-  // are evaluated, if the user is a memeber of a group.
+  // are evaluated, if the user is a member of a group.
   13: required map<string, i32> group_query_limits
 }
 

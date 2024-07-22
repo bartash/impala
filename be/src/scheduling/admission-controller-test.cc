@@ -1264,7 +1264,7 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   ASSERT_EQ(1, max_to_dequeue);
   admission_controller->pool_config_map_[queue_node->pool_name] = queue_node->pool_cfg;
 
-  // Dequeue a query which is rejected.
+  // Try to dequeue a query which will be rejected.
   admission_controller->TryDequeue();
   ASSERT_TRUE(queue_c.empty());
   // The pool max_requests is 0 so query will be rejected.
@@ -1292,7 +1292,7 @@ TEST_F(AdmissionControllerTest, DequeueLoop) {
   stats_c->IncrementPerUser(USER1);
   ASSERT_FALSE(queue_c.empty());
 
-  // Dequeue a query which is cancelled.
+  // Try to dequeue a query which will be cancelled.
   admission_controller->TryDequeue();
   ASSERT_TRUE(queue_c.empty());
   ASSERT_EQ(AdmissionOutcome::CANCELLED, queue_node->admit_outcome->Get());

@@ -639,8 +639,9 @@ class AdmissionController {
     void ReleaseMem(int64_t mem_to_release);
     /// Updates the pool stats when the request represented by 'state' is queued.
     void Queue();
-    /// Increment and Decrement per-user stats for a user.
+    /// Increment per-user stats for a user.
     void IncrementPerUser(const std::string& user);
+    /// Decrement per-user stats for a user.
     void DecrementPerUser(const std::string& user);
     /// Updates the pool stats when the request represented by 'state is dequeued.
     void Dequeue(bool timed_out);
@@ -704,13 +705,15 @@ class AdmissionController {
     /// average of wait time.
     void ResetInformationalStats();
 
+    /// Return the count of queries for the given user in the PoolStats object.
     int64 GetUserLoad(const string& user);
 
-    const std::string& name() const { return name_; }
-
+    /// Return the embedded AggregatedUserLoads object that tracks per-user loads.
     [[nodiscard]] AggregatedUserLoads& get_aggregated_user_loads() {
       return agg_user_loads_;
     }
+
+    const std::string& name() const { return name_; }
 
     /// The max number of running trivial queries that can be allowed at the same time.
     static const int MAX_NUM_TRIVIAL_QUERY_RUNNING;
@@ -733,8 +736,8 @@ class AdmissionController {
     /// other hosts. Updated only by UpdateAggregates().
     int64_t agg_mem_reserved_;
 
-    // Aggregate  (across all coordinators) per-user loads in this pool.
-    // Updated by UpdateAggregates(), and kept up to date by IncrememtPerUser and
+    // Aggregate (across all coordinators) per-user loads in this pool.
+    // Updated by UpdateAggregates(), and kept up to date by IncrementPerUser and
     // DecrementPerUser().
     AdmissionController::AggregatedUserLoads agg_user_loads_;
 
@@ -874,7 +877,8 @@ class AdmissionController {
     /// Config of the pool this query will be scheduled on.
     string pool_name;
     TPoolConfig pool_cfg;
-    /// FIXME add description
+
+    /// Config of the root pool this query will be scheduled on.
     TPoolConfig root_cfg;
 
     /// END: Members that are valid for new objects after initialization
@@ -966,7 +970,7 @@ class AdmissionController {
     /// Indicate whether the query is admitted as a trivial query.
     bool is_trivial;
 
-    /// The effective user running the query. Not set if user quotas are not configured.
+    /// The effective user running the query. Set only if user quotas are configured.
     std::string user;
   };
 
@@ -1003,7 +1007,8 @@ class AdmissionController {
   std::string request_queue_topic_name_;
 
   /// Resolves the resource pool name in 'query_ctx.request_pool' and stores the resulting
-  /// name in 'pool_name' and the resulting config in 'pool_config'.
+  /// name in 'pool_name' the resulting config in 'pool_config', and the
+  /// root config in 'root_config'.
   Status ResolvePoolAndGetConfig(const TQueryCtx& query_ctx, string* pool_name,
       TPoolConfig* pool_config, TPoolConfig* root_config);
 
@@ -1059,6 +1064,7 @@ class AdmissionController {
   /// Dequeues the queued queries when notified by dequeue_cv_ and admits them if they
   /// have not been cancelled yet.
   void DequeueLoop();
+  /// Attempt to Dequeue a single query.
   void TryDequeue();
 
   /// Returns true if schedule can be admitted to the pool with pool_cfg.

@@ -1303,34 +1303,25 @@ bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
 }
 
 bool AdmissionController::CanAdmitQuota(const ScheduleState& state,
-    const TPoolConfig& pool_cfg, const TPoolConfig& root_cfg, bool admit_from_queue,
+    const TPoolConfig& pool_cfg, const TPoolConfig& root_cfg,
     string* not_admitted_reason) {
   PoolStats* pool_stats = GetPoolStats(state);
+  // Enforce quotas before query is queued.
+  // If you don't enforce at submission time them users can queue queries only to have
+  // them rejected later, which is confusing.
+  // If you enforce at submission time then maybe you don't need ot enforce at dequeue.
+  const string& user = GetEffectiveUser(state.request().query_ctx.session);
+  int64 user_load = pool_stats->GetUserLoad(user);
+  if (!CheckUserAndGroupPoolQuotas(
+          state, pool_cfg, state.request_pool(), user_load, not_admitted_reason)) {
+    return false;
+  }
 
-  // FIXME asherman can we only reject if admit_from_queue=false?
-  // That was my original design.
-  // Suppose we enforce
-  // Check quotas at pool level
-
-  // FIXME asherman remove or explain admit_from_queue
-  if (!admit_from_queue) {
-    // Enforce quotas before query is queued.
-    // If you don't enforce at submission time them users can queue queries only to have
-    // them rejected later, which is confusing.
-    // If you enforce at submission time then maybe you don't need ot enforce at dequeue.
-    const string& user = GetEffectiveUser(state.request().query_ctx.session);
-    int64 user_load = pool_stats->GetUserLoad(user);
-    if (!CheckUserAndGroupPoolQuotas(
-            state, pool_cfg, state.request_pool(), user_load, not_admitted_reason)) {
-      return false;
-    }
-
-    // Check quotas at root level.
-    int64 user_load_across_cluster = root_agg_user_loads_.get(user);
-    if (!CheckUserAndGroupPoolQuotas(
-            state, root_cfg, ROOT_POOL, user_load_across_cluster, not_admitted_reason)) {
-      return false;
-    }
+  // Check quotas at root level.
+  int64 user_load_across_cluster = root_agg_user_loads_.get(user);
+  if (!CheckUserAndGroupPoolQuotas(
+          state, root_cfg, ROOT_POOL, user_load_across_cluster, not_admitted_reason)) {
+    return false;
   }
   return true;
 }
@@ -2319,9 +2310,9 @@ bool AdmissionController::FindGroupToAdmitOrReject(
       return false;
     }
 
-    // Query is rejected if user quotas are in place and quota is exceeded.
-    if (!CanAdmitQuota(
-            *state, pool_config, root_cfg, admit_from_queue, &rejection_reason)) {
+    // Query is rejected if we are not admitting from the queue, user quotas are in place,
+    // and quota is exceeded.
+    if (!admit_from_queue && !CanAdmitQuota(*state, pool_config, root_cfg, &rejection_reason)) {
       DCHECK(!rejection_reason.empty());
       queue_node->not_admitted_reason = rejection_reason;
       return false;

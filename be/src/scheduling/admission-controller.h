@@ -507,34 +507,36 @@ class AdmissionController {
   /// executor groups).
   IntCounter* total_dequeue_failed_coordinator_limited_ = nullptr;
 
-  /// A Holder for per-user loads.
-  /// Contains a mapping of user names to number of queries running.
-  /// This matches the generated type of user_loads in TPoolStats.
+  /// A typedef for a holder of per-user loads.
+  /// This matches the thrift-generated type of user_loads in TPoolStats.
+  /// There are a few helper functions for this type.
+  /// Key is user name, value is a count of queries.
   typedef std::map<std::string, int64> UserLoads;
 
   /// Helper function on UserLoads that increments the value associated with the given
   /// key by 1.
   static void IncrementCount(UserLoads& loads, const std::string& key);
 
+  /// Helper function on UserLoads that returns a dump of the contents of the object.
   static std::string DebugString(const UserLoads& loads);
 
   /// A Holder for aggregated per-user loads.
-  /// This is basically a wrapper around a UserLoads object.
+  /// This is a wrapper around a UserLoads object.
   class AggregatedUserLoads {
    public:
     AggregatedUserLoads() = default;
 
-    /// Inserts a new key-value pair into the map.
+    /// Insert a new key-value pair into the map.
     void insert(const std::string& key, int64 value);
 
-    /// Returns the integer value corresponding to the given key, or 0 if the key does not
+    /// Return the integer value corresponding to the given key, or 0 if the key does not
     /// exist.
     int64 get(const std::string& key);
 
-    /// Increments the value associated with the given key by 1.
+    /// Increment the value associated with the given key by 1.
     void increment(const std::string& key);
 
-    /// Decrements the value associated with the given key by 1.
+    /// Decrement the value associated with the given key by 1.
     void decrement(const std::string& key);
 
     /// Return the number of keys. For testing only.
@@ -546,15 +548,16 @@ class AdmissionController {
     /// Clear the value for a key.
     void clear_key(const std::string& key);
 
-    /// Merge in loads from a map.
+    /// Merge in loads from a UserLoads object.
     void add_loads(const UserLoads& loads);
 
     /// Export user names to a metrics set.
     void export_users(SetMetric<std::string>* metrics);
 
-    /// Print the keys and values from loads_ into a string.
+    /// Return a dump of the contents of the object
     [[nodiscard]] std::string DebugString() const;
 
+    /// Return the underlying UserLoads object
     [[nodiscard]] const UserLoads& get_user_loads() const { return loads_; }
 
    private:

@@ -622,10 +622,10 @@ class AdmissionController {
       InitMetrics();
     }
 
-    [[nodiscard]] int64_t agg_num_running() const { return agg_num_running_; }
-    [[nodiscard]] int64_t agg_num_queued() const { return agg_num_queued_; }
-    [[nodiscard]] int64_t local_trivial_running() const { return local_trivial_running_; }
-    [[nodiscard]] int64_t EffectiveMemReserved() const {
+    int64_t agg_num_running() const { return agg_num_running_; }
+    int64_t agg_num_queued() const { return agg_num_queued_; }
+    int64_t local_trivial_running() const { return local_trivial_running_; }
+    int64_t EffectiveMemReserved() const {
       return std::max(agg_mem_reserved_, local_mem_admitted_);
     }
 

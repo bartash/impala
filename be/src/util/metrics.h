@@ -390,14 +390,6 @@ class MetricGroup {
       const std::string& metric_def_arg = "") {
     return RegisterMetric(new DoubleGauge(MetricDefs::Get(key, metric_def_arg), value));
   }
-/*
-  // FIXME paramterize by type????
-  SetMetric<std::string>* AddSetMetric(const std::string& key, const set<string> value,
-      const std::string& metric_def_arg = "") {
-
-    return SetMetric<std::string>::CreateAndRegister(parent_->metrics_group_, AGG_CURRENT_USERS_METRIC_KEY_FORMAT, set<string>());
-
-  }*/
 
   template<typename T>
   LockedMetric<T, TMetricKind::PROPERTY>* AddProperty(const std::string& key,

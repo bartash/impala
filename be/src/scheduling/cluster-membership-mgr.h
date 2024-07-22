@@ -290,8 +290,6 @@ class ClusterMembershipMgr {
 
   friend class impala::test::SchedulerWrapper;
   friend class ClusterMembershipMgrUnitTest_TestPopulateExpectedExecGroupSets_Test;
-  FRIEND_TEST(AdmissionControllerTest, DequeueLoop);
-//  FRIEND_TEST(AdmissionControllerTest, MakeAdmissionController);
   friend class AdmissionControllerTest;
 };
 

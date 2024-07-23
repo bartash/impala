@@ -1167,22 +1167,27 @@ bool AdmissionController::HasSufficientPoolQuotas(const ScheduleState& state,
   }
   const string& user = GetEffectiveUser(state.request().query_ctx.session);
   bool key_matched = false;
+  // Check for non-wildcard user quota, the highest precedence rules.
   if (!HasSufficientUserQuota(pool_cfg, pool_level, state, user_load, user,
           quota_exceeded_reason, false, &key_matched)) {
     return false;
   }
   if (key_matched) {
+    // Once a rule is matched, don't check any further.
     VLOG_ROW << "user " << user << " passes quota check as user rule is matched";
     return true;
   }
+  // Check for group quota.
   if (!HasSufficientGroupQuota(pool_cfg, pool_level, state, user_load, user,
           quota_exceeded_reason, &key_matched)) {
     return false;
   }
   if (key_matched) {
+    // Once a rule is matched, don't check any further.
     VLOG_ROW << "user " << user << " passes quota check as group rule is matched";
     return true;
   }
+  // Check for wildcard user quota.
   if (!HasSufficientUserQuota(pool_cfg, pool_level, state, user_load, user,
           quota_exceeded_reason, true, &key_matched)) {
     return false;
@@ -1305,9 +1310,10 @@ bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
 bool AdmissionController::CanAdmitQuota(const ScheduleState& state,
     const TPoolConfig& pool_cfg, const TPoolConfig& root_cfg,
     string* not_admitted_reason) {
-  // Check quotas at pool level.
   PoolStats* pool_stats = GetPoolStats(state);
   const string& user = GetEffectiveUser(state.request().query_ctx.session);
+
+  // Check quotas at pool level.
   int64 user_load = pool_stats->GetUserLoad(user);
   if (!HasSufficientPoolQuotas(
           state, pool_cfg, state.request_pool(), user_load, not_admitted_reason)) {

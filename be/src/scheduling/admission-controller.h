@@ -1123,9 +1123,11 @@ class AdmissionController {
   bool HasAvailableSlots(const ScheduleState& state, const TPoolConfig& pool_cfg,
       string* unavailable_reason, bool& coordinator_resource_limited);
 
-  /// Returns true unless this query exceeds user or group quotas.
+  /// Returns true if this query has sufficient user and group quotas in the specified
+  /// pool with config 'pool_cfg'.
+  /// Returns true if quotas are not configured.
   /// Must hold admission_ctrl_lock_.
-  static bool CheckUserAndGroupPoolQuotas(const ScheduleState& state,
+  static bool HasSufficientPoolQuotas(const ScheduleState& state,
       const TPoolConfig& pool_cfg, const string& pool_level, int64 user_load,
       string* quota_exceeded_reason);
 

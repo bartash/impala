@@ -1158,7 +1158,7 @@ bool AdmissionController::HasAvailableSlots(const ScheduleState& state,
   return true;
 }
 
-bool AdmissionController::CheckUserAndGroupPoolQuotas(const ScheduleState& state,
+bool AdmissionController::HasSufficientPoolQuotas(const ScheduleState& state,
     const TPoolConfig& pool_cfg, const string& pool_level, int64 user_load,
     string* quota_exceeded_reason) {
   if (!HasQuotaConfig(pool_cfg)) {
@@ -1309,14 +1309,14 @@ bool AdmissionController::CanAdmitQuota(const ScheduleState& state,
   PoolStats* pool_stats = GetPoolStats(state);
   const string& user = GetEffectiveUser(state.request().query_ctx.session);
   int64 user_load = pool_stats->GetUserLoad(user);
-  if (!CheckUserAndGroupPoolQuotas(
+  if (!HasSufficientPoolQuotas(
           state, pool_cfg, state.request_pool(), user_load, not_admitted_reason)) {
     return false;
   }
 
   // Check quotas at root level.
   int64 user_load_across_cluster = root_agg_user_loads_.get(user);
-  if (!CheckUserAndGroupPoolQuotas(
+  if (!HasSufficientPoolQuotas(
           state, root_cfg, ROOT_POOL, user_load_across_cluster, not_admitted_reason)) {
     return false;
   }

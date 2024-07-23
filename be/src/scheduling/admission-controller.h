@@ -163,7 +163,7 @@ enum class AdmissionOutcome {
 /// submission is low enough that new state is able to be updated by the statestore.
 ///
 /// User Quotas:
-/// In addition to the checks described before, User Quotas can be configuerd to limit
+/// In addition to the checks described before, User Quotas can be configured to limit
 /// the number of concurrent queries that can be run by a user.
 ///
 /// The User Model for User Quotas is implemented by rules in the fair-scheduler.xml
@@ -173,9 +173,9 @@ enum class AdmissionOutcome {
 ///
 /// At the root level and at the pool level there are 3 types of rules. These rules have
 /// a precedence. The rules are evaluated in this order:
-/// 1. Rules that specify a user name
-/// 2. Rules that specify a group name
-/// 3. Wildcard rules that match any user
+///  1) Rules that specify a user name
+///  2) Rules that specify a group name
+///  3) Wildcard rules that match any user
 /// When evaluating rules at either the root level, or at the pool level, when a rule
 /// matches a user then there is no more evaluation done at that level.  So, for example,
 /// if there is a rule at the pool level about the specific user ‘sunil’, and a rule

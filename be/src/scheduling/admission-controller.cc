@@ -1305,11 +1305,8 @@ bool AdmissionController::CanAdmitRequest(const ScheduleState& state,
 bool AdmissionController::CanAdmitQuota(const ScheduleState& state,
     const TPoolConfig& pool_cfg, const TPoolConfig& root_cfg,
     string* not_admitted_reason) {
+  // Check quotas at pool level.
   PoolStats* pool_stats = GetPoolStats(state);
-  // Enforce quotas before query is queued.
-  // If you don't enforce at submission time them users can queue queries only to have
-  // them rejected later, which is confusing.
-  // If you enforce at submission time then maybe you don't need ot enforce at dequeue.
   const string& user = GetEffectiveUser(state.request().query_ctx.session);
   int64 user_load = pool_stats->GetUserLoad(user);
   if (!CheckUserAndGroupPoolQuotas(

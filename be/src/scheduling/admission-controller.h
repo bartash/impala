@@ -1078,7 +1078,11 @@ class AdmissionController {
       const TPoolConfig& root_cfg, bool admit_from_queue, string* not_admitted_reason,
       string* not_admitted_details, bool& coordinator_resource_limited);
 
-  // FIXME asherman add description
+  /// Returns true if User Quotas allow the schedule to be admitted to the pool with
+  /// config 'pool_cfg' and root config 'root_cfg'.
+  /// If no quotas are configured then True is returned.
+  /// User and group Quotas are checked on the pool and the root pool.
+  /// Caller owns not_admitted_reason
   bool CanAdmitQuota(const ScheduleState& state, const TPoolConfig& pool_cfg,
       const TPoolConfig& root_cfg, string* not_admitted_reason);
 

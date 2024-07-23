@@ -1247,6 +1247,24 @@ class AdmissionController {
   /// Returns the maximum number of requests that can be queued in the pool.
   static int64_t GetMaxQueuedForPool(const TPoolConfig& pool_config);
 
+  /// Return True if the pool configuration contains a User Quota.
+  static bool HasQuotaConfig(const TPoolConfig& pool_cfg);
+
+  // FIXME asherman add description
+  // In particular explain user_for_load user_for_limit
+
+  /// Returns True if the query will not exceed a per-user limit for the delegated user.
+  /// Returns True if no per-user quota is configured.
+  // FIXME asherman explain parameters
+  static bool HasSufficientUserQuota(const TPoolConfig& pool_cfg, const string& pool_name,
+      const ScheduleState& state, int64 user_load, const string& user_for_load,
+      string* quota_exceeded_reason, bool use_wildcard, bool* key_matched);
+  // FIXME asherman document
+  // FIXME asherman maybe HasSufficientGroupQuota
+  static bool HasSufficientGroupQuota(const TPoolConfig& pool_cfg, const string& pool_name,
+      const ScheduleState& state, int64 user_load, const string& user,
+      string* quota_exceeded_reason, bool* key_matched);
+
   /// Returns available memory and slots of the executor group.
   const std::pair<int64_t, int64_t> GetAvailableMemAndSlots(
       const ExecutorGroup& group) const;
@@ -1319,16 +1337,6 @@ class AdmissionController {
   /// Performs the work of ReleaseQueryBackends(). 'admission_ctrl_lock_' must be held.
   void ReleaseQueryBackendsLocked(const UniqueIdPB& query_id, const UniqueIdPB& coord_id,
       const vector<NetworkAddressPB>& host_addr);
-
-  // FIXME asherman add description
-  // In particular explain user_for_load user_for_limit
-  static bool HasQuotaConfig(const TPoolConfig& pool_cfg);
-  static bool CheckUserQuota(const TPoolConfig& pool_cfg, const string& pool_name,
-      const ScheduleState& state, int64 user_load, const string& user_for_load,
-      string* quota_exceeded_reason, bool use_wildcard, bool* key_matched);
-  static bool CheckGroupQuota(const TPoolConfig& pool_cfg, const string& pool_name,
-      const ScheduleState& state, int64 user_load, const string& user,
-      string* quota_exceeded_reason, bool* key_matched);
 
   FRIEND_TEST(AdmissionControllerTest, AggregatedUserLoads);
   FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestCount);

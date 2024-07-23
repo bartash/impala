@@ -1167,15 +1167,15 @@ bool AdmissionController::HasSufficientPoolQuotas(const ScheduleState& state,
   }
   const string& user = GetEffectiveUser(state.request().query_ctx.session);
   bool key_matched = false;
-  if (!CheckUserQuota(pool_cfg, pool_level, state, user_load, user, quota_exceeded_reason,
-          false, &key_matched)) {
+  if (!HasSufficientUserQuota(pool_cfg, pool_level, state, user_load, user,
+          quota_exceeded_reason, false, &key_matched)) {
     return false;
   }
   if (key_matched) {
     VLOG_ROW << "user " << user << " passes quota check as user rule is matched";
     return true;
   }
-  if (!CheckGroupQuota(pool_cfg, pool_level, state, user_load, user,
+  if (!HasSufficientGroupQuota(pool_cfg, pool_level, state, user_load, user,
           quota_exceeded_reason, &key_matched)) {
     return false;
   }
@@ -1183,8 +1183,8 @@ bool AdmissionController::HasSufficientPoolQuotas(const ScheduleState& state,
     VLOG_ROW << "user " << user << " passes quota check as group rule is matched";
     return true;
   }
-  if (!CheckUserQuota(pool_cfg, pool_level, state, user_load, user, quota_exceeded_reason,
-          true, &key_matched)) {
+  if (!HasSufficientUserQuota(pool_cfg, pool_level, state, user_load, user,
+          quota_exceeded_reason, true, &key_matched)) {
     return false;
   }
   return true;
@@ -1193,7 +1193,7 @@ bool AdmissionController::HasQuotaConfig(const TPoolConfig& pool_cfg) {
   return !pool_cfg.user_query_limits.empty() || !pool_cfg.group_query_limits.empty();
 }
 
-bool AdmissionController::CheckUserQuota(const TPoolConfig& pool_cfg,
+bool AdmissionController::HasSufficientUserQuota(const TPoolConfig& pool_cfg,
     const string& pool_name, const ScheduleState& state, int64 user_load,
     const string& user_for_load, string* quota_exceeded_reason, bool use_wildcard,
     bool* key_matched) {
@@ -1215,7 +1215,7 @@ bool AdmissionController::CheckUserQuota(const TPoolConfig& pool_cfg,
   return true;
 }
 
-bool AdmissionController::CheckGroupQuota(const TPoolConfig& pool_cfg,
+bool AdmissionController::HasSufficientGroupQuota(const TPoolConfig& pool_cfg,
     const string& pool_name, const ScheduleState& state, int64 user_load,
     const string& user, string* quota_exceeded_reason, bool* key_matched) {
   // Get the groups the user is in.

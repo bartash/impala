@@ -162,6 +162,27 @@ enum class AdmissionOutcome {
 /// are used or, if there is a wide distribution of requests across impalads, the rate of
 /// submission is low enough that new state is able to be updated by the statestore.
 ///
+/// User Quotas:
+/// In addition to the checks described before, User Quotas can be configuerd to limit
+/// the number of concurrent queries that can be run by a user.
+///
+/// The User Model for User Quotas is implemented by rules in the fair-scheduler.xml
+/// configuration file. The rules can be set at the root level, or at the pool level.
+/// The root level rules and pool level rules must both be passed for a new query to be
+/// queued. The rules dictate a maximum number of queries that can run.
+///
+/// At the root level and at the pool level there are 3 types of rules. These rules have
+/// a precedence. The rules are evaluated in this order:
+/// 1. Rules that specify a user name
+/// 2. Rules that specify a group name
+/// 3. Wildcard rules that match any user
+/// When evaluating rules at either the root level, or at the pool level, when a rule
+/// matches a user then there is no more evaluation done at that level.  So, for example,
+/// if there is a rule at the pool level about the specific user ‘sunil’, and a rule
+/// about the user group ‘workers’ (which group includes ‘sunil’), and if a query is
+/// submitted by sunil, then once the user-specific rule has been evaluated, the
+/// rule about the user group ‘workers’ is skipped.
+///
 /// Releasing Queries:
 /// When queries complete they must be explicitly released from the admission controller
 /// using the methods 'ReleaseQuery' and 'ReleaseQueryBackends'. These methods release

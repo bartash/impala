@@ -825,7 +825,7 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     statestored_args=_STATESTORED_ARGS)
   def test_cancellation(self):
     """ Test to confirm that all Async cancellation windows are hit and are able to
-    succesfully cancel the query"""
+    successfully cancel the query"""
     impalad = self.cluster.impalads[0]
     client = impalad.service.create_beeswax_client()
     try:

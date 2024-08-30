@@ -584,7 +584,7 @@ public class AllocationFileLoaderService extends AbstractService {
     Map<String, Integer> limits =
         userQueryLimits.computeIfAbsent(queueName, k -> new HashMap<>());
     int number = -1;
-    List<String> userNames= new ArrayList<>();
+    List<String> userNames = new ArrayList<>();
     NodeList fields = element.getChildNodes();
     for (int j = 0; j < fields.getLength(); j++) {
       Node fieldNode = fields.item(j);
@@ -594,11 +594,11 @@ public class AllocationFileLoaderService extends AbstractService {
       System.out.println("xxxfield.getTagName() = " + field.getTagName());
 
       if ("user".equals(field.getTagName())) {
-        String user = ((Text)field.getFirstChild()).getData();
+        String user = ((Text) field.getFirstChild()).getData();
         System.out.println("text for " + field.getTagName() + " = " + user);
         userNames.add(user);
       } else if ("limit".equals(field.getTagName())) {
-        String numberStr = ((Text)field.getFirstChild()).getData();
+        String numberStr = ((Text) field.getFirstChild()).getData();
         System.out.println("text for " + field.getTagName() + " = " + numberStr);
         if (number != -1) {
           throw new AllocationConfigurationException("Duplicate limit tags for " + tagName + "/" + field.getTagName());
@@ -611,7 +611,7 @@ public class AllocationFileLoaderService extends AbstractService {
         }
         System.out.println("number = " + number);
       }
-      if (userNames.isEmpty()_ {
+      if (userNames.isEmpty()) {
         throw new AllocationConfigurationException("Empty user names for " + tagName);
       }
     }

@@ -583,8 +583,8 @@ public class AllocationFileLoaderService extends AbstractService {
       } else if ("aclSubmitApps".equals(field.getTagName())) {
         String text = ((Text)field.getFirstChild()).getData();
         acls.put(QueueACL.SUBMIT_APPLICATIONS, new AccessControlList(text));
-      } else if ("userQueryLimit2".equals(field.getTagName())) {
-        addQueryLimit(queueName, field, "userQueryLimit2", userQueryLimits, "user");
+      } else if ("userQueryLimit".equals(field.getTagName())) {
+        addQueryLimit(queueName, field, "userQueryLimit", userQueryLimits, "user");
       } else if ("groupQueryLimit".equals(field.getTagName())) {
         String text = ((Text)field.getFirstChild()).getData();
         addQueryLimits(groupQueryLimits, queueName, text);

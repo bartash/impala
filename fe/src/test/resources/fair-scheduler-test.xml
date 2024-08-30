@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 <allocations>
   <queue name="root">
-    <userQueryLimit2>
+    <userQueryLimit>
       <user>userB</user>
       <limit>6</limit>
-    </userQueryLimit2>
-    <userQueryLimit2>
+    </userQueryLimit>
+    <userQueryLimit>
       <user>*</user>
       <limit>10</limit>
-    </userQueryLimit2>
+    </userQueryLimit>
     <groupQueryLimit>group3 5</groupQueryLimit>
     <queue name="queueA">
       <aclSubmitApps>* </aclSubmitApps>
@@ -23,19 +23,19 @@
     </queue>
     <queue name="queueD">
       <aclSubmitApps>userA,userB </aclSubmitApps>
-      <userQueryLimit2>
+      <userQueryLimit>
         <user>*</user>
         <limit>3</limit>
-      </userQueryLimit2>
-      <userQueryLimit2>
+      </userQueryLimit>
+      <userQueryLimit>
         <user>userA</user>
         <user>userF</user>
         <limit>2</limit>
-      </userQueryLimit2>
-      <userQueryLimit2>
+      </userQueryLimit>
+      <userQueryLimit>
         <user> userG </user>
         <limit> 101 </limit>
-      </userQueryLimit2>
+      </userQueryLimit>
       <groupQueryLimit>group1,group2 1</groupQueryLimit>
     </queue>
     <aclSubmitApps> </aclSubmitApps>

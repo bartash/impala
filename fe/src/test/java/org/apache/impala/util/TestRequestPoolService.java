@@ -397,17 +397,17 @@ public class TestRequestPoolService {
 
     Map<String, Map<String, Integer>> userQueryLimits = new HashMap<>();
     String queueName = "queue1";
-    addQueryLimit(queueName, rootElement, "userQueryLimit2", userQueryLimits, "user");
+    addQueryLimit(queueName, rootElement, "userQueryLimit", userQueryLimits, "user");
     return userQueryLimits.get(queueName);
   }
 
   @Test
   public void testNewLimitParsing() throws Exception {
     String xmlString = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit2>",
+        "<userQueryLimit>",
         "    <user>John</user>",
         "    <limit>30</limit>",
-        "</userQueryLimit2>"
+        "</userQueryLimit>"
     );
     Map<String, Integer> expected = new HashMap<String, Integer>() {{
       put("John", 30);
@@ -417,11 +417,11 @@ public class TestRequestPoolService {
     Assert.assertEquals(expected, parsed);
 
     String xmlString2 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit2>",
+        "<userQueryLimit>",
         "    <user>John</user>",
         "    <user>Barry</user>",
         "    <limit>30</limit>",
-        "</userQueryLimit2>"
+        "</userQueryLimit>"
     );
     Map<String, Integer> expected2 = new HashMap<String, Integer>() {{
       put("John", 30);
@@ -446,42 +446,42 @@ public class TestRequestPoolService {
   @Test
   public void testNewLimitParsingErrors() throws Exception {
     String xmlString1 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit2>",
+        "<userQueryLimit>",
         "    <limit>30</limit>",
-        "</userQueryLimit2>"
+        "</userQueryLimit>"
     );
     assertFailureMessage(xmlString1, "Empty user names");
     String xmlString2 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit2>",
+        "<userQueryLimit>",
         "    <user>John</user>",
         "    <user>Barry</user>",
         "    <limit>30</limit>",
         "    <limit>31</limit>",
-        "</userQueryLimit2>"
+        "</userQueryLimit>"
     );
     assertFailureMessage(xmlString2, "Duplicate limit tags");
     String xmlString3 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit2>",
+        "<userQueryLimit>",
         "    <user>John</user>",
         "    <user>Barry</user>",
         "    <limit>fish</limit>",
-        "</userQueryLimit2>"
+        "</userQueryLimit>"
     );
     assertFailureMessage(xmlString3, "Could not parse query limit");
     String xmlString4 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit2>",
+        "<userQueryLimit>",
         "    <user>John</user>",
         "    <user>Barry</user>",
-        "</userQueryLimit2>"
+        "</userQueryLimit>"
     );
     assertFailureMessage(xmlString4, "No limit for");
 
     String xmlString5 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit2>",
+        "<userQueryLimit>",
         "    <user>John</user>",
         "    <user>John</user>",
         "    <limit>30</limit>",
-        "</userQueryLimit2>"
+        "</userQueryLimit>"
     );
     assertFailureMessage(xmlString5, "Duplicate value given for name");
   }

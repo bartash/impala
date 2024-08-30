@@ -2,43 +2,80 @@
 <allocations>
   <queue name="root">
     <!-- A user not matched by any other rule can run 8 queries across the cluster -->
-    <userQueryLimit>* 8</userQueryLimit>
+    <userQueryLimit>
+      <user>*</user>
+      <limit>8</limit>
+    </userQueryLimit>
 
     <!-- Members of group 'support' are limited to run 6 queries across the cluster -->
-    <groupQueryLimit>support 6</groupQueryLimit>
+    <groupQueryLimit>
+      <group>support</group>
+      <limit>6</limit>
+    </groupQueryLimit>
 
     <!-- User 'howard' is limited to running 4 queries across the cluster -->
-    <userQueryLimit>howard 4</userQueryLimit>
+    <userQueryLimit>
+      <user>howard</user>
+      <limit>4</limit>
+    </userQueryLimit>
 
     <queue name="group-set-small">
       <!-- A user not matched by any other rule can run 1 query in the small pool -->
-      <userQueryLimit>* 1</userQueryLimit>
+      <userQueryLimit>
+        <user>*</user>
+        <limit>1</limit>
+      </userQueryLimit>
 
       <!-- Members of groups 'dev' and 'support' can run 5 queries in the small pool-->
-      <groupQueryLimit>dev,support 5</groupQueryLimit>
+      <groupQueryLimit>
+        <group>dev</group>
+        <group>support</group>
+        <limit>5</limit>
+      </groupQueryLimit>
 
       <!-- Members of the group 'it' can run 2 queries in the small pool-->
-      <groupQueryLimit>it 2</groupQueryLimit>
+      <groupQueryLimit>
+        <group>it</group>
+        <limit>2</limit>
+      </groupQueryLimit>
 
       <!-- The user 'alice' can run 4 queries in the small pool -->
-      <userQueryLimit>alice 4</userQueryLimit>
+      <userQueryLimit>
+        <user>alice</user>
+        <limit>4</limit>
+      </userQueryLimit>
     </queue>
 
     <queue name="group-set-large">
       <!-- A user not matched by any other rule can run 1 query in the large pool -->
-      <userQueryLimit>* 1</userQueryLimit>
+      <userQueryLimit>
+        <user>*</user>
+        <limit>1</limit>
+      </userQueryLimit>
 
       <!-- Members of the group 'dev' can run 2 queries in the large pool-->
-      <groupQueryLimit>dev 2</groupQueryLimit>
+      <groupQueryLimit>
+        <group>dev</group>
+        <limit>2</limit>
+      </groupQueryLimit>
 
       <!-- Members of the group 'dev' can run 1 query in the large pool-->
-      <groupQueryLimit>support 1</groupQueryLimit>
+      <groupQueryLimit>
+        <group>support</group>
+        <limit>1</limit>
+      </groupQueryLimit>
 
       <!-- The user 'claire' can run 3 queries in the large pool -->
-      <userQueryLimit>claire 3</userQueryLimit>
+      <userQueryLimit>
+        <user>claire</user>
+        <limit>3</limit>
+      </userQueryLimit>
 
       <!-- The user 'alice' can run 4 queries in the large pool -->
-      <userQueryLimit>alice 4</userQueryLimit>
+      <userQueryLimit>
+        <user>alice</user>
+        <limit>4</limit>
+      </userQueryLimit>
     </queue>
   </queue>
 </allocations>

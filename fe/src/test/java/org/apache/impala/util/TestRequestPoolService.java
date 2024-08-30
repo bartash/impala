@@ -18,6 +18,7 @@
 package org.apache.impala.util;
 
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTH_TO_LOCAL;
+import static org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationFileLoaderService.addQueryLimits;
 
 import com.google.common.collect.Iterables;
 import com.google.common.io.Files;
@@ -44,7 +45,13 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -378,52 +385,119 @@ public class TestRequestPoolService {
         queueEUserQueryLimits, queueEGroupQueryLimits);
   }
 
-  /**
-   * Unit test for  AllocationFileLoaderService.addQueryLimits().
-   */
+  private static Map<String, Integer> doQueryLimitParsing(String xmlString, String name) throws ParserConfigurationException, SAXException, IOException, AllocationConfigurationException {
+    // Create a DocumentBuilderFactory instance
+    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+    // Create a DocumentBuilder instance
+    DocumentBuilder builder = factory.newDocumentBuilder();
+    // Parse the XML string into a Document object
+    Document document = builder.parse(new java.io.ByteArrayInputStream(xmlString.getBytes()));
+    // Get the root element
+    Element rootElement = document.getDocumentElement();
+
+    Map<String, Map<String, Integer>> userQueryLimits = new HashMap<>();
+    String queueName = "queue1";
+    addQueryLimits(queueName, rootElement, "userQueryLimit", userQueryLimits, name);
+    return userQueryLimits.get(queueName);
+  }
+
+  private static void assertFailureMessage(String xmlString, String expectedError) {
+    try {
+      doQueryLimitParsing(xmlString, "user");
+      Assert.fail("did not get expected exception, with expected message " + expectedError);
+    } catch (Exception e) {
+      Assert.assertTrue(e instanceof AllocationConfigurationException);
+
+      Assert.assertTrue(e.getMessage().contains(expectedError));
+    }
+  }
+
   @Test
-  public void testLimitsParsing() throws AllocationConfigurationException {
-    Map<String, Map<String, Integer>> allLimits = new HashMap<>();
-    String QUEUE1 = "queue1";
-    String QUEUE2 = "queue2";
-    String QUEUE3 = "queue3";
-    AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user1 1");
-    AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, " user2     2 ");
-    AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "* 2");
-    AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE2, "user1 12 ");
+  public void testNewLimitParsing() throws Exception {
+    String xmlString = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<userQueryLimit>",
+        "    <user>John</user>",
+        "    <limit>30</limit>",
+        "</userQueryLimit>"
+    );
+    Map<String, Integer> expected = new HashMap<String, Integer>() {{
+      put("John", 30);
+    }};
 
-    Map<String, Integer> queue1 = allLimits.get(QUEUE1);
-    Map<String, Integer> queue2 = allLimits.get(QUEUE2);
-    Map<String, Integer> queue3 = allLimits.get(QUEUE3);
-    Assert.assertEquals(1,(long) queue1.get("user1"));
-    Assert.assertEquals(2,(long) queue1.get("user2"));
-    Assert.assertEquals(12,(long) queue2.get("user1"));
-    Assert.assertNull(queue3);
+    Map<String, Integer> parsed = doQueryLimitParsing(xmlString, "user");
+    Assert.assertEquals(expected, parsed);
 
-    allLimits = new HashMap<>();
-    AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user1 1");
-    try {
-      AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user1 2");
-      Assert.fail("should have got exception");
-    } catch (AllocationConfigurationException e) {
-      Assert.assertTrue(e.getMessage().contains("Duplicate value"));
-    }
+    String xmlString2 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<userQueryLimit>",
+        "    <user>John</user>",
+        "    <user>Barry</user>",
+        "    <limit>30</limit>",
+        "</userQueryLimit>"
+    );
+    Map<String, Integer> expected2 = new HashMap<String, Integer>() {{
+      put("John", 30);
+      put("Barry", 30);
+    }};
 
-    allLimits = new HashMap<>();
-    try {
-      AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user1 xxx");
-      Assert.fail("should have got exception");
-    } catch (AllocationConfigurationException e) {
-      Assert.assertTrue(e.getMessage().contains("Cannot parse"));
-    }
+    Map<String, Integer> parsed2 = doQueryLimitParsing(xmlString2, "user");
+    Assert.assertEquals(expected2, parsed2);
 
-    allLimits = new HashMap<>();
-    try {
-      AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user1=xxx");
-      Assert.fail("should have got exception");
-    } catch (AllocationConfigurationException e) {
-      Assert.assertTrue(e.getMessage().contains("name and number"));
-    }
+    String xmlString3 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<groupQueryLimit>",
+        "    <group>group1</group>",
+        "    <group>group2</group>",
+        "    <limit>1</limit>",
+        "</groupQueryLimit>"
+    );
+    Map<String, Integer> expected3 = new HashMap<String, Integer>() {{
+      put("group1", 1);
+      put("group2", 1);
+    }};
+    Map<String, Integer> parsed3 = doQueryLimitParsing(xmlString3, "group");
+    Assert.assertEquals(expected3, parsed3);
+  }
+
+  @Test
+  public void testNewLimitParsingErrors() throws Exception {
+    String xmlString1 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<userQueryLimit>",
+        "    <limit>30</limit>",
+        "</userQueryLimit>"
+    );
+    assertFailureMessage(xmlString1, "Empty user names");
+    String xmlString2 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<userQueryLimit>",
+        "    <user>John</user>",
+        "    <user>Barry</user>",
+        "    <limit>30</limit>",
+        "    <limit>31</limit>",
+        "</userQueryLimit>"
+    );
+    assertFailureMessage(xmlString2, "Duplicate limit tags");
+    String xmlString3 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<userQueryLimit>",
+        "    <user>John</user>",
+        "    <user>Barry</user>",
+        "    <limit>fish</limit>",
+        "</userQueryLimit>"
+    );
+    assertFailureMessage(xmlString3, "Could not parse query limit");
+    String xmlString4 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<userQueryLimit>",
+        "    <user>John</user>",
+        "    <user>Barry</user>",
+        "</userQueryLimit>"
+    );
+    assertFailureMessage(xmlString4, "No limit for");
+
+    String xmlString5 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<userQueryLimit>",
+        "    <user>John</user>",
+        "    <user>John</user>",
+        "    <limit>30</limit>",
+        "</userQueryLimit>"
+    );
+    assertFailureMessage(xmlString5, "Duplicate value given for name");
   }
 
   private void checkModifiedConfigResults()

@@ -592,14 +592,14 @@ public class AllocationFileLoaderService extends AbstractService {
         continue;
       Element field = (Element) fieldNode;
       if ("user".equals(field.getTagName())) {
-        String user = ((Text) field.getFirstChild()).getData();
+        String user = ((Text) field.getFirstChild()).getData().trim();
         if (userNames.contains(user)) {
           throw new AllocationConfigurationException(
               "Duplicate value given for name " + user);
         }
         userNames.add(user);
       } else if ("limit".equals(field.getTagName())) {
-        String numberStr = ((Text) field.getFirstChild()).getData();
+        String numberStr = ((Text) field.getFirstChild()).getData().trim();
         if (number != -1) {
           throw new AllocationConfigurationException("Duplicate limit tags for " + tagName + "/" + field.getTagName());
         }

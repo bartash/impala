@@ -5,7 +5,10 @@
       <user>userB</user>
       <limit>6</limit>
     </userQueryLimit2>
-    <userQueryLimit>* 10</userQueryLimit>
+    <userQueryLimit2>
+      <user>*</user>
+      <limit>10</limit>
+    </userQueryLimit2>
     <groupQueryLimit>group3 5</groupQueryLimit>
     <queue name="queueA">
       <aclSubmitApps>* </aclSubmitApps>
@@ -20,9 +23,19 @@
     </queue>
     <queue name="queueD">
       <aclSubmitApps>userA,userB </aclSubmitApps>
-      <userQueryLimit>userA,userF 2</userQueryLimit>
-      <userQueryLimit>* 3</userQueryLimit>
-      <userQueryLimit> userG  101</userQueryLimit>
+      <userQueryLimit2>
+        <user>*</user>
+        <limit>3</limit>
+      </userQueryLimit2>
+      <userQueryLimit2>
+        <user>userA</user>
+        <user>userF</user>
+        <limit>2</limit>
+      </userQueryLimit2>
+      <userQueryLimit2>
+        <user> userG </user>
+        <limit> 101 </limit>
+      </userQueryLimit2>
       <groupQueryLimit>group1,group2 1</groupQueryLimit>
     </queue>
     <aclSubmitApps> </aclSubmitApps>

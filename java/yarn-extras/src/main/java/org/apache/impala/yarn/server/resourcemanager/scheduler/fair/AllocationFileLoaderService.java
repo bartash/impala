@@ -593,6 +593,10 @@ public class AllocationFileLoaderService extends AbstractService {
       Element field = (Element) fieldNode;
       if ("user".equals(field.getTagName())) {
         String user = ((Text) field.getFirstChild()).getData();
+        if (userNames.contains(user)) {
+          throw new AllocationConfigurationException(
+              "Duplicate value given for name " + user);
+        }
         userNames.add(user);
       } else if ("limit".equals(field.getTagName())) {
         String numberStr = ((Text) field.getFirstChild()).getData();

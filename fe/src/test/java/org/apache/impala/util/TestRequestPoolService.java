@@ -435,6 +435,7 @@ public class TestRequestPoolService {
   private static void assertFailureMessage(String xmlString, String expectedError) {
     try {
       doQueryLimitParsing(xmlString);
+      Assert.fail("did not get expected exception, with expected message " + expectedError);
     } catch (Exception e) {
       Assert.assertTrue(e instanceof AllocationConfigurationException);
 
@@ -474,6 +475,15 @@ public class TestRequestPoolService {
         "</userQueryLimit2>"
     );
     assertFailureMessage(xmlString4, "No limit for");
+
+    String xmlString5 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<userQueryLimit2>",
+        "    <user>John</user>",
+        "    <user>John</user>",
+        "    <limit>30</limit>",
+        "</userQueryLimit2>"
+    );
+    assertFailureMessage(xmlString5, "Duplicate value given for name");
   }
 
   /**

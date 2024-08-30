@@ -385,7 +385,7 @@ public class TestRequestPoolService {
         queueEUserQueryLimits, queueEGroupQueryLimits);
   }
 
-  private static Map<String, Integer> doQueryLimitParsing(String xmlString) throws ParserConfigurationException, SAXException, IOException, AllocationConfigurationException {
+  private static Map<String, Integer> doQueryLimitParsing(String xmlString, String name) throws ParserConfigurationException, SAXException, IOException, AllocationConfigurationException {
     // Create a DocumentBuilderFactory instance
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
     // Create a DocumentBuilder instance
@@ -401,6 +401,17 @@ public class TestRequestPoolService {
     return userQueryLimits.get(queueName);
   }
 
+  private static void assertFailureMessage(String xmlString, String expectedError) {
+    try {
+      doQueryLimitParsing(xmlString, "user");
+      Assert.fail("did not get expected exception, with expected message " + expectedError);
+    } catch (Exception e) {
+      Assert.assertTrue(e instanceof AllocationConfigurationException);
+
+      Assert.assertTrue(e.getMessage().contains(expectedError));
+    }
+  }
+
   @Test
   public void testNewLimitParsing() throws Exception {
     String xmlString = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
@@ -413,7 +424,7 @@ public class TestRequestPoolService {
       put("John", 30);
     }};
 
-    Map<String, Integer> parsed = doQueryLimitParsing(xmlString);
+    Map<String, Integer> parsed = doQueryLimitParsing(xmlString, "user");
     Assert.assertEquals(expected, parsed);
 
     String xmlString2 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
@@ -428,19 +439,22 @@ public class TestRequestPoolService {
       put("Barry", 30);
     }};
 
-    Map<String, Integer> parsed2 = doQueryLimitParsing(xmlString2);
+    Map<String, Integer> parsed2 = doQueryLimitParsing(xmlString2, "user");
     Assert.assertEquals(expected2, parsed2);
-  }
 
-  private static void assertFailureMessage(String xmlString, String expectedError) {
-    try {
-      doQueryLimitParsing(xmlString);
-      Assert.fail("did not get expected exception, with expected message " + expectedError);
-    } catch (Exception e) {
-      Assert.assertTrue(e instanceof AllocationConfigurationException);
-
-      Assert.assertTrue(e.getMessage().contains(expectedError));
-    }
+    String xmlString3 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<groupQueryLimit2>",
+        "    <group>group1</group>",
+        "    <group>group2</group>",
+        "    <limit>1</limit>",
+        "</groupQueryLimit2>"
+    );
+    Map<String, Integer> expected3 = new HashMap<String, Integer>() {{
+      put("group1", 1);
+      put("group2", 1);
+    }};
+    Map<String, Integer> parsed3 = doQueryLimitParsing(xmlString3, "group");
+    Assert.assertEquals(expected3, parsed3);
   }
 
   @Test

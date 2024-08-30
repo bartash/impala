@@ -47,9 +47,11 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -383,18 +385,7 @@ public class TestRequestPoolService {
         queueEUserQueryLimits, queueEGroupQueryLimits);
   }
 
-  @Test
-  public void testNewLimitParsing() throws Exception {
-    String xmlString = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit2>",
-        "    <user>John</user>",
-        "    <limit>30</limit>",
-        "</userQueryLimit2>"
-    );
-    Map<String, Integer> expected = new HashMap<String, Integer>() {{
-      put("John", 30);
-    }};
-
+  private static void assertQueryLimitParsing(String xmlString, Map<String, Integer> expected) throws ParserConfigurationException, SAXException, IOException, AllocationConfigurationException {
     // Create a DocumentBuilderFactory instance
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
     // Create a DocumentBuilder instance
@@ -409,6 +400,35 @@ public class TestRequestPoolService {
     addNewQueryLimit(queueName, rootElement, "userQueryLimit2", userQueryLimits);
     Map<String, Integer> userLimits = userQueryLimits.get(queueName);
     Assert.assertEquals(expected, userLimits);
+  }
+
+  @Test
+  public void testNewLimitParsing() throws Exception {
+    String xmlString = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<userQueryLimit2>",
+        "    <user>John</user>",
+        "    <limit>30</limit>",
+        "</userQueryLimit2>"
+    );
+    Map<String, Integer> expected = new HashMap<String, Integer>() {{
+      put("John", 30);
+    }};
+
+    assertQueryLimitParsing(xmlString, expected);
+
+    String xmlString2 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<userQueryLimit2>",
+        "    <user>John</user>",
+        "    <user>Barry</user>",
+        "    <limit>30</limit>",
+        "</userQueryLimit2>"
+    );
+    Map<String, Integer> expected2 = new HashMap<String, Integer>() {{
+      put("John", 30);
+      put("Barry", 30);
+    }};
+
+    assertQueryLimitParsing(xmlString2, expected2);
   }
 
   /**

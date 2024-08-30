@@ -449,8 +449,7 @@ public class TestRequestPoolService {
         "    <limit>30</limit>",
         "</userQueryLimit2>"
     );
-    String error1 = "Empty user names";
-    assertFailureMessage(xmlString1, error1);
+    assertFailureMessage(xmlString1, "Empty user names");
     String xmlString2 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
         "<userQueryLimit2>",
         "    <user>John</user>",
@@ -460,7 +459,15 @@ public class TestRequestPoolService {
         "</userQueryLimit2>"
     );
     String error2 = "Duplicate limit tags";
-    assertFailureMessage(xmlString2, error2);
+    assertFailureMessage(xmlString2, "Duplicate limit tags");
+    String xmlString3 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<userQueryLimit2>",
+        "    <user>John</user>",
+        "    <user>Barry</user>",
+        "    <limit>fish</limit>",
+        "</userQueryLimit2>"
+    );
+    assertFailureMessage(xmlString3, "ould not parse query limit");
   }
 
   /**

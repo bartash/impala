@@ -532,7 +532,7 @@ public class AllocationFileLoaderService extends AbstractService {
         String text = ((Text)field.getFirstChild()).getData();
         acls.put(QueueACL.SUBMIT_APPLICATIONS, new AccessControlList(text));
       } else if ("userQueryLimit2".equals(field.getTagName())) {
-        addNewQueryLimit(field, "userQueryLimit2", userQueryLimits);
+        addNewQueryLimit(queueName, field, "userQueryLimit2", userQueryLimits);
       } else if ("userQueryLimit".equals(field.getTagName())) {
         String text = ((Text)field.getFirstChild()).getData();
         addQueryLimits(userQueryLimits, queueName, text);
@@ -579,24 +579,29 @@ public class AllocationFileLoaderService extends AbstractService {
     }
   }
 
-  private void addNewQueryLimit(Element element, String tagName,
+  private void addNewQueryLimit(String queueName, Element element, String tagName,
                                 Map<String, Map<String, Integer>> userQueryLimits) throws AllocationConfigurationException {
     NodeList fields = element.getChildNodes();
     boolean isLeaf = true;
 
+    int number = -1;
     for (int j = 0; j < fields.getLength(); j++) {
       Node fieldNode = fields.item(j);
       if (!(fieldNode instanceof Element))
         continue;
       Element field = (Element) fieldNode;
       System.out.println("xxxfield.getTagName() = " + field.getTagName());
+      List<String> userNames= new ArrayList<>();
       if ("user".equals(field.getTagName())) {
-        String text = ((Text)field.getFirstChild()).getData();
-        System.out.println("text for " + field.getTagName() + " = " + text);
+        String user = ((Text)field.getFirstChild()).getData();
+        System.out.println("text for " + field.getTagName() + " = " + user);
+        userNames.add(user);
       } else if ("limit".equals(field.getTagName())) {
         String numberStr = ((Text)field.getFirstChild()).getData();
         System.out.println("text for " + field.getTagName() + " = " + numberStr);
-        int number = 0;
+        if (number != -1) {
+          throw new AllocationConfigurationException("Duplicate limit tags for " + tagName + "/" + field.getTagName());
+        }
         try {
           number = Integer.parseInt(numberStr);
         } catch (NumberFormatException e) {
@@ -605,6 +610,12 @@ public class AllocationFileLoaderService extends AbstractService {
         }
         System.out.println("number = " + number);
       }
+      if (userNames.isEmpty()_ {
+        throw new AllocationConfigurationException("Empty user names for " + tagName);
+      }
+    }
+    if (number == -1) {
+      throw new AllocationConfigurationException("No limit for " + tagName);
     }
 
   }

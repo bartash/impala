@@ -385,7 +385,7 @@ public class TestRequestPoolService {
         queueEUserQueryLimits, queueEGroupQueryLimits);
   }
 
-  private static void assertQueryLimitParsing(String xmlString, Map<String, Integer> expected) throws ParserConfigurationException, SAXException, IOException, AllocationConfigurationException {
+  private static Map<String, Integer> doQueryLimitParsing(String xmlString) throws ParserConfigurationException, SAXException, IOException, AllocationConfigurationException {
     // Create a DocumentBuilderFactory instance
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
     // Create a DocumentBuilder instance
@@ -398,8 +398,7 @@ public class TestRequestPoolService {
     Map<String, Map<String, Integer>> userQueryLimits = new HashMap<>();
     String queueName = "queue1";
     addNewQueryLimit(queueName, rootElement, "userQueryLimit2", userQueryLimits);
-    Map<String, Integer> userLimits = userQueryLimits.get(queueName);
-    Assert.assertEquals(expected, userLimits);
+    return userQueryLimits.get(queueName);
   }
 
   @Test
@@ -414,7 +413,8 @@ public class TestRequestPoolService {
       put("John", 30);
     }};
 
-    assertQueryLimitParsing(xmlString, expected);
+    Map<String, Integer> parsed = doQueryLimitParsing(xmlString);
+    Assert.assertEquals(expected, parsed);
 
     String xmlString2 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
         "<userQueryLimit2>",
@@ -428,7 +428,19 @@ public class TestRequestPoolService {
       put("Barry", 30);
     }};
 
-    assertQueryLimitParsing(xmlString2, expected2);
+    Map<String, Integer> parsed2 = doQueryLimitParsing(xmlString2);
+    Assert.assertEquals(expected2, parsed2);
+  }
+
+  public void testNewLimitParsingErrors() throws Exception {
+    String xmlString = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<userQueryLimit2>",
+        "    <limit>30</limit>",
+        "</userQueryLimit2>"
+    );
+
+    doQueryLimitParsing(xmlString);
+
   }
 
   /**

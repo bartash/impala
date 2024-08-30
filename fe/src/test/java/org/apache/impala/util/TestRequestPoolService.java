@@ -18,6 +18,7 @@
 package org.apache.impala.util;
 
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTH_TO_LOCAL;
+import static org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationFileLoaderService.addNewQueryLimit;
 
 import com.google.common.collect.Iterables;
 import com.google.common.io.Files;
@@ -383,32 +384,31 @@ public class TestRequestPoolService {
   }
 
   @Test
-  public void testNewLimitParsing() {
-    String xmlString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        +
-        "<person>\n" +
-        "    <name>John Doe</name>\n" +
-        "    <age>30</age>\n" +
-        "</person>";
+  public void testNewLimitParsing() throws Exception {
+    String xmlString = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<userQueryLimit2>",
+        "    <user>John</user>",
+        "    <limit>30</limit>",
+        "</userQueryLimit2>"
+    );
+    Map<String, Integer> expected = new HashMap<String, Integer>() {{
+      put("John", 30);
+    }};
 
-    try {
-      // Create a DocumentBuilderFactory instance
-      DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+    // Create a DocumentBuilderFactory instance
+    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+    // Create a DocumentBuilder instance
+    DocumentBuilder builder = factory.newDocumentBuilder();
+    // Parse the XML string into a Document object
+    Document document = builder.parse(new java.io.ByteArrayInputStream(xmlString.getBytes()));
+    // Get the root element
+    Element rootElement = document.getDocumentElement();
 
-      // Create a DocumentBuilder instance
-      DocumentBuilder builder = factory.newDocumentBuilder();
-
-
-      // Parse the XML string into a Document object
-      Document document = builder.parse(new java.io.ByteArrayInputStream(xmlString.getBytes()));
-
-      // Get the root element
-      Element rootElement = document.getDocumentElement();
-
-
-    } catch (Exception e) {
-      Assert.fail("caught " +e);
-    }
+    Map<String, Map<String, Integer>> userQueryLimits = new HashMap<>();
+    String queueName = "queue1";
+    addNewQueryLimit(queueName, rootElement, "userQueryLimit2", userQueryLimits);
+    Map<String, Integer> userLimits = userQueryLimits.get(queueName);
+    Assert.assertEquals(expected, userLimits);
   }
 
   /**

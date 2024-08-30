@@ -579,7 +579,7 @@ public class AllocationFileLoaderService extends AbstractService {
     }
   }
 
-  private void addNewQueryLimit(String queueName, Element element, String tagName,
+  public static void addNewQueryLimit(String queueName, Element element, String tagName,
                                 Map<String, Map<String, Integer>> userQueryLimits) throws AllocationConfigurationException {
     Map<String, Integer> limits =
         userQueryLimits.computeIfAbsent(queueName, k -> new HashMap<>());

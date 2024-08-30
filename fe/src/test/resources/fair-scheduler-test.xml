@@ -1,7 +1,10 @@
 <?xml version="1.0"?>
 <allocations>
   <queue name="root">
-    <userQueryLimit>userB 6</userQueryLimit>
+    <userQueryLimit2>
+      <user>userB</user>
+      <limit>6</limit>
+    </userQueryLimit2>
     <userQueryLimit>* 10</userQueryLimit>
     <groupQueryLimit>group3 5</groupQueryLimit>
     <queue name="queueA">

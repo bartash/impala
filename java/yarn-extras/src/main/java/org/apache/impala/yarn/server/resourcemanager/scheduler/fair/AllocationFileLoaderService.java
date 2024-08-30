@@ -531,6 +531,8 @@ public class AllocationFileLoaderService extends AbstractService {
       } else if ("aclSubmitApps".equals(field.getTagName())) {
         String text = ((Text)field.getFirstChild()).getData();
         acls.put(QueueACL.SUBMIT_APPLICATIONS, new AccessControlList(text));
+      } else if ("userQueryLimit2".equals(field.getTagName())) {
+        addNewQueryLimit(field, "userQueryLimit2", userQueryLimits);
       } else if ("userQueryLimit".equals(field.getTagName())) {
         String text = ((Text)field.getFirstChild()).getData();
         addQueryLimits(userQueryLimits, queueName, text);
@@ -575,6 +577,36 @@ public class AllocationFileLoaderService extends AbstractService {
               + "min resources %s", queueName, maxQueueResources.get(queueName),
               minQueueResources.get(queueName)));
     }
+  }
+
+  private void addNewQueryLimit(Element element, String tagName,
+                                Map<String, Map<String, Integer>> userQueryLimits) throws AllocationConfigurationException {
+    NodeList fields = element.getChildNodes();
+    boolean isLeaf = true;
+
+    for (int j = 0; j < fields.getLength(); j++) {
+      Node fieldNode = fields.item(j);
+      if (!(fieldNode instanceof Element))
+        continue;
+      Element field = (Element) fieldNode;
+      System.out.println("xxxfield.getTagName() = " + field.getTagName());
+      if ("user".equals(field.getTagName())) {
+        String text = ((Text)field.getFirstChild()).getData();
+        System.out.println("text for " + field.getTagName() + " = " + text);
+      } else if ("limit".equals(field.getTagName())) {
+        String numberStr = ((Text)field.getFirstChild()).getData();
+        System.out.println("text for " + field.getTagName() + " = " + numberStr);
+        int number = 0;
+        try {
+          number = Integer.parseInt(numberStr);
+        } catch (NumberFormatException e) {
+          throw new AllocationConfigurationException(
+              "Could not parse query limit for " + tagName + "/" + field.getTagName(), e);
+        }
+        System.out.println("number = " + number);
+      }
+    }
+
   }
 
   public interface Listener {

@@ -467,7 +467,15 @@ public class TestRequestPoolService {
         "    <limit>fish</limit>",
         "</userQueryLimit2>"
     );
-    assertFailureMessage(xmlString3, "ould not parse query limit");
+    assertFailureMessage(xmlString3, "could not parse query limit");
+    String xmlString4 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<userQueryLimit2>",
+        "    <user>John</user>",
+        "    <user>Barry</user>",
+        "</userQueryLimit2>"
+    );
+    assertFailureMessage(xmlString4, "No limit for");
+
   }
 
   /**

@@ -18,7 +18,7 @@
 package org.apache.impala.util;
 
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTH_TO_LOCAL;
-import static org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationFileLoaderService.addNewQueryLimit;
+import static org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationFileLoaderService.addQueryLimit;
 
 import com.google.common.collect.Iterables;
 import com.google.common.io.Files;
@@ -397,7 +397,7 @@ public class TestRequestPoolService {
 
     Map<String, Map<String, Integer>> userQueryLimits = new HashMap<>();
     String queueName = "queue1";
-    addNewQueryLimit(queueName, rootElement, "userQueryLimit2", userQueryLimits);
+    addQueryLimit(queueName, rootElement, "userQueryLimit2", userQueryLimits, "user");
     return userQueryLimits.get(queueName);
   }
 

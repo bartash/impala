@@ -436,6 +436,58 @@ public class AllocationFileLoaderService extends AbstractService {
   }
 
   /**
+   *
+   * @param queueName the name of the queue name.
+   * @param element the element containing the definition.
+   * @param tagName fir diagnostics, the enclosing tag name
+   * @param limitsMap where the Map will be inserted
+   * @param name the name of the tag "user" or "group"
+   * @throws AllocationConfigurationException if parsing fails.
+   */
+  public static void addQueryLimit(String queueName, Element element, String tagName,
+                                   Map<String, Map<String, Integer>> limitsMap, String name) throws AllocationConfigurationException {
+    Map<String, Integer> limits =
+        limitsMap.computeIfAbsent(queueName, k -> new HashMap<>());
+    int number = -1;
+    List<String> userNames = new ArrayList<>();
+    NodeList fields = element.getChildNodes();
+    for (int j = 0; j < fields.getLength(); j++) {
+      Node fieldNode = fields.item(j);
+      if (!(fieldNode instanceof Element))
+        continue;
+      Element field = (Element) fieldNode;
+      if (name.equals(field.getTagName())) {
+        String user = ((Text) field.getFirstChild()).getData().trim();
+        if (userNames.contains(user)) {
+          throw new AllocationConfigurationException(
+              "Duplicate value given for name " + user);
+        }
+        userNames.add(user);
+      } else if ("limit".equals(field.getTagName())) {
+        String numberStr = ((Text) field.getFirstChild()).getData().trim();
+        if (number != -1) {
+          throw new AllocationConfigurationException("Duplicate limit tags for " + tagName + "/" + field.getTagName());
+        }
+        try {
+          number = Integer.parseInt(numberStr);
+        } catch (NumberFormatException e) {
+          throw new AllocationConfigurationException(
+              "Could not parse query limit for " + tagName + "/" + field.getTagName(), e);
+        }
+      }
+      if (userNames.isEmpty()) {
+        throw new AllocationConfigurationException("Empty user names for " + tagName);
+      }
+    }
+    if (number == -1) {
+      throw new AllocationConfigurationException("No limit for " + tagName);
+    }
+    for (String userName : userNames) {
+      limits.put(userName, number);
+    }
+  }
+
+  /**
    * Loads a queue from a queue element in the configuration file
    */
   private void loadQueue(String parentName, Element element,
@@ -532,7 +584,7 @@ public class AllocationFileLoaderService extends AbstractService {
         String text = ((Text)field.getFirstChild()).getData();
         acls.put(QueueACL.SUBMIT_APPLICATIONS, new AccessControlList(text));
       } else if ("userQueryLimit2".equals(field.getTagName())) {
-        addNewQueryLimit(queueName, field, "userQueryLimit2", userQueryLimits);
+        addQueryLimit(queueName, field, "userQueryLimit2", userQueryLimits, "user");
       } else if ("groupQueryLimit".equals(field.getTagName())) {
         String text = ((Text)field.getFirstChild()).getData();
         addQueryLimits(groupQueryLimits, queueName, text);
@@ -573,49 +625,6 @@ public class AllocationFileLoaderService extends AbstractService {
           String.format("Queue %s has max resources %s less than "
               + "min resources %s", queueName, maxQueueResources.get(queueName),
               minQueueResources.get(queueName)));
-    }
-  }
-
-  public static void addNewQueryLimit(String queueName, Element element, String tagName,
-                                Map<String, Map<String, Integer>> userQueryLimits) throws AllocationConfigurationException {
-    Map<String, Integer> limits =
-        userQueryLimits.computeIfAbsent(queueName, k -> new HashMap<>());
-    int number = -1;
-    List<String> userNames = new ArrayList<>();
-    NodeList fields = element.getChildNodes();
-    for (int j = 0; j < fields.getLength(); j++) {
-      Node fieldNode = fields.item(j);
-      if (!(fieldNode instanceof Element))
-        continue;
-      Element field = (Element) fieldNode;
-      if ("user".equals(field.getTagName())) {
-        String user = ((Text) field.getFirstChild()).getData().trim();
-        if (userNames.contains(user)) {
-          throw new AllocationConfigurationException(
-              "Duplicate value given for name " + user);
-        }
-        userNames.add(user);
-      } else if ("limit".equals(field.getTagName())) {
-        String numberStr = ((Text) field.getFirstChild()).getData().trim();
-        if (number != -1) {
-          throw new AllocationConfigurationException("Duplicate limit tags for " + tagName + "/" + field.getTagName());
-        }
-        try {
-          number = Integer.parseInt(numberStr);
-        } catch (NumberFormatException e) {
-          throw new AllocationConfigurationException(
-              "Could not parse query limit for " + tagName + "/" + field.getTagName(), e);
-        }
-      }
-      if (userNames.isEmpty()) {
-        throw new AllocationConfigurationException("Empty user names for " + tagName);
-      }
-    }
-    if (number == -1) {
-      throw new AllocationConfigurationException("No limit for " + tagName);
-    }
-    for (String name : userNames) {
-      limits.put(name, number);
     }
   }
 

@@ -458,7 +458,6 @@ public class TestRequestPoolService {
         "    <limit>31</limit>",
         "</userQueryLimit2>"
     );
-    String error2 = "Duplicate limit tags";
     assertFailureMessage(xmlString2, "Duplicate limit tags");
     String xmlString3 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
         "<userQueryLimit2>",
@@ -475,7 +474,6 @@ public class TestRequestPoolService {
         "</userQueryLimit2>"
     );
     assertFailureMessage(xmlString4, "No limit for");
-
   }
 
   /**

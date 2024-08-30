@@ -591,8 +591,6 @@ public class AllocationFileLoaderService extends AbstractService {
       if (!(fieldNode instanceof Element))
         continue;
       Element field = (Element) fieldNode;
-      System.out.println("xxxfield.getTagName() = " + field.getTagName());
-
       if ("user".equals(field.getTagName())) {
         String user = ((Text) field.getFirstChild()).getData();
         userNames.add(user);
@@ -607,7 +605,6 @@ public class AllocationFileLoaderService extends AbstractService {
           throw new AllocationConfigurationException(
               "Could not parse query limit for " + tagName + "/" + field.getTagName(), e);
         }
-        System.out.println("number = " + number);
       }
       if (userNames.isEmpty()) {
         throw new AllocationConfigurationException("Empty user names for " + tagName);
@@ -619,7 +616,6 @@ public class AllocationFileLoaderService extends AbstractService {
     for (String name : userNames) {
       limits.put(name, number);
     }
-
   }
 
   public interface Listener {

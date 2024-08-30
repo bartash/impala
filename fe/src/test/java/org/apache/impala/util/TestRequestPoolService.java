@@ -44,7 +44,11 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -376,6 +380,35 @@ public class TestRequestPoolService {
 
     checkPoolConfigResult("root.queueE", -1, 200, -1, null, "",
         queueEUserQueryLimits, queueEGroupQueryLimits);
+  }
+
+  @Test
+  public void testNewLimitParsing() {
+    String xmlString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        +
+        "<person>\n" +
+        "    <name>John Doe</name>\n" +
+        "    <age>30</age>\n" +
+        "</person>";
+
+    try {
+      // Create a DocumentBuilderFactory instance
+      DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+      // Create a DocumentBuilder instance
+      DocumentBuilder builder = factory.newDocumentBuilder();
+
+
+      // Parse the XML string into a Document object
+      Document document = builder.parse(new java.io.ByteArrayInputStream(xmlString.getBytes()));
+
+      // Get the root element
+      Element rootElement = document.getDocumentElement();
+
+
+    } catch (Exception e) {
+      Assert.fail("caught " +e);
+    }
   }
 
   /**

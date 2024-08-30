@@ -595,11 +595,9 @@ public class AllocationFileLoaderService extends AbstractService {
 
       if ("user".equals(field.getTagName())) {
         String user = ((Text) field.getFirstChild()).getData();
-        System.out.println("text for " + field.getTagName() + " = " + user);
         userNames.add(user);
       } else if ("limit".equals(field.getTagName())) {
         String numberStr = ((Text) field.getFirstChild()).getData();
-        System.out.println("text for " + field.getTagName() + " = " + numberStr);
         if (number != -1) {
           throw new AllocationConfigurationException("Duplicate limit tags for " + tagName + "/" + field.getTagName());
         }

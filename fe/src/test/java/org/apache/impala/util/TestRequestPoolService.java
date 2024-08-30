@@ -432,19 +432,35 @@ public class TestRequestPoolService {
     Assert.assertEquals(expected2, parsed2);
   }
 
+  private static void assertFailureMessage(String xmlString1, String error1) {
+    try {
+      doQueryLimitParsing(xmlString1);
+    } catch (Exception e) {
+      Assert.assertTrue(e instanceof AllocationConfigurationException);
+
+      Assert.assertTrue(e.getMessage().contains(error1));
+    }
+  }
+
   @Test
   public void testNewLimitParsingErrors() throws Exception {
-    String xmlString = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+    String xmlString1 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
         "<userQueryLimit2>",
         "    <limit>30</limit>",
         "</userQueryLimit2>"
     );
-
-    try {
-      doQueryLimitParsing(xmlString);
-    } catch (Exception e) {
-      Assert.assertTrue(e instanceof AllocationConfigurationException);
-    }
+    String error1 = "Empty user names";
+    assertFailureMessage(xmlString1, error1);
+    String xmlString2 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<userQueryLimit2>",
+        "    <user>John</user>",
+        "    <user>Barry</user>",
+        "    <limit>30</limit>",
+        "    <limit>31</limit>",
+        "</userQueryLimit2>"
+    );
+    String error2 = "Duplicate limit tags";
+    assertFailureMessage(xmlString2, error2);
   }
 
   /**

@@ -432,13 +432,13 @@ public class TestRequestPoolService {
     Assert.assertEquals(expected2, parsed2);
   }
 
-  private static void assertFailureMessage(String xmlString1, String error1) {
+  private static void assertFailureMessage(String xmlString, String expectedError) {
     try {
-      doQueryLimitParsing(xmlString1);
+      doQueryLimitParsing(xmlString);
     } catch (Exception e) {
       Assert.assertTrue(e instanceof AllocationConfigurationException);
 
-      Assert.assertTrue(e.getMessage().contains(error1));
+      Assert.assertTrue(e.getMessage().contains(expectedError));
     }
   }
 

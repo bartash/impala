@@ -581,17 +581,18 @@ public class AllocationFileLoaderService extends AbstractService {
 
   private void addNewQueryLimit(String queueName, Element element, String tagName,
                                 Map<String, Map<String, Integer>> userQueryLimits) throws AllocationConfigurationException {
-    NodeList fields = element.getChildNodes();
-    boolean isLeaf = true;
-
+    Map<String, Integer> limits =
+        userQueryLimits.computeIfAbsent(queueName, k -> new HashMap<>());
     int number = -1;
+    List<String> userNames= new ArrayList<>();
+    NodeList fields = element.getChildNodes();
     for (int j = 0; j < fields.getLength(); j++) {
       Node fieldNode = fields.item(j);
       if (!(fieldNode instanceof Element))
         continue;
       Element field = (Element) fieldNode;
       System.out.println("xxxfield.getTagName() = " + field.getTagName());
-      List<String> userNames= new ArrayList<>();
+
       if ("user".equals(field.getTagName())) {
         String user = ((Text)field.getFirstChild()).getData();
         System.out.println("text for " + field.getTagName() + " = " + user);
@@ -616,6 +617,9 @@ public class AllocationFileLoaderService extends AbstractService {
     }
     if (number == -1) {
       throw new AllocationConfigurationException("No limit for " + tagName);
+    }
+    for (String name : userNames) {
+      limits.put(name, number);
     }
 
   }

@@ -486,54 +486,6 @@ public class TestRequestPoolService {
     assertFailureMessage(xmlString5, "Duplicate value given for name");
   }
 
-  /**
-   * Unit test for  AllocationFileLoaderService.addQueryLimits().
-   */
-  @Test
-  public void testLimitsParsing() throws AllocationConfigurationException {
-    Map<String, Map<String, Integer>> allLimits = new HashMap<>();
-    String QUEUE1 = "queue1";
-    String QUEUE2 = "queue2";
-    String QUEUE3 = "queue3";
-    AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user1 1");
-    AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, " user2     2 ");
-    AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "* 2");
-    AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE2, "user1 12 ");
-
-    Map<String, Integer> queue1 = allLimits.get(QUEUE1);
-    Map<String, Integer> queue2 = allLimits.get(QUEUE2);
-    Map<String, Integer> queue3 = allLimits.get(QUEUE3);
-    Assert.assertEquals(1,(long) queue1.get("user1"));
-    Assert.assertEquals(2,(long) queue1.get("user2"));
-    Assert.assertEquals(12,(long) queue2.get("user1"));
-    Assert.assertNull(queue3);
-
-    allLimits = new HashMap<>();
-    AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user1 1");
-    try {
-      AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user1 2");
-      Assert.fail("should have got exception");
-    } catch (AllocationConfigurationException e) {
-      Assert.assertTrue(e.getMessage().contains("Duplicate value"));
-    }
-
-    allLimits = new HashMap<>();
-    try {
-      AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user1 xxx");
-      Assert.fail("should have got exception");
-    } catch (AllocationConfigurationException e) {
-      Assert.assertTrue(e.getMessage().contains("Cannot parse"));
-    }
-
-    allLimits = new HashMap<>();
-    try {
-      AllocationFileLoaderService.addQueryLimits(allLimits, QUEUE1, "user1=xxx");
-      Assert.fail("should have got exception");
-    } catch (AllocationConfigurationException e) {
-      Assert.assertTrue(e.getMessage().contains("name and number"));
-    }
-  }
-
   private void checkModifiedConfigResults()
       throws InternalException, IOException {
     // Test pool resolution: now there's a queueC

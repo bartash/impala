@@ -432,6 +432,7 @@ public class TestRequestPoolService {
     Assert.assertEquals(expected2, parsed2);
   }
 
+  @Test
   public void testNewLimitParsingErrors() throws Exception {
     String xmlString = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
         "<userQueryLimit2>",
@@ -439,8 +440,11 @@ public class TestRequestPoolService {
         "</userQueryLimit2>"
     );
 
-    doQueryLimitParsing(xmlString);
-
+    try {
+      doQueryLimitParsing(xmlString);
+    } catch (Exception e) {
+      Assert.assertTrue(e instanceof AllocationConfigurationException);
+    }
   }
 
   /**

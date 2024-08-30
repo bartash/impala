@@ -18,7 +18,7 @@
 package org.apache.impala.util;
 
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTH_TO_LOCAL;
-import static org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationFileLoaderService.addQueryLimit;
+import static org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationFileLoaderService.addQueryLimits;
 
 import com.google.common.collect.Iterables;
 import com.google.common.io.Files;
@@ -397,7 +397,7 @@ public class TestRequestPoolService {
 
     Map<String, Map<String, Integer>> userQueryLimits = new HashMap<>();
     String queueName = "queue1";
-    addQueryLimit(queueName, rootElement, "userQueryLimit", userQueryLimits, name);
+    addQueryLimits(queueName, rootElement, "userQueryLimit", userQueryLimits, name);
     return userQueryLimits.get(queueName);
   }
 
@@ -443,11 +443,11 @@ public class TestRequestPoolService {
     Assert.assertEquals(expected2, parsed2);
 
     String xmlString3 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<groupQueryLimit2>",
+        "<groupQueryLimit>",
         "    <group>group1</group>",
         "    <group>group2</group>",
         "    <limit>1</limit>",
-        "</groupQueryLimit2>"
+        "</groupQueryLimit>"
     );
     Map<String, Integer> expected3 = new HashMap<String, Integer>() {{
       put("group1", 1);

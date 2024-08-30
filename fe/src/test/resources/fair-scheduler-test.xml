@@ -9,10 +9,10 @@
       <user>*</user>
       <limit>10</limit>
     </userQueryLimit>
-    <groupQueryLimit2>
+    <groupQueryLimit>
       <group>group3</group>
       <limit>5</limit>
-    </groupQueryLimit2>
+    </groupQueryLimit>
     <queue name="queueA">
       <aclSubmitApps>* </aclSubmitApps>
       <maxResources>1024 mb, 2 vcores</maxResources>
@@ -39,11 +39,11 @@
         <user> userG </user>
         <limit> 101 </limit>
       </userQueryLimit>
-      <groupQueryLimit2>
+      <groupQueryLimit>
         <group>group1</group>
         <group>group2</group>
         <limit>1</limit>
-      </groupQueryLimit2>
+      </groupQueryLimit>
     </queue>
     <aclSubmitApps> </aclSubmitApps>
   </queue>

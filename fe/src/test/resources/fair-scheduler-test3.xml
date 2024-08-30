@@ -8,10 +8,10 @@
     </userQueryLimit>
 
     <!-- Members of group 'support' are limited to run 6 queries across the cluster -->
-    <groupQueryLimit2>
+    <groupQueryLimit>
       <group>support</group>
       <limit>6</limit>
-    </groupQueryLimit2>
+    </groupQueryLimit>
 
     <!-- User 'howard' is limited to running 4 queries across the cluster -->
     <userQueryLimit>
@@ -27,17 +27,17 @@
       </userQueryLimit>
 
       <!-- Members of groups 'dev' and 'support' can run 5 queries in the small pool-->
-      <groupQueryLimit2>
+      <groupQueryLimit>
         <group>dev</group>
         <group>support</group>
         <limit>5</limit>
-      </groupQueryLimit2>
+      </groupQueryLimit>
 
       <!-- Members of the group 'it' can run 2 queries in the small pool-->
-      <groupQueryLimit2>
+      <groupQueryLimit>
         <group>it</group>
         <limit>2</limit>
-      </groupQueryLimit2>
+      </groupQueryLimit>
 
       <!-- The user 'alice' can run 4 queries in the small pool -->
       <userQueryLimit>
@@ -54,16 +54,16 @@
       </userQueryLimit>
 
       <!-- Members of the group 'dev' can run 2 queries in the large pool-->
-      <groupQueryLimit2>
+      <groupQueryLimit>
         <group>dev</group>
         <limit>2</limit>
-      </groupQueryLimit2>
+      </groupQueryLimit>
 
       <!-- Members of the group 'dev' can run 1 query in the large pool-->
-      <groupQueryLimit2>
+      <groupQueryLimit>
         <group>support</group>
         <limit>1</limit>
-      </groupQueryLimit2>
+      </groupQueryLimit>
 
       <!-- The user 'claire' can run 3 queries in the large pool -->
       <userQueryLimit>

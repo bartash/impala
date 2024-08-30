@@ -31,11 +31,11 @@
         <user>userH</user>
         <limit>0</limit>
       </userQueryLimit>
-      <groupQueryLimit2>
+      <groupQueryLimit>
         <group>group1</group>
         <group>group2</group>
         <limit>2</limit>
-      </groupQueryLimit2>
+      </groupQueryLimit>
       <userQueryLimit>
         <user>*</user>
         <limit>1</limit>

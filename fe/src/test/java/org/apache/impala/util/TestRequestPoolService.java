@@ -397,7 +397,7 @@ public class TestRequestPoolService {
 
     Map<String, Map<String, Integer>> userQueryLimits = new HashMap<>();
     String queueName = "queue1";
-    addQueryLimit(queueName, rootElement, "userQueryLimit", userQueryLimits, "user");
+    addQueryLimit(queueName, rootElement, "userQueryLimit", userQueryLimits, name);
     return userQueryLimits.get(queueName);
   }
 

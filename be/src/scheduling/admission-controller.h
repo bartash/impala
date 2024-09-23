@@ -535,8 +535,8 @@ class AdmissionController {
   typedef std::map<std::string, int64_t> UserLoads;
 
   /// Helper function on UserLoads that increments the value associated with the given
-  /// key by 1.
-  static void IncrementCount(UserLoads& loads, const std::string& key);
+  /// key by 1, and returns the new value.
+  static int64_t IncrementCount(UserLoads& loads, const std::string& key);
 
   /// Helper function on UserLoads that returns a dump of the contents of the object.
   static std::string DebugString(const UserLoads& loads);
@@ -555,7 +555,7 @@ class AdmissionController {
     int64_t get(const std::string& key) const;
 
     /// Increment the value associated with the given key by 1.
-    void increment(const std::string& key);
+    int64_t increment(const std::string& key);
 
     /// Decrement the value associated with the given key by 1, and return the new value.
     int64_t decrement(const std::string& key);
@@ -655,7 +655,9 @@ class AdmissionController {
     void AdmitQueryAndMemory(const ScheduleState& state, const std::string& user,
         bool was_queued, bool is_trivial, bool track_per_user);
     /// Updates the pool stats except the memory admitted stat.
-    void ReleaseQuery(int64_t peak_mem_consumption, bool is_trivial, const std::string&);
+    /// The 'user' parameter is empty unless use quotas are configured.
+    void ReleaseQuery(
+        int64_t peak_mem_consumption, bool is_trivial, const std::string& user);
     /// Releases the specified memory from the pool stats.
     void ReleaseMem(int64_t mem_to_release);
     /// Updates the pool stats when the request represented by 'state' is queued.
@@ -826,6 +828,7 @@ class AdmissionController {
     friend class AdmissionControllerTest;
   };
 
+ private:
   // Return a string reporting top 5 queries with most memory consumed among all
   // pools in a host. The string is composed of up to 5 sections, where
   // each section is about one pool describing the following: the top queries

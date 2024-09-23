@@ -36,6 +36,7 @@
         <limit>2</limit>
       </userQueryLimit>
       <userQueryLimit>
+        <!-- test that whitespace is trimmed -->
         <user> userG </user>
         <limit> 101 </limit>
       </userQueryLimit>

@@ -768,6 +768,7 @@ void AdmissionController::PoolStats::ReleaseQuery(
   }
 
   if (!user.empty()) {
+    // Non-empty user name means user quotas are being used.
     DecrementPerUser(user);
   }
 
@@ -881,8 +882,8 @@ int64_t AdmissionController::AggregatedUserLoads::get(const std::string& key) co
   return 0;
 }
 
-void AdmissionController::IncrementCount(UserLoads& loads, const std::string& key) {
-  loads[key]++;
+int64_t AdmissionController::IncrementCount(UserLoads& loads, const std::string& key) {
+  return ++loads[key];
 }
 
 std::string AdmissionController::DebugString(const UserLoads& loads) {
@@ -893,8 +894,8 @@ std::string AdmissionController::DebugString(const UserLoads& loads) {
   return buffer.str();
 }
 
-void AdmissionController::AggregatedUserLoads::increment(const std::string& key) {
-  IncrementCount(loads_, key);
+int64_t AdmissionController::AggregatedUserLoads::increment(const std::string& key) {
+  return IncrementCount(loads_, key);
 }
 
 int64_t AdmissionController::AggregatedUserLoads::decrement(const std::string& key) {

@@ -387,7 +387,7 @@ public class TestRequestPoolService {
   }
 
   /**
-   * Parse a snipped of xml, and then call addQueryLimits() on the root element.
+   * Parse a snippet of xml, and then call addQueryLimits() on the root element.
    */
   private static Map<String, Integer> doQueryLimitParsing(String xmlString, String name)
       throws ParserConfigurationException, SAXException, IOException,

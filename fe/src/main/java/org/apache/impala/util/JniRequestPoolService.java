@@ -59,7 +59,6 @@ public class JniRequestPoolService {
   private final RequestPoolService requestPoolService_;
 
 
-  // Caching this saves ~50ms per call to getHadoopConfig
   private static final Configuration CONF = new Configuration();
   private static final Groups GROUPS = Groups.getUserToGroupsMappingService(CONF);
 

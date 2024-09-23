@@ -2038,7 +2038,7 @@ TEST_F(AdmissionControllerTest, AggregatedUserLoads) {
   ASSERT_EQ(0, user_loads.get(USER1));
   ASSERT_EQ(0, user_loads.size());
 
-  user_loads.increment(USER1);
+  ASSERT_EQ(1, user_loads.increment(USER1));
   ASSERT_EQ(1, user_loads.get(USER1));
   ASSERT_EQ(1, user_loads.size());
   ASSERT_EQ("user1:1 ", user_loads.DebugString());

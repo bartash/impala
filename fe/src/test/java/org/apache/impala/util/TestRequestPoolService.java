@@ -492,7 +492,7 @@ public class TestRequestPoolService {
         "    <totalCount>31</totalCount>",
         "</userQueryLimit>"
     );
-    assertFailureMessage(xmlString2, "Duplicate limit tags");
+    assertFailureMessage(xmlString2, "Duplicate totalCount tags");
     String xmlString3 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
         "<userQueryLimit>",
         "    <user>John</user>",
@@ -500,14 +500,14 @@ public class TestRequestPoolService {
         "    <totalCount>fish</totalCount>",
         "</userQueryLimit>"
     );
-    assertFailureMessage(xmlString3, "Could not parse query limit");
+    assertFailureMessage(xmlString3, "Could not parse query totalCount");
     String xmlString4 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
         "<userQueryLimit>",
         "    <user>John</user>",
         "    <user>Barry</user>",
         "</userQueryLimit>"
     );
-    assertFailureMessage(xmlString4, "No limit for");
+    assertFailureMessage(xmlString4, "No totalCount for");
 
     String xmlString5 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
         "<userQueryLimit>",

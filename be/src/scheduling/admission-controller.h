@@ -1274,6 +1274,7 @@ class AdmissionController {
 
   /// Check that the query will not exceed a per-user limit for the delegated user.
   /// Returns True if there is sufficient quota or if no per-user quota is configured.
+  /// When a rule is evaluated, and passed, then *key_matched is set to True.
   static bool HasSufficientUserQuota(const TPoolConfig& pool_cfg, const string& pool_name,
       const ScheduleState& state, int64_t user_load, const string& user,
       string* quota_exceeded_reason, bool use_wildcard, bool* key_matched);

@@ -432,7 +432,7 @@ public class TestRequestPoolService {
     String xmlString = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
         "<userQueryLimit>",
         "    <user>John</user>",
-        "    <limit>30</limit>",
+        "    <totalCount>30</totalCount>",
         "</userQueryLimit>"
     );
     Map<String, Integer> expected = new HashMap<String, Integer>() {{
@@ -446,7 +446,7 @@ public class TestRequestPoolService {
         "<userQueryLimit>",
         "    <user>John</user>",
         "    <user>Barry</user>",
-        "    <limit>30</limit>",
+        "    <totalCount>30</totalCount>",
         "</userQueryLimit>"
     );
     Map<String, Integer> expected2 = new HashMap<String, Integer>() {{
@@ -461,7 +461,7 @@ public class TestRequestPoolService {
         "<groupQueryLimit>",
         "    <group>group1</group>",
         "    <group>group2</group>",
-        "    <limit>1</limit>",
+        "    <totalCount>1</totalCount>",
         "</groupQueryLimit>"
     );
     Map<String, Integer> expected3 = new HashMap<String, Integer>() {{
@@ -480,7 +480,7 @@ public class TestRequestPoolService {
   public void testLimitsParsingErrors() throws Exception {
     String xmlString1 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
         "<userQueryLimit>",
-        "    <limit>30</limit>",
+        "    <totalCount>30</totalCount>",
         "</userQueryLimit>"
     );
     assertFailureMessage(xmlString1, "Empty user names");
@@ -488,8 +488,8 @@ public class TestRequestPoolService {
         "<userQueryLimit>",
         "    <user>John</user>",
         "    <user>Barry</user>",
-        "    <limit>30</limit>",
-        "    <limit>31</limit>",
+        "    <totalCount>30</totalCount>",
+        "    <totalCount>31</totalCount>",
         "</userQueryLimit>"
     );
     assertFailureMessage(xmlString2, "Duplicate limit tags");
@@ -497,7 +497,7 @@ public class TestRequestPoolService {
         "<userQueryLimit>",
         "    <user>John</user>",
         "    <user>Barry</user>",
-        "    <limit>fish</limit>",
+        "    <totalCount>fish</totalCount>",
         "</userQueryLimit>"
     );
     assertFailureMessage(xmlString3, "Could not parse query limit");
@@ -513,7 +513,7 @@ public class TestRequestPoolService {
         "<userQueryLimit>",
         "    <user>John</user>",
         "    <user>John</user>",
-        "    <limit>30</limit>",
+        "    <totalCount>30</totalCount>",
         "</userQueryLimit>"
     );
     assertFailureMessage(xmlString5, "Duplicate value given for name");

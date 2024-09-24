@@ -223,17 +223,17 @@ public class AllocationFileLoaderService extends AbstractService {
               "Duplicate value given for name " + name);
         }
         nameList.add(name);
-      } else if ("limit".equals(field.getTagName())) {
+      } else if ("totalCount".equals(field.getTagName())) {
         String numberStr = ((Text) field.getFirstChild()).getData().trim();
         if (number != -1) {
           throw new AllocationConfigurationException(
-              "Duplicate limit tags for " + parentName + "/" + field.getTagName());
+              "Duplicate totalCount tags for " + parentName + "/" + field.getTagName());
         }
         try {
           number = Integer.parseInt(numberStr);
         } catch (NumberFormatException e) {
           throw new AllocationConfigurationException(
-              "Could not parse query limit for " + parentName + "/" + field.getTagName(),
+              "Could not parse query totalCount for " + parentName + "/" + field.getTagName(),
               e);
         }
       }
@@ -242,7 +242,7 @@ public class AllocationFileLoaderService extends AbstractService {
       }
     }
     if (number == -1) {
-      throw new AllocationConfigurationException("No limit for " + parentName);
+      throw new AllocationConfigurationException("No totalCount for " + parentName);
     }
     for (String name : nameList) { limits.put(name, number); }
   }

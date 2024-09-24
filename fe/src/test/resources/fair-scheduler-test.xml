@@ -3,15 +3,15 @@
   <queue name="root">
     <userQueryLimit>
       <user>userB</user>
-      <limit>6</limit>
+      <totalCount>6</totalCount>
     </userQueryLimit>
     <userQueryLimit>
       <user>*</user>
-      <limit>10</limit>
+      <totalCount>10</totalCount>
     </userQueryLimit>
     <groupQueryLimit>
       <group>group3</group>
-      <limit>5</limit>
+      <totalCount>5</totalCount>
     </groupQueryLimit>
     <queue name="queueA">
       <aclSubmitApps>* </aclSubmitApps>
@@ -28,22 +28,22 @@
       <aclSubmitApps>userA,userB </aclSubmitApps>
       <userQueryLimit>
         <user>*</user>
-        <limit>3</limit>
+        <totalCount>3</totalCount>
       </userQueryLimit>
       <userQueryLimit>
         <user>userA</user>
         <user>userF</user>
-        <limit>2</limit>
+        <totalCount>2</totalCount>
       </userQueryLimit>
       <userQueryLimit>
         <!-- test that whitespace is trimmed -->
         <user> userG </user>
-        <limit> 101 </limit>
+        <totalCount> 101 </totalCount>
       </userQueryLimit>
       <groupQueryLimit>
         <group>group1</group>
         <group>group2</group>
-        <limit>1</limit>
+        <totalCount>1</totalCount>
       </groupQueryLimit>
     </queue>
     <aclSubmitApps> </aclSubmitApps>

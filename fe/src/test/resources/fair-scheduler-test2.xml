@@ -3,7 +3,7 @@
   <queue name="root">
     <userQueryLimit>
       <user>userD</user>
-      <limit>2</limit>
+      <totalCount>2</totalCount>
     </userQueryLimit>
     <queue name="queueA">
       <aclSubmitApps>*</aclSubmitApps>
@@ -25,20 +25,20 @@
       <userQueryLimit>
         <user>userA</user>
         <user>userG</user>
-        <limit>3</limit>
+        <totalCount>3</totalCount>
       </userQueryLimit>
       <userQueryLimit>
         <user>userH</user>
-        <limit>0</limit>
+        <totalCount>0</totalCount>
       </userQueryLimit>
       <groupQueryLimit>
         <group>group1</group>
         <group>group2</group>
-        <limit>2</limit>
+        <totalCount>2</totalCount>
       </groupQueryLimit>
       <userQueryLimit>
         <user>*</user>
-        <limit>1</limit>
+        <totalCount>1</totalCount>
       </userQueryLimit>
     </queue>
     <aclSubmitApps> </aclSubmitApps>

@@ -1090,15 +1090,15 @@ public class MetastoreShim extends Hive3MetastoreShimBase {
     if (metaDataFilter != null) {
       if (metaDataFilter.getCatName() != null &&
           !metaDataFilter.getCatName().isEmpty()) {
-//        eventRequest.setCatName(metaDataFilter.getCatName());
+        eventRequest.setCatName(metaDataFilter.getCatName());
       }
       if (metaDataFilter.getDbName() != null &&
           !metaDataFilter.getDbName().isEmpty()) {
-//        eventRequest.setDbName(metaDataFilter.getDbName());
+        eventRequest.setDbName(metaDataFilter.getDbName());
       }
       if (metaDataFilter.getTableName() != null &&
           !metaDataFilter.getTableName().isEmpty()) {
-//        eventRequest.setTableNames(Arrays.asList(metaDataFilter.getTableName()));
+        eventRequest.setTableNames(Arrays.asList(metaDataFilter.getTableName()));
       }
     }
   }

@@ -868,6 +868,7 @@ class AdmissionController {
     PerUserTracking(const string& user);
     const std::string& user;
     bool was_queued;
+    bool track_per_user;
   };
 
 

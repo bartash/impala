@@ -3080,5 +3080,5 @@ int64_t AdmissionController::GetExecGroupQueryLoad(const string& grp_name) {
   return 0;
 }
 
-AdmissionController::PerUserTracking::PerUserTracking(string& user) : user(user) {}
+AdmissionController::PerUserTracking::PerUserTracking(const string& user) : user(user) {}
 } // namespace impala

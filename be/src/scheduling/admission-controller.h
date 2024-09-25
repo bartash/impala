@@ -865,7 +865,7 @@ class AdmissionController {
   };
 
   struct PerUserTracking {
-    PerUserTracking(const string& user);
+    PerUserTracking(const string& user, bool was_queued, bool track_per_user);
     const std::string& user;
     bool was_queued;
     bool track_per_user;

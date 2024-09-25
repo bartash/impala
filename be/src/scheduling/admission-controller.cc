@@ -2598,10 +2598,10 @@ void AdmissionController::AdmitQuery(QueueNode* node, bool was_queued, bool is_t
 
   // Update memory and number of queries.
   bool track_per_user = HasQuotaConfig(node->pool_cfg) || HasQuotaConfig(node->root_cfg);
-  PerUserTracking per_user(user);
+  PerUserTracking per_user_tracking(user, was_queued, track_per_user);
 
   UpdateStatsOnAdmission(
-      *state, user, was_queued, is_trivial, track_per_user, per_user);
+      *state, user, was_queued, is_trivial, track_per_user, per_user_tracking);
   UpdateExecGroupMetric(state->executor_group(), 1);
   // Update summary profile.
   const string& admission_result = was_queued ?
@@ -3080,5 +3080,7 @@ int64_t AdmissionController::GetExecGroupQueryLoad(const string& grp_name) {
   return 0;
 }
 
-AdmissionController::PerUserTracking::PerUserTracking(const string& user) : user(user) {}
+AdmissionController::PerUserTracking::PerUserTracking(
+    const string& user, bool was_queued, bool track_per_user)
+  : user(user), was_queued(was_queued), track_per_user(track_per_user) {}
 } // namespace impala

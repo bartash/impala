@@ -660,9 +660,8 @@ class AdmissionController {
 
     // ADMISSION LIFECYCLE METHODS
     /// Updates the pool stats when the request represented by 'state' is admitted.
-    void AdmitQueryAndMemory(const ScheduleState& state, const std::string& user,
-        bool was_queued, bool is_trivial, bool track_per_user,
-        PerUserTracking& per_user_tracking);
+    void AdmitQueryAndMemory(
+        const ScheduleState& state, bool is_trivial, PerUserTracking& per_user_tracking);
     /// Updates the pool stats except the memory admitted stat.
     /// The 'user' parameter is empty unless user quotas are configured.
     void ReleaseQuery(
@@ -1158,9 +1157,8 @@ class AdmissionController {
   /// Updates the memory admitted and the num of queries running for each backend in
   /// 'state'. Also updates the stats of its associated resource pool. Used only when
   /// the 'state' is admitted.
-  void UpdateStatsOnAdmission(const ScheduleState& state, const std::string& user,
-      bool was_queued, bool is_trivial, bool track_per_user,
-      PerUserTracking& per_user_tracking);
+  void UpdateStatsOnAdmission(
+      const ScheduleState& state, bool is_trivial, PerUserTracking& per_user_tracking);
 
   /// Updates the memory admitted and the num of queries running for each backend in
   /// 'state' which have been release/completed. The list of completed backends is

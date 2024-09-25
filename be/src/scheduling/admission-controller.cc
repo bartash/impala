@@ -728,9 +728,8 @@ Status AdmissionController::Init() {
   return status;
 }
 
-void AdmissionController::PoolStats::AdmitQueryAndMemory(const ScheduleState& state,
-    const std::string& user, bool was_queued, bool is_trivial, bool track_per_user,
-    PerUserTracking& per_user_tracking) {
+void AdmissionController::PoolStats::AdmitQueryAndMemory(
+    const ScheduleState& state, bool is_trivial, PerUserTracking& per_user_tracking) {
   int64_t cluster_mem_admitted = state.GetClusterMemoryToAdmit();
   DCHECK_GT(cluster_mem_admitted, 0);
   local_mem_admitted_ += cluster_mem_admitted;
@@ -749,10 +748,6 @@ void AdmissionController::PoolStats::AdmitQueryAndMemory(const ScheduleState& st
     // If the query was not previously queued then track the user counts.
     IncrementPerUser(per_user_tracking.user);
   }
-//  if (track_per_user && !was_queued) {
-//    // If the query was not previously queued then track the user counts.
-//    IncrementPerUser(user);
-//  }
 }
 
 void AdmissionController::PoolStats::ReleaseQuery(
@@ -932,17 +927,15 @@ void AdmissionController::UpdateStatsOnReleaseForBackends(const UniqueIdPB& quer
   pools_for_updates_.insert(running_query.request_pool);
 }
 
-void AdmissionController::UpdateStatsOnAdmission(const ScheduleState& state,
-    const std::string& user, bool was_queued, bool is_trivial, bool track_per_user,
-    PerUserTracking& per_user_tracking) {
+void AdmissionController::UpdateStatsOnAdmission(
+    const ScheduleState& state, bool is_trivial, PerUserTracking& per_user_tracking) {
   for (const auto& entry : state.per_backend_schedule_states()) {
     const NetworkAddressPB& host_addr = entry.first;
     int64_t mem_to_admit = GetMemToAdmit(state, entry.second);
     UpdateHostStats(host_addr, mem_to_admit, 1, entry.second.exec_params->slots_to_use());
   }
   PoolStats* pool_stats = GetPoolStats(state);
-  pool_stats->AdmitQueryAndMemory(
-      state, user, was_queued, is_trivial, track_per_user, per_user_tracking);
+  pool_stats->AdmitQueryAndMemory(state, is_trivial, per_user_tracking);
   pools_for_updates_.insert(state.request_pool());
 }
 
@@ -2606,8 +2599,7 @@ void AdmissionController::AdmitQuery(QueueNode* node, bool was_queued, bool is_t
   bool track_per_user = HasQuotaConfig(node->pool_cfg) || HasQuotaConfig(node->root_cfg);
   PerUserTracking per_user_tracking(user, was_queued, track_per_user);
 
-  UpdateStatsOnAdmission(
-      *state, user, was_queued, is_trivial, track_per_user, per_user_tracking);
+  UpdateStatsOnAdmission(*state, is_trivial, per_user_tracking);
   UpdateExecGroupMetric(state->executor_group(), 1);
   // Update summary profile.
   const string& admission_result = was_queued ?

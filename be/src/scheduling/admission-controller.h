@@ -475,6 +475,14 @@ class AdmissionController {
   std::string GetStalenessDetail(const std::string& prefix,
       int64_t* ms_since_last_update = nullptr);
 
+  struct PerUserTracking {
+    PerUserTracking(const string& user, bool was_queued, bool track_per_user);
+    const std::string& user;
+    bool was_queued;
+    bool track_per_user;
+  };
+
+
  private:
   class PoolStats;
   friend class PoolStats;
@@ -864,14 +872,6 @@ class AdmissionController {
     std::unique_ptr<ScheduleState> state;
     const ExecutorGroup& executor_group;
   };
-
-  struct PerUserTracking {
-    PerUserTracking(const string& user, bool was_queued, bool track_per_user);
-    const std::string& user;
-    bool was_queued;
-    bool track_per_user;
-  };
-
 
   /// The set of pools that have changed between topic updates that need stats to be sent
   /// to the statestore. The key is the pool name.

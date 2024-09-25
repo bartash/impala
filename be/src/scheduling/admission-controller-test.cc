@@ -1346,7 +1346,9 @@ TEST_F(AdmissionControllerTest, PoolStats) {
       "[" + USER1 + "]", pool_stats->metrics()->local_current_users->ToHumanReadable());
 
   // Show that Admit and Release leave stats at zero.
-  pool_stats->AdmitQueryAndMemory(*schedule_state, USER1, true, false, false);
+  AdmissionController::PerUserTracking per_user_tracking(USER1, true, false);
+  pool_stats->AdmitQueryAndMemory(
+      *schedule_state, USER1, true, false, false, per_user_tracking);
   ASSERT_EQ(1, pool_stats->agg_num_running());
   ASSERT_EQ(1, pool_stats->metrics()->agg_num_running->GetValue());
   ASSERT_EQ(

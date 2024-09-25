@@ -729,7 +729,8 @@ Status AdmissionController::Init() {
 }
 
 void AdmissionController::PoolStats::AdmitQueryAndMemory(const ScheduleState& state,
-    const std::string& user, bool was_queued, bool is_trivial, bool track_per_user) {
+    const std::string& user, bool was_queued, bool is_trivial, bool track_per_user,
+    PerUserTracking& per_user_tracking) {
   int64_t cluster_mem_admitted = state.GetClusterMemoryToAdmit();
   DCHECK_GT(cluster_mem_admitted, 0);
   local_mem_admitted_ += cluster_mem_admitted;
@@ -744,10 +745,14 @@ void AdmissionController::PoolStats::AdmitQueryAndMemory(const ScheduleState& st
   metrics_.total_admitted->Increment(1L);
   if (is_trivial) ++local_trivial_running_;
 
-  if (track_per_user && !was_queued) {
+  if (per_user_tracking.track_per_user && !per_user_tracking.was_queued) {
     // If the query was not previously queued then track the user counts.
-    IncrementPerUser(user);
+    IncrementPerUser(per_user_tracking.user);
   }
+//  if (track_per_user && !was_queued) {
+//    // If the query was not previously queued then track the user counts.
+//    IncrementPerUser(user);
+//  }
 }
 
 void AdmissionController::PoolStats::ReleaseQuery(
@@ -936,7 +941,8 @@ void AdmissionController::UpdateStatsOnAdmission(const ScheduleState& state,
     UpdateHostStats(host_addr, mem_to_admit, 1, entry.second.exec_params->slots_to_use());
   }
   PoolStats* pool_stats = GetPoolStats(state);
-  pool_stats->AdmitQueryAndMemory(state, user, was_queued, is_trivial, track_per_user);
+  pool_stats->AdmitQueryAndMemory(
+      state, user, was_queued, is_trivial, track_per_user, per_user_tracking);
   pools_for_updates_.insert(state.request_pool());
 }
 

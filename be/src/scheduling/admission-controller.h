@@ -653,7 +653,8 @@ class AdmissionController {
     // ADMISSION LIFECYCLE METHODS
     /// Updates the pool stats when the request represented by 'state' is admitted.
     void AdmitQueryAndMemory(const ScheduleState& state, const std::string& user,
-        bool was_queued, bool is_trivial, bool track_per_user);
+        bool was_queued, bool is_trivial, bool track_per_user,
+        PerUserTracking& per_user_tracking);
     /// Updates the pool stats except the memory admitted stat.
     /// The 'user' parameter is empty unless user quotas are configured.
     void ReleaseQuery(

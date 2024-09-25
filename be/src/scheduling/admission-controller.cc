@@ -928,7 +928,8 @@ void AdmissionController::UpdateStatsOnReleaseForBackends(const UniqueIdPB& quer
 }
 
 void AdmissionController::UpdateStatsOnAdmission(const ScheduleState& state,
-    const std::string& user, bool was_queued, bool is_trivial, bool track_per_user) {
+    const std::string& user, bool was_queued, bool is_trivial, bool track_per_user,
+    PerUserTracking& per_user_tracking) {
   for (const auto& entry : state.per_backend_schedule_states()) {
     const NetworkAddressPB& host_addr = entry.first;
     int64_t mem_to_admit = GetMemToAdmit(state, entry.second);
@@ -2597,7 +2598,10 @@ void AdmissionController::AdmitQuery(QueueNode* node, bool was_queued, bool is_t
 
   // Update memory and number of queries.
   bool track_per_user = HasQuotaConfig(node->pool_cfg) || HasQuotaConfig(node->root_cfg);
-  UpdateStatsOnAdmission(*state, user, was_queued, is_trivial, track_per_user);
+  PerUserTracking per_user(user);
+
+  UpdateStatsOnAdmission(
+      *state, user, was_queued, is_trivial, track_per_user, per_user);
   UpdateExecGroupMetric(state->executor_group(), 1);
   // Update summary profile.
   const string& admission_result = was_queued ?
@@ -3076,4 +3080,5 @@ int64_t AdmissionController::GetExecGroupQueryLoad(const string& grp_name) {
   return 0;
 }
 
+AdmissionController::PerUserTracking::PerUserTracking(string& user) : user(user) {}
 } // namespace impala

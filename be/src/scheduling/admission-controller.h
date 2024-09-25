@@ -864,6 +864,13 @@ class AdmissionController {
     const ExecutorGroup& executor_group;
   };
 
+  struct PerUserTracking {
+    PerUserTracking(const string& user);
+    const std::string& user;
+    bool was_queued;
+  };
+
+
   /// The set of pools that have changed between topic updates that need stats to be sent
   /// to the statestore. The key is the pool name.
   typedef boost::unordered_set<std::string> PoolSet;
@@ -1150,7 +1157,8 @@ class AdmissionController {
   /// 'state'. Also updates the stats of its associated resource pool. Used only when
   /// the 'state' is admitted.
   void UpdateStatsOnAdmission(const ScheduleState& state, const std::string& user,
-      bool was_queued, bool is_trivial, bool track_per_user);
+      bool was_queued, bool is_trivial, bool track_per_user,
+      PerUserTracking& per_user_tracking);
 
   /// Updates the memory admitted and the num of queries running for each backend in
   /// 'state' which have been release/completed. The list of completed backends is

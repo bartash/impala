@@ -78,7 +78,8 @@ DEFINE_bool(clamp_query_mem_limit_backend_mem_limit, true, "Caps query memory li
 
 DECLARE_bool(is_coordinator);
 DECLARE_bool(is_executor);
-DECLARE_string(cluster_id);
+DEFINE_string(cluster_membership_topic_id, "", "FIXME asherman Specifies an identifier string that uniquely represents "
+                              "this cluster. This identifier is included in the query log table if enabled.");
 
 namespace impala {
 
@@ -664,11 +665,11 @@ AdmissionController::AdmissionController(ClusterMembershipMgr* cluster_membershi
       });
   total_dequeue_failed_coordinator_limited_ =
       metrics_group_->AddCounter(TOTAL_DEQUEUE_FAILED_COORDINATOR_LIMITED, 0);
-  if (FLAGS_cluster_id.empty()) {
+  if (FLAGS_cluster_membership_topic_id.empty()) {
     request_queue_topic_name_ = Statestore::IMPALA_REQUEST_QUEUE_TOPIC;
   } else {
     request_queue_topic_name_ =
-        FLAGS_cluster_id + '-' + Statestore::IMPALA_REQUEST_QUEUE_TOPIC;
+        FLAGS_cluster_membership_topic_id + '-' + Statestore::IMPALA_REQUEST_QUEUE_TOPIC;
   }
 }
 

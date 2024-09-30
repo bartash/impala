@@ -21,7 +21,6 @@
 #include <tuple>
 #include <utility>
 
-#include <boost/algorithm/string/predicate.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/lexical_cast.hpp>
 #include <thrift/Thrift.h>
@@ -49,7 +48,6 @@
 
 #include "common/names.h"
 
-using boost::algorithm::ends_with;
 using boost::posix_time::seconds;
 using boost::shared_lock;
 using boost::shared_mutex;
@@ -1237,8 +1235,7 @@ Statestore::TopicEntry::Version Statestore::GetMinSubscriberTopicVersion(
 }
 
 bool Statestore::IsPrioritizedTopic(const string& topic) {
-  return ends_with(topic, IMPALA_MEMBERSHIP_TOPIC)
-      || ends_with(topic, IMPALA_REQUEST_QUEUE_TOPIC);
+  return topic == IMPALA_MEMBERSHIP_TOPIC || topic == IMPALA_REQUEST_QUEUE_TOPIC;
 }
 
 const char* Statestore::GetUpdateKindName(UpdateKind kind) {

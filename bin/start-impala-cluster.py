@@ -86,11 +86,8 @@ parser.add_option("--force_kill", dest="force_kill", action="store_true", defaul
                   help="Force kill impalad and statestore processes.")
 parser.add_option("-a", "--add_executors", dest="add_executors",
                   action="store_true", default=False,
-                  help="Start additional executors. The executor group name must be"
-                  "specified using --impalad_args")
-parser.add_option("--add_impalads", dest="add_impalads",
-                  action="store_true", default=False,
-                  help="Start additional impalad processes.")
+                  help="Start additional impalad processes. The executor group name must "
+                  "be specified using --impalad_args")
 parser.add_option("-r", "--restart_impalad_only", dest="restart_impalad_only",
                   action="store_true", default=False,
                   help="Restarts only the impalad processes")
@@ -541,7 +538,7 @@ def build_impalad_arg_lists(cluster_size, num_coordinators, use_exclusive_coordi
           timeout=DISCONNECTED_SESSION_TIMEOUT,
           args=args)
 
-    if i - start_idx >= num_coordinators:
+    if i >= num_coordinators:
       args = "-is_coordinator=false {args}".format(args=args)
     elif use_exclusive_coordinators:
       # Coordinator instance that doesn't execute non-coordinator fragments
@@ -1114,7 +1111,7 @@ if __name__ == "__main__":
     cluster_ops.kill_all_catalogds(force=options.force_kill)
   elif options.restart_statestored_only:
     cluster_ops.kill_all_statestoreds(force=options.force_kill)
-  elif options.add_executors or options.add_impalads:
+  elif options.add_executors:
     pass
   else:
     cluster_ops.kill_all_daemons(force=options.force_kill)
@@ -1146,11 +1143,6 @@ if __name__ == "__main__":
       cluster_ops.start_impalads(options.cluster_size, num_coordinators,
                                  use_exclusive_coordinators, existing_cluster_size)
       expected_cluster_size += existing_cluster_size
-    elif options.add_impalads:
-      cluster_ops.start_impalads(options.cluster_size, options.num_coordinators,
-                                 options.use_exclusive_coordinators,
-                                 existing_cluster_size)
-      expected_cluster_size += existing_cluster_size
     else:
       cluster_ops.start_statestore()
       cluster_ops.start_catalogd()
@@ -1167,12 +1159,8 @@ if __name__ == "__main__":
       for delay in options.catalog_init_delays.split(","):
         if int(delay.strip()) != 0: expected_catalog_delays += 1
     # Check for the cluster to be ready.
-    expected_num_ready_impalads = expected_cluster_size - expected_catalog_delays
-    if options.add_impalads:
-      # TODO: This is a hack to make the waiting logic work. We'd better add a dedicated
-      # option for adding a new cluster using the existing catalogd and statestore.
-      expected_num_ready_impalads = options.cluster_size
-    impala_cluster.wait_until_ready(expected_cluster_size, expected_num_ready_impalads)
+    impala_cluster.wait_until_ready(expected_cluster_size,
+        expected_cluster_size - expected_catalog_delays)
   except Exception as e:
     LOG.exception("Error starting cluster")
     sys.exit(1)

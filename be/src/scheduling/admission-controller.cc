@@ -78,7 +78,6 @@ DEFINE_bool(clamp_query_mem_limit_backend_mem_limit, true, "Caps query memory li
 
 DECLARE_bool(is_coordinator);
 DECLARE_bool(is_executor);
-DECLARE_string(cluster_id);
 
 namespace impala {
 
@@ -664,12 +663,6 @@ AdmissionController::AdmissionController(ClusterMembershipMgr* cluster_membershi
       });
   total_dequeue_failed_coordinator_limited_ =
       metrics_group_->AddCounter(TOTAL_DEQUEUE_FAILED_COORDINATOR_LIMITED, 0);
-  if (FLAGS_cluster_id.empty()) {
-    request_queue_topic_name_ = Statestore::IMPALA_REQUEST_QUEUE_TOPIC;
-  } else {
-    request_queue_topic_name_ =
-        FLAGS_cluster_id + '-' + Statestore::IMPALA_REQUEST_QUEUE_TOPIC;
-  }
 }
 
 AdmissionController::~AdmissionController() {
@@ -701,7 +694,7 @@ Status AdmissionController::Init() {
   // This can effectively reduce the network load of the statestore.
   string filter_prefix =
       FLAGS_is_executor && !FLAGS_is_coordinator ? TOPIC_KEY_POOL_PREFIX : "";
-  Status status = subscriber_->AddTopic(request_queue_topic_name_,
+  Status status = subscriber_->AddTopic(Statestore::IMPALA_REQUEST_QUEUE_TOPIC,
       /* is_transient=*/true, /* populate_min_subscriber_topic_version=*/false,
       filter_prefix, cb);
   if (!status.ok()) {
@@ -1707,7 +1700,7 @@ void AdmissionController::UpdatePoolStats(
     AddPoolAndPerHostStatsUpdates(subscriber_topic_updates);
 
     StatestoreSubscriber::TopicDeltaMap::const_iterator topic =
-        incoming_topic_deltas.find(request_queue_topic_name_);
+        incoming_topic_deltas.find(Statestore::IMPALA_REQUEST_QUEUE_TOPIC);
     if (topic != incoming_topic_deltas.end()) {
       const TTopicDelta& delta = topic->second;
       // Delta and non-delta updates are handled the same way, except for a full update
@@ -2102,7 +2095,7 @@ void AdmissionController::AddPoolAndPerHostStatsUpdates(
   }
   topic_updates->push_back(TTopicDelta());
   TTopicDelta& topic_delta = topic_updates->back();
-  topic_delta.topic_name = request_queue_topic_name_;
+  topic_delta.topic_name = Statestore::IMPALA_REQUEST_QUEUE_TOPIC;
   for (const string& pool_name: pools_for_updates_) {
     DCHECK(pool_stats_.find(pool_name) != pool_stats_.end());
     PoolStats* stats = GetPoolStats(pool_name);

@@ -286,9 +286,11 @@ class TestQueryLive(CustomClusterTestSuite):
   def test_executor_groups(self):
     """Asserts scans are performed only on coordinators with multiple executor groups."""
     # Add a (non-dedicated) coordinator and executor in a different executor group.
-    self._start_impala_cluster(options=['--impalad_args=--executor_groups=extra',
-                                        '--impalad_args=--cluster_membership_topic_id='
-                                        'test_query_live'],
+    self._start_impala_cluster(options=['--impalad_args=--executor_groups=extra '
+                                                       '--cluster_membership_topic_id='
+                                                            'test_query_live_topic '
+                                                       '--cluster_id=test_query_live',
+                                        ],
                                cluster_size=1,
                                add_executors=True,
                                expected_num_impalads=4)

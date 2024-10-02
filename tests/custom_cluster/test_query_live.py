@@ -278,20 +278,24 @@ class TestQueryLive(CustomClusterTestSuite):
     client2.close_query(handle2)
     client2.close()
 
-  @CustomClusterTestSuite.with_args(impalad_args="--enable_workload_mgmt "
-                                                 "--cluster_id=test_query_live",
-                                    catalogd_args="--enable_workload_mgmt",
-                                    cluster_size=3,
-                                    num_exclusive_coordinators=2)
+  @CustomClusterTestSuite.with_args(
+    impalad_args="--enable_workload_mgmt "
+                 "--cluster_id=test_query_live "
+                 "--cluster_membership_topic_id=test_query_live_topic ",
+    catalogd_args="--enable_workload_mgmt",
+    cluster_size=3,
+    num_exclusive_coordinators=2)
   def test_executor_groups(self):
     """Asserts scans are performed only on coordinators with multiple executor groups."""
     # Add a (non-dedicated) coordinator and executor in a different executor group.
-    self._start_impala_cluster(options=['--impalad_args=--executor_groups=extra',
-                                        '--impalad_args=--cluster_membership_topic_id='
-                                        'test_query_live'],
-                               cluster_size=1,
-                               add_executors=True,
-                               expected_num_impalads=4)
+    self._start_impala_cluster(
+      options=['--impalad_args='
+                 '--executor_groups=extra '
+                 '--cluster_id=test_query_live '
+                 '-cluster_membership_topic_id=test_query_live_topic '],
+      cluster_size=1,
+      add_executors=True,
+      expected_num_impalads=4)
 
     result = self.client.execute(
         "select query_id, impala_coordinator from sys.impala_query_live",

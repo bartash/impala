@@ -17,6 +17,32 @@
 
 package org.apache.impala.util;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.net.URISyntaxException;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.net.URISyntaxException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTH_TO_LOCAL;
 import static org.apache.impala.yarn.server.resourcemanager.scheduler.fair.
     AllocationFileLoaderService.addQueryLimits;
@@ -26,6 +52,8 @@ import com.google.common.io.Files;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationFileLoaderService;
+
 import org.apache.impala.authorization.User;
 import org.apache.impala.common.ByteUnits;
 import org.apache.impala.common.InternalException;
@@ -39,30 +67,12 @@ import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.
 import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.
     AllocationFileLoaderService;
 import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.QueuePlacementPolicy;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import com.google.common.collect.Iterables;
+import com.google.common.io.Files;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.net.URISyntaxException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 
 /**
  * Unit tests for the user to pool resolution, authorization, and getting configuration

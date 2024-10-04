@@ -47,7 +47,6 @@ import com.google.common.io.Files;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationFileLoaderService;
 
 import org.apache.impala.authorization.User;
 import org.apache.impala.common.ByteUnits;
@@ -59,7 +58,10 @@ import org.apache.impala.thrift.TResolveRequestPoolParams;
 import org.apache.impala.thrift.TResolveRequestPoolResult;
 import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.
     AllocationConfigurationException;
+import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.
+    AllocationFileLoaderService;
 import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.QueuePlacementPolicy;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;

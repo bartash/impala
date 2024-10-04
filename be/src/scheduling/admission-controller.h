@@ -830,6 +830,7 @@ class AdmissionController {
     FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestMemory);
     FRIEND_TEST(AdmissionControllerTest, DequeueLoop);
     FRIEND_TEST(AdmissionControllerTest, GetMaxToDequeue);
+    FRIEND_TEST(AdmissionControllerTest, MicroBenchmarks);
     FRIEND_TEST(AdmissionControllerTest, PoolStats);
     FRIEND_TEST(AdmissionControllerTest, QueryRejection);
     FRIEND_TEST(AdmissionControllerTest, QuotaExamples);
@@ -1379,6 +1380,7 @@ class AdmissionController {
   FRIEND_TEST(AdmissionControllerTest, DedicatedCoordScheduleState);
   FRIEND_TEST(AdmissionControllerTest, DequeueLoop);
   FRIEND_TEST(AdmissionControllerTest, GetMaxToDequeue);
+  FRIEND_TEST(AdmissionControllerTest, MicroBenchmarks);
   FRIEND_TEST(AdmissionControllerTest, PoolStats);
   FRIEND_TEST(AdmissionControllerTest, QueryRejection);
   FRIEND_TEST(AdmissionControllerTest, QuotaExamples);

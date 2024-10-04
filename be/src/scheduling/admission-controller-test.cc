@@ -957,6 +957,11 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
       not_admitted_reason);
 }
 
+/// Test CanAdmitQuota in the context of user and group quotas.
+TEST_F(AdmissionControllerTest, MicroBenchmarks) {
+
+}
+
 /// Test CanAdmitRequest() using the slots mechanism that is enabled with non-default
 /// executor groups.
 TEST_F(AdmissionControllerTest, CanAdmitRequestSlots) {

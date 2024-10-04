@@ -65,7 +65,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
-
 /**
  * Unit tests for the user to pool resolution, authorization, and getting configuration
  * parameters via {@link RequestPoolService}. Sets a configuration file and ensures the

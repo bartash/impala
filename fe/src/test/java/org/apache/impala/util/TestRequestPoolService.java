@@ -25,6 +25,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.io.Files;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.util.StringUtils;
 import org.apache.impala.authorization.User;
 import org.apache.impala.common.ByteUnits;
 import org.apache.impala.common.InternalException;
@@ -57,8 +58,10 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URISyntaxException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -212,6 +215,15 @@ public class TestRequestPoolService {
     Assert.assertTrue(poolService_.hasAccess("root.queueD", "userA"));
     Assert.assertTrue(poolService_.hasAccess("root.queueD", "userB"));
     Assert.assertFalse(poolService_.hasAccess("root.queueD", "userZ"));
+
+    Collection<String> strings = StringUtils.getTrimmedStringCollection("aa bb");
+    for (String next : strings) {
+      System.out.println("next = " + next);
+    }
+    strings = StringUtils.getTrimmedStringCollection("cc,dd");
+    for (String next : strings) {
+      System.out.println("next = " + next);
+    }
   }
 
   @Test

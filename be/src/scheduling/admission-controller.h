@@ -830,6 +830,7 @@ class AdmissionController {
     FRIEND_TEST(AdmissionControllerTest, CanAdmitRequestMemory);
     FRIEND_TEST(AdmissionControllerTest, DequeueLoop);
     FRIEND_TEST(AdmissionControllerTest, GetMaxToDequeue);
+    FRIEND_TEST(AdmissionControllerTest, MicroBenchmarks);
     FRIEND_TEST(AdmissionControllerTest, PoolStats);
     FRIEND_TEST(AdmissionControllerTest, QueryRejection);
     FRIEND_TEST(AdmissionControllerTest, QuotaExamples);
@@ -869,6 +870,7 @@ class AdmissionController {
   /// executor_group stays valid.
   struct GroupScheduleState {
     GroupScheduleState(
+
         std::unique_ptr<ScheduleState> state, const ExecutorGroup& executor_group)
       : state(std::move(state)), executor_group(executor_group) {}
     std::unique_ptr<ScheduleState> state;
@@ -1379,6 +1381,7 @@ class AdmissionController {
   FRIEND_TEST(AdmissionControllerTest, DedicatedCoordScheduleState);
   FRIEND_TEST(AdmissionControllerTest, DequeueLoop);
   FRIEND_TEST(AdmissionControllerTest, GetMaxToDequeue);
+  FRIEND_TEST(AdmissionControllerTest, MicroBenchmarks);
   FRIEND_TEST(AdmissionControllerTest, PoolStats);
   FRIEND_TEST(AdmissionControllerTest, QueryRejection);
   FRIEND_TEST(AdmissionControllerTest, QuotaExamples);

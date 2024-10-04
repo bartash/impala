@@ -1937,7 +1937,6 @@ Status AdmissionController::ResolvePoolAndGetConfig(const TQueryCtx& query_ctx,
   return request_pool_service_->GetPoolConfig(ROOT_POOL, root_config);
 }
 
-// Statestore subscriber callback for IMPALA_REQUEST_QUEUE_TOPIC.
 void AdmissionController::UpdatePoolStats(
     const StatestoreSubscriber::TopicDeltaMap& incoming_topic_deltas,
     vector<TTopicDelta>* subscriber_topic_updates) {

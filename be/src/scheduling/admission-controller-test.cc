@@ -35,6 +35,8 @@
 #include "util/collection-metrics.h"
 #include "util/debug-util.h"
 #include "util/metrics.h"
+#include "util/pretty-printer.h"
+#include "util/stopwatch.h"
 
 // Access the flags that are defined in RequestPoolService.
 DECLARE_string(fair_scheduler_allocation_path);
@@ -548,6 +550,33 @@ class AdmissionControllerTest : public testing::Test {
         state, pool_cfg, mem_unavailable_reason);
   }
 
+  void RunDeserializeMicroBenchmark(AdmissionController * admission_controller,
+      string usernames[], int num_users) {
+    TTopicDelta membership = MakeTopicDelta(false);
+
+    // Create UserLoads for a count of 'num_users' users.
+    AdmissionController::UserLoads loads;
+    for (int i = 0 ; i < num_users; i++) {
+      ++loads[usernames[i]];
+    }
+    AddStatsToTopic(&membership, HOST_1, QUEUE_B, MakePoolStats(1000, 1, 0, loads));
+
+    StatestoreSubscriber::TopicDeltaMap incoming_topic_deltas;
+    incoming_topic_deltas.emplace(Statestore::IMPALA_REQUEST_QUEUE_TOPIC, membership);
+    vector<TTopicDelta> outgoing_topic_updates;
+
+    // Find the time taken to apply the Statestore subscriber callback for
+    // IMPALA_REQUEST_QUEUE_TOPIC.
+    StopWatch deser_time;
+    deser_time.Start();
+    admission_controller->UpdatePoolStats(incoming_topic_deltas, &outgoing_topic_updates);
+    deser_time.Stop();
+
+    cout << "Total time (ns): for " << num_users << " users "
+         << PrettyPrinter::Print(deser_time.ElapsedTime(), TUnit::TIME_NS)
+         << endl << endl;
+  }
+
   void TestDedicatedCoordAdmissionRejection(TPoolConfig& test_pool_config,
       int64_t mem_limit, int64_t mem_limit_executors, int64_t mem_limit_coordinators) {
     ScheduleState* test_state = DedicatedCoordAdmissionSetup(
@@ -955,6 +984,39 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
       "current per-user load 1 for user iris is at or above the wildcard limit 1 in pool "
           + QUEUE_LARGE,
       not_admitted_reason);
+}
+
+/// Test CanAdmitQuota in the context of user and group quotas.
+TEST_F(AdmissionControllerTest, MicroBenchmarks) {
+  std::cout << "hello world" << std::endl;
+
+
+  AdmissionController* admission_controller = MakeAdmissionController();
+  RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
+
+  // Get a default PoolConfig (as fair-scheduler and llama files not set)
+  TPoolConfig config;
+  const string QUEUE = "unused";
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE, &config));
+  ASSERT_FALSE(AdmissionController::HasQuotaConfig(config));
+
+
+  // Generate 10K user names
+  string usernames[10000];
+  for (int i = 0; i < 10000; i++) {
+    std::ostringstream stringStream;
+    stringStream << "UserName" << i;
+    usernames[i] =  stringStream.str();
+  }
+
+  RunDeserializeMicroBenchmark(admission_controller, usernames, 10);
+  RunDeserializeMicroBenchmark(admission_controller, usernames, 10);
+  RunDeserializeMicroBenchmark(admission_controller, usernames, 1000);
+  RunDeserializeMicroBenchmark(admission_controller, usernames, 10000);
+  RunDeserializeMicroBenchmark(admission_controller, usernames, 10);
+  RunDeserializeMicroBenchmark(admission_controller, usernames, 1000);
+  RunDeserializeMicroBenchmark(admission_controller, usernames, 10000);
+
 }
 
 /// Test CanAdmitRequest() using the slots mechanism that is enabled with non-default

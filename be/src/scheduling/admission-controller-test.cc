@@ -964,11 +964,33 @@ TEST_F(AdmissionControllerTest, MicroBenchmarks) {
   std::cout << "hello world" << std::endl;
 
 
+  AdmissionController* admission_controller = MakeAdmissionController();
+  RequestPoolService* request_pool_service = admission_controller->request_pool_service_;
+
+  // Get a default PoolConfig (as fair-scheduler and llama files not set)
+  TPoolConfig config;
+  const string QUEUE = "unused";
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE, &config));
+  ASSERT_FALSE(AdmissionController::HasQuotaConfig(config));
+
+  // Create a ScheduleState.
+  ScheduleState* schedule_state = MakeScheduleState(QUEUE, config, 1, 1000);
+
+  // Get a PoolStats object.
+  AdmissionController::PoolStats* pool_stats = admission_controller->GetPoolStats(QUEUE);
+  CheckPoolStatsEmpty(pool_stats);
+
+  // Show that Queue, IncrementPerUser, and Dequeue leave stats at zero.
+  pool_stats->Queue();
+  pool_stats->IncrementPerUser(USER1);
+
    StopWatch total_time;
    total_time.Start();
 
 
-   TPoolStats stats;
+
+
+
    ThriftSerializer serializer(true);
    uint8_t* serialized_buf = nullptr;
    uint32_t serialized_len = 0;
@@ -982,6 +1004,12 @@ TEST_F(AdmissionControllerTest, MicroBenchmarks) {
    cout << "Total time (ns): "
         << PrettyPrinter::Print(total_time.ElapsedTime(), TUnit::TIME_NS)
         << endl << endl;
+
+   // Myabe test with
+   StatestoreSubscriber::TopicDeltaMap incoming_topic_deltas;
+   incoming_topic_deltas.emplace(Statestore::IMPALA_REQUEST_QUEUE_TOPIC, membership);
+   vector<TTopicDelta> outgoing_topic_updates;
+   admission_controller->UpdatePoolStats(incoming_topic_deltas, &outgoing_topic_updates);
 
 }
 

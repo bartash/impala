@@ -35,6 +35,8 @@
 #include "util/collection-metrics.h"
 #include "util/debug-util.h"
 #include "util/metrics.h"
+#include "util/pretty-printer.h"
+#include "util/stopwatch.h"
 
 // Access the flags that are defined in RequestPoolService.
 DECLARE_string(fair_scheduler_allocation_path);
@@ -961,15 +963,25 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
 TEST_F(AdmissionControllerTest, MicroBenchmarks) {
   std::cout << "hello world" << std::endl;
 
-  TPoolStats stats;
-  ThriftSerializer serializer(true);
-  uint8_t* serialized_buf = nullptr;
-  uint32_t serialized_len = 0;
-  Status serialize_status =
-      serializer.SerializeToBuffer(&stats, &serialized_len, &serialized_buf);
+
+   StopWatch total_time;
+   total_time.Start();
+
+
+   TPoolStats stats;
+   ThriftSerializer serializer(true);
+   uint8_t* serialized_buf = nullptr;
+   uint32_t serialized_len = 0;
+   Status serialize_status =
+       serializer.SerializeToBuffer(&stats, &serialized_len, &serialized_buf);
    ASSERT_TRUE(serialize_status.ok());
    std::cout << "serialized size " << serialized_len << std::endl;
 
+   total_time.Stop();
+
+   cout << "Total time (ns): "
+        << PrettyPrinter::Print(total_time.ElapsedTime(), TUnit::TIME_NS)
+        << endl << endl;
 
 }
 

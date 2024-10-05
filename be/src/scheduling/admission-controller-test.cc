@@ -959,6 +959,17 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
 
 /// Test CanAdmitQuota in the context of user and group quotas.
 TEST_F(AdmissionControllerTest, MicroBenchmarks) {
+  std::cout << "hello world" << std::endl;
+
+  TPoolStats stats;
+  ThriftSerializer serializer(true);
+  uint8_t* serialized_buf = nullptr;
+  uint32_t serialized_len = 0;
+  Status serialize_status =
+      serializer.SerializeToBuffer(&stats, &serialized_len, &serialized_buf);
+   ASSERT_TRUE(serialize_status.ok());
+   std::cout << "serialized size " << serialized_len << std::endl;
+
 
 }
 

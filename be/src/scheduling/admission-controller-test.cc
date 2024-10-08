@@ -572,9 +572,28 @@ class AdmissionControllerTest : public testing::Test {
     admission_controller->UpdatePoolStats(incoming_topic_deltas, &outgoing_topic_updates);
     deser_time.Stop();
 
-    cout << "Total time (ns): for " << num_users << " users "
+    cout << "UpdatePoolStats Total time (ns): for " << num_users << " users "
          << PrettyPrinter::Print(deser_time.ElapsedTime(), TUnit::TIME_NS)
-         << endl << endl;
+         << endl;
+
+    vector<TTopicDelta> subscriber_topic_updates;
+
+    AdmissionController::PoolStats* pool_stats =
+        admission_controller->GetPoolStats(QUEUE_C);
+    pool_stats->local_stats_.user_loads.clear();
+    for (int i = 0 ; i < num_users; i++) {
+      ++ pool_stats->local_stats_.user_loads[usernames[i]];
+    }
+    admission_controller->pools_for_updates_.clear();
+    admission_controller->pools_for_updates_.insert(QUEUE_C);
+
+    StopWatch ser_time;
+    ser_time.Start();
+    admission_controller->AddPoolAndPerHostStatsUpdates(&subscriber_topic_updates);
+    ser_time.Stop();
+    cout << "AddPoolAndPerHostStatsUpdates: Total time (ns): for " << num_users << " users "
+         << PrettyPrinter::Print(ser_time.ElapsedTime(), TUnit::TIME_NS)
+         << endl;
   }
 
   void TestDedicatedCoordAdmissionRejection(TPoolConfig& test_pool_config,

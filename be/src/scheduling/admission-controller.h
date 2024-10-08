@@ -870,6 +870,7 @@ class AdmissionController {
   /// executor_group stays valid.
   struct GroupScheduleState {
     GroupScheduleState(
+
         std::unique_ptr<ScheduleState> state, const ExecutorGroup& executor_group)
       : state(std::move(state)), executor_group(executor_group) {}
     std::unique_ptr<ScheduleState> state;

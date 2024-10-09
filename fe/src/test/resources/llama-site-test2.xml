@@ -4,15 +4,15 @@
   <!-- Default values -->
   <property>
     <name>llama.am.throttling.maximum.placed.reservations</name>
-    <value>5</value>
+    <value>5000</value>
   </property>
   <property>
     <name>llama.am.throttling.maximum.queued.reservations</name>
-    <value>10</value>
+    <value>5000</value>
   </property>
   <property>
     <name>impala.admission-control.pool-queue-timeout-ms</name>
-    <value>30000</value>
+    <value>600000</value>
   </property>
 
   <property>
@@ -21,7 +21,7 @@
   </property>
   <property>
     <name>llama.am.throttling.maximum.queued.reservations.root</name>
-    <value>100</value>
+    <value>1000</value>
   </property>
   <property>
     <name>llama.am.throttling.maximum.placed.reservations.root.queueA</name>

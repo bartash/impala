@@ -24,9 +24,12 @@ import java.net.URISyntaxException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.After;
@@ -94,6 +97,8 @@ public class TestRequestPoolService {
   // Set the file check interval to something short so we don't have to wait long after
   // changing the file.
   private static final long CHECK_INTERVAL_MS = 100L;
+
+  public static final List<String> EMPTY_LIST = Collections.emptyList();
 
   // Temp folder where the config files are copied so we can modify them in place.
   // The JUnit @Rule creates and removes the temp folder between every test.
@@ -205,6 +210,7 @@ public class TestRequestPoolService {
         Iterables.getOnlyElement(result.getStatus().getError_msgs()));
   }
 
+  @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
   @Test
   public void testPoolAcls() throws Exception {
     createPoolService(ALLOCATION_FILE, LLAMA_CONFIG_FILE);
@@ -216,6 +222,21 @@ public class TestRequestPoolService {
     Assert.assertTrue(poolService_.hasAccess("root.queueD", "userA"));
     Assert.assertTrue(poolService_.hasAccess("root.queueD", "userB"));
     Assert.assertFalse(poolService_.hasAccess("root.queueD", "userZ"));
+
+    checkPoolAcls("root.queueA", Arrays.asList("userA", "userB", "userZ"), EMPTY_LIST);
+    checkPoolAcls(
+        "root.queueB", Arrays.asList("userB", "root"), Arrays.asList("userA", "userZ"));
+    checkPoolAcls("root.queueD", Arrays.asList("userB", "userA"), Arrays.asList("userZ"));
+  }
+
+  private void checkPoolAcls(String queueName, List<String> allowedUsers,
+      List<String> deniedUsers) throws InternalException {
+    for (String allowed : allowedUsers) {
+      Assert.assertTrue(poolService_.hasAccess(queueName, allowed));
+    }
+    for (String denied : deniedUsers) {
+      Assert.assertFalse(poolService_.hasAccess(queueName, denied));
+    }
   }
 
   @Test
@@ -252,7 +273,7 @@ public class TestRequestPoolService {
   public void testDefaultConfigs() throws Exception {
     createPoolService(ALLOCATION_FILE_EMPTY, LLAMA_CONFIG_FILE_EMPTY);
     Assert.assertEquals("root.userA", poolService_.assignToPool("", "userA"));
-    Assert.assertTrue(poolService_.hasAccess("root.userA", "userA"));
+    checkPoolAcls("root.userA", Arrays.asList("userA", "userB", "userZ"), EMPTY_LIST);
     checkPoolConfigResult("root", -1, 200, -1, null, "", 0, 0, true, 0, 0, null, null);
   }
 

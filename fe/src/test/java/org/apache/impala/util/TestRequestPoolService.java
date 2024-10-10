@@ -24,9 +24,12 @@ import java.net.URISyntaxException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.After;
@@ -38,6 +41,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import static java.util.Arrays.asList;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTH_TO_LOCAL;
 import static org.apache.impala.yarn.server.resourcemanager.scheduler.fair.
     AllocationFileLoaderService.addQueryLimits;
@@ -73,6 +77,7 @@ import org.xml.sax.SAXException;
  * the updated values are returned.
  * TODO: Move tests to C++ to test the API that's actually used.
  */
+@SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
 public class TestRequestPoolService {
   // Pool definitions and includes memory resource limits, copied to a temporary file
   private static final String ALLOCATION_FILE = "fair-scheduler-test.xml";
@@ -94,6 +99,8 @@ public class TestRequestPoolService {
   // Set the file check interval to something short so we don't have to wait long after
   // changing the file.
   private static final long CHECK_INTERVAL_MS = 100L;
+
+  public static final List<String> EMPTY_LIST = Collections.emptyList();
 
   // Temp folder where the config files are copied so we can modify them in place.
   // The JUnit @Rule creates and removes the temp folder between every test.
@@ -205,17 +212,30 @@ public class TestRequestPoolService {
         Iterables.getOnlyElement(result.getStatus().getError_msgs()));
   }
 
+  @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
   @Test
   public void testPoolAcls() throws Exception {
     createPoolService(ALLOCATION_FILE, LLAMA_CONFIG_FILE);
-    Assert.assertTrue(poolService_.hasAccess("root.queueA", "userA"));
-    Assert.assertTrue(poolService_.hasAccess("root.queueB", "userB"));
-    Assert.assertFalse(poolService_.hasAccess("root.queueB", "userA"));
-    Assert.assertTrue(poolService_.hasAccess("root.queueB", "root"));
-    // Test that comma separated users are parsed correctly.
-    Assert.assertTrue(poolService_.hasAccess("root.queueD", "userA"));
-    Assert.assertTrue(poolService_.hasAccess("root.queueD", "userB"));
-    Assert.assertFalse(poolService_.hasAccess("root.queueD", "userZ"));
+
+    checkPoolAcls("root.queueA", asList("userA", "userB", "userZ"), EMPTY_LIST);
+    checkPoolAcls("root.queueB", asList("userB", "root"), asList("userA", "userZ"));
+    checkPoolAcls("root.queueD", asList("userB", "userA"), asList("userZ"));
+  }
+
+  /**
+   * Check that the access to teh pool is as expected.
+   * @param queueName name of queue.
+   * @param allowedUsers a List of users that should have access
+   * @param deniedUsers a List of users that should be denied access
+   */
+  private void checkPoolAcls(String queueName, List<String> allowedUsers,
+      List<String> deniedUsers) throws InternalException {
+    for (String allowed : allowedUsers) {
+      Assert.assertTrue(poolService_.hasAccess(queueName, allowed));
+    }
+    for (String denied : deniedUsers) {
+      Assert.assertFalse(poolService_.hasAccess(queueName, denied));
+    }
   }
 
   @Test
@@ -252,7 +272,7 @@ public class TestRequestPoolService {
   public void testDefaultConfigs() throws Exception {
     createPoolService(ALLOCATION_FILE_EMPTY, LLAMA_CONFIG_FILE_EMPTY);
     Assert.assertEquals("root.userA", poolService_.assignToPool("", "userA"));
-    Assert.assertTrue(poolService_.hasAccess("root.userA", "userA"));
+    checkPoolAcls("root.userA", asList("userA", "userB", "userZ"), EMPTY_LIST);
     checkPoolConfigResult("root", -1, 200, -1, null, "", 0, 0, true, 0, 0, null, null);
   }
 
@@ -360,12 +380,10 @@ public class TestRequestPoolService {
     Assert.assertEquals("root.queueC", poolService_.assignToPool("queueC", "userA"));
 
     // Test pool ACLs
-    Assert.assertTrue(poolService_.hasAccess("root.queueA", "userA"));
-    Assert.assertTrue(poolService_.hasAccess("root.queueB", "userB"));
-    Assert.assertTrue(poolService_.hasAccess("root.queueB", "userA"));
-    Assert.assertFalse(poolService_.hasAccess("root.queueC", "userA"));
-    Assert.assertTrue(poolService_.hasAccess("root.queueC", "root"));
-    Assert.assertTrue(poolService_.hasAccess("root.queueD", "userA"));
+    checkPoolAcls("root.queueA", asList("userA", "userB"), EMPTY_LIST);
+    checkPoolAcls("root.queueB", asList("userA", "userB"), EMPTY_LIST);
+    checkPoolAcls("root.queueC", asList("userC", "root"), asList("userA", "userB"));
+    checkPoolAcls("root.queueD", asList("userA", "userB"), EMPTY_LIST);
 
     // Test pool limits
     Map<String, Integer> rootQueryLimits = new HashMap<>();
@@ -531,11 +549,10 @@ public class TestRequestPoolService {
     Assert.assertEquals("root.queueC", poolService_.assignToPool("queueC", "userA"));
 
     // Test pool ACL changes
-    Assert.assertTrue(poolService_.hasAccess("root.queueA", "userA"));
-    Assert.assertTrue(poolService_.hasAccess("root.queueB", "userB"));
-    Assert.assertTrue(poolService_.hasAccess("root.queueB", "userA"));
-    Assert.assertFalse(poolService_.hasAccess("root.queueC", "userA"));
-    Assert.assertTrue(poolService_.hasAccess("root.queueC", "root"));
+    checkPoolAcls("root.queueA", asList("userA", "userB"), EMPTY_LIST);
+    checkPoolAcls("root.queueB", asList("userA", "userB"), EMPTY_LIST);
+    checkPoolAcls("root.queueC", asList("userC", "root"), asList("userA", "userB"));
+    checkPoolAcls("root.queueD", asList("userA", "userB"), EMPTY_LIST);
 
     // Test pool limit changes
     Map<String, Integer> rootQueryLimits = new HashMap<>();

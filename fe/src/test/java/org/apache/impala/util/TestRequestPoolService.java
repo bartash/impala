@@ -223,6 +223,12 @@ public class TestRequestPoolService {
     checkPoolAcls("root.queueD", asList("userB", "userA"), asList("userZ"));
   }
 
+  /**
+   * Check that the access to teh pool is as expected.
+   * @param queueName name of queue.
+   * @param allowedUsers a List of users that should have access
+   * @param deniedUsers a List of users that should be denied access
+   */
   private void checkPoolAcls(String queueName, List<String> allowedUsers,
       List<String> deniedUsers) throws InternalException {
     for (String allowed : allowedUsers) {

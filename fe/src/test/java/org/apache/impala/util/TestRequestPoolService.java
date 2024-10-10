@@ -218,8 +218,7 @@ public class TestRequestPoolService {
     createPoolService(ALLOCATION_FILE, LLAMA_CONFIG_FILE);
 
     checkPoolAcls("root.queueA", asList("userA", "userB", "userZ"), EMPTY_LIST);
-    checkPoolAcls(
-        "root.queueB", asList("userB", "root"), asList("userA", "userZ"));
+    checkPoolAcls("root.queueB", asList("userB", "root"), asList("userA", "userZ"));
     checkPoolAcls("root.queueD", asList("userB", "userA"), asList("userZ"));
   }
 
@@ -385,7 +384,6 @@ public class TestRequestPoolService {
     checkPoolAcls("root.queueB", asList("userA", "userB"), EMPTY_LIST);
     checkPoolAcls("root.queueC", asList("userC", "root"), asList("userA", "userB"));
     checkPoolAcls("root.queueD", asList("userA", "userB"), EMPTY_LIST);
-
 
     // Test pool limits
     Map<String, Integer> rootQueryLimits = new HashMap<>();

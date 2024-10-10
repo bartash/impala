@@ -1005,7 +1005,7 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
       not_admitted_reason);
 }
 
-/// Test CanAdmitQuota in the context of user and group quotas.
+/// Microbenchmark to test scalability of user quotas.
 TEST_F(AdmissionControllerTest, MicroBenchmarks) {
   std::cout << "hello world" << std::endl;
 

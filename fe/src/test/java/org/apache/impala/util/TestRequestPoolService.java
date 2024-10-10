@@ -545,11 +545,10 @@ public class TestRequestPoolService {
     Assert.assertEquals("root.queueC", poolService_.assignToPool("queueC", "userA"));
 
     // Test pool ACL changes
-    Assert.assertTrue(poolService_.hasAccess("root.queueA", "userA"));
-    Assert.assertTrue(poolService_.hasAccess("root.queueB", "userB"));
-    Assert.assertTrue(poolService_.hasAccess("root.queueB", "userA"));
-    Assert.assertFalse(poolService_.hasAccess("root.queueC", "userA"));
-    Assert.assertTrue(poolService_.hasAccess("root.queueC", "root"));
+    checkPoolAcls("root.queueA", asList("userA", "userB"), EMPTY_LIST);
+    checkPoolAcls("root.queueB", asList("userA", "userB"), EMPTY_LIST);
+    checkPoolAcls("root.queueC", asList("userC", "root"), asList("userA", "userB"));
+    checkPoolAcls("root.queueD", asList("userA", "userB"), EMPTY_LIST);
 
     // Test pool limit changes
     Map<String, Integer> rootQueryLimits = new HashMap<>();

@@ -101,6 +101,7 @@ import org.apache.impala.thrift.TWrappedHttpResponse;
 import org.apache.impala.util.AuthorizationUtil;
 import org.apache.impala.util.ExecutorMembershipSnapshot;
 import org.apache.impala.util.GlogAppender;
+import org.apache.impala.util.JniRequestPoolService;
 import org.apache.impala.util.PatternMatcher;
 import org.apache.impala.util.TSessionStateUtil;
 import org.apache.log4j.Appender;
@@ -700,36 +701,7 @@ public class JniFrontend {
    * Returns the list of Hadoop groups for the given user name.
    */
   public byte[] getHadoopGroups(byte[] serializedRequest) throws ImpalaException {
-    TGetHadoopGroupsRequest request = new TGetHadoopGroupsRequest();
-    JniUtil.deserializeThrift(protocolFactory_, request, serializedRequest);
-    TGetHadoopGroupsResponse result = new TGetHadoopGroupsResponse();
-    String user  = request.getUser();
-    String injectedGroups = BackendConfig.INSTANCE.getInjectedGroupMembersDebugOnly();
-    if (StringUtils.isEmpty(injectedGroups)) {
-      try {
-        result.setGroups(GROUPS.getGroups(user));
-      } catch (IOException e) {
-        // HACK: https://issues.apache.org/jira/browse/HADOOP-15505
-        // There is no easy way to know if no groups found for a user
-        // other than reading the exception message.
-        if (e.getMessage().startsWith("No groups found for user")) {
-          result.setGroups(Collections.emptyList());
-        } else {
-          LOG.error("Error getting Hadoop groups for user: " + request.getUser(), e);
-          throw new InternalException(e.getMessage());
-        }
-      }
-    } else {
-      List<String> groups = JniUtil.decodeInjectedGroups(injectedGroups, user);
-      LOG.info("getHadoopGroups returns injected groups " + groups + " for user " + user);
-      result.setGroups(groups);
-    }
-    try {
-      TSerializer serializer = new TSerializer(protocolFactory_);
-      return serializer.serialize(result);
-    } catch (TException e) {
-      throw new InternalException(e.getMessage());
-    }
+    return JniRequestPoolService.getHadoopGroupsInternal(serializedRequest);
   }
 
   /**

@@ -132,7 +132,8 @@ public class JniRequestPoolService {
   /**
    * Returns the list of Hadoop groups for the given user name.
    */
-  public byte[] getHadoopGroups(byte[] serializedRequest) throws ImpalaException {
+  public static byte[] getHadoopGroupsInternal(byte[] serializedRequest)
+      throws ImpalaException {
     TGetHadoopGroupsRequest request = new TGetHadoopGroupsRequest();
     JniUtil.deserializeThrift(protocolFactory_, request, serializedRequest);
     TGetHadoopGroupsResponse result = new TGetHadoopGroupsResponse();
@@ -163,5 +164,12 @@ public class JniRequestPoolService {
     } catch (TException e) {
       throw new InternalException(e.getMessage());
     }
+  }
+
+  /**
+   * Returns the list of Hadoop groups for the given user name.
+   */
+  public byte[] getHadoopGroups(byte[] serializedRequest) throws ImpalaException {
+    return getHadoopGroupsInternal(serializedRequest);
   }
 }

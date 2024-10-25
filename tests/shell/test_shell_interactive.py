@@ -126,6 +126,45 @@ class TestHTTPServer503(object):
     self.http_server_thread = threading.Thread(target=self.httpd.serve_forever)
     self.http_server_thread.start()
 
+class RequestHandlerProxy(http.server.SimpleHTTPRequestHandler):
+  """A custom http handler acts as an http proxy."""
+
+  def __init__(self, request, client_address, server):
+    http.server.SimpleHTTPRequestHandler.__init__(self, request, client_address,
+                                                   server)
+
+  def do_POST(self):
+    # Ensure that a 'Host' header is contained in the request before responding.
+    assert "Host" in self.headers
+
+    # Respond with Proxy.
+    self.send_response(code=http.client.SERVICE_UNAVAILABLE,
+                       message="Service Unavailable")
+    # The Python 3 version of SimpleHTTPRequestHandler requires this to be called
+    # explicitly
+    self.end_headers()
+    if self.should_send_body_text():
+      # Optionally send body text with Proxy message.
+      self.wfile.write("EXTRA")
+
+
+class RequestHandlerProxyExtra(RequestHandlerProxy):
+  """"Override RequestHandlerProxy so as to send body text with the Proxy message."""
+
+  def __init__(self, request, client_address, server):
+    RequestHandlerProxy.__init__(self, request, client_address, server)
+
+
+
+class TestHTTPServerProxy(object):
+  def __init__(self, clazz):
+    self.HOST = "localhost"
+    self.PORT = get_unused_port()
+    self.httpd = socketserver.TCPServer((self.HOST, self.PORT), clazz)
+
+    self.http_server_thread = threading.Thread(target=self.httpd.serve_forever)
+    self.http_server_thread.start()
+
 
 def shutdown_server(server):
   """Helper method to shutdown a http server."""
@@ -155,6 +194,14 @@ def http_503_server_extra():
   # Cleanup after test.
   shutdown_server(server)
 
+@pytest.yield_fixture
+def http_proxy_server():
+  """A fixture that creates an http proxy."""
+  server = TestHTTPServerProxy(RequestHandlerProxy)
+  yield server
+
+  # Cleanup after test.
+  shutdown_server(server)
 
 class TestImpalaShellInteractive(ImpalaTestSuite):
   """Test the impala shell interactively"""
@@ -1208,6 +1255,20 @@ class TestImpalaShellInteractive(ImpalaTestSuite):
     impala_shell_executable = get_impala_shell_executable(vector)
     shell_args = ["--protocol={0}".format(protocol),
                   "-i{0}:{1}".format(http_503_server.HOST, http_503_server.PORT)]
+    shell_proc = spawn_shell(impala_shell_executable + shell_args)
+    shell_proc.expect("HTTP code 503", timeout=10)
+
+  def test_duplicate_headers(self, vector, http_proxy_server):
+    """Test interactions with the http server when using hs2-http protocol.
+    Check that the shell prints a good message when the server returns a 503 error."""
+    protocol = vector.get_value("protocol")
+    if protocol != 'hs2-http':
+      pytest.skip()
+
+    # Check that we get a message about the 503 error when we try to connect.
+    impala_shell_executable = get_impala_shell_executable(vector)
+    shell_args = ["--protocol={0}".format(protocol),
+                  "-i{0}:{1}".format(http_proxy_server.HOST, http_proxy_server.PORT)]
     shell_proc = spawn_shell(impala_shell_executable + shell_args)
     shell_proc.expect("HTTP code 503", timeout=10)
 

@@ -137,8 +137,9 @@ class RequestHandlerProxy(http.server.SimpleHTTPRequestHandler):
 
   def do_POST(self):
 
+    data_string = self.rfile.read(int(self.headers['Content-Length']))
 
-    response = requests.post(url="http://localhost:28000/cliservice", headers=self.headers)
+    response = requests.post(url="http://localhost:28000/cliservice", headers=self.headers, data=data_string)
     self.send_response(code=response.status_code)
     for key, value in response.headers.iteritems():
       self.send_header(keyword=key, value=value)

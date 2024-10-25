@@ -21,6 +21,8 @@
 from __future__ import absolute_import, division, print_function
 import http.client
 import http.server
+import requests
+
 import logging
 import os
 import pexpect
@@ -134,19 +136,13 @@ class RequestHandlerProxy(http.server.SimpleHTTPRequestHandler):
                                                    server)
 
   def do_POST(self):
-    # Ensure that a 'Host' header is contained in the request before responding.
-    assert "Host" in self.headers
 
-    # Respond with Proxy.
-    self.send_response(code=http.client.SERVICE_UNAVAILABLE,
-                       message="Service Unavailable")
-    # The Python 3 version of SimpleHTTPRequestHandler requires this to be called
-    # explicitly
+
+    response = requests.post(url="http://localhost:28000/cliservice", headers=self.headers)
+    self.send_response(code=response.status_code)
+    for key, value in response.headers.iteritems():
+      self.send_header(keyword=key, value=value)
     self.end_headers()
-    if self.should_send_body_text():
-      # Optionally send body text with Proxy message.
-      self.wfile.write("EXTRA")
-
 
 class RequestHandlerProxyExtra(RequestHandlerProxy):
   """"Override RequestHandlerProxy so as to send body text with the Proxy message."""
@@ -1270,7 +1266,7 @@ class TestImpalaShellInteractive(ImpalaTestSuite):
     shell_args = ["--protocol={0}".format(protocol),
                   "-i{0}:{1}".format(http_proxy_server.HOST, http_proxy_server.PORT)]
     shell_proc = spawn_shell(impala_shell_executable + shell_args)
-    shell_proc.expect("HTTP code 503", timeout=10)
+    shell_proc.expect(":{0}] default>".format(get_impalad_port(vector)))
 
   def test_http_interactions_extra(self, vector, http_503_server_extra):
     """Test interactions with the http server when using hs2-http protocol.

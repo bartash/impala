@@ -136,6 +136,22 @@ class TestShellInteractive(CustomClusterTestSuite):
     proc.expect("Query Runtime Profile:")
     proc.expect("Query State: FINISHED")
 
+  @pytest.mark.execute_serially
+  @CustomClusterTestSuite.with_args(impalad_args="--trusted_domain_use_xff_header=true "
+                                                 "--enable_ldap_auth=true  "
+                                                 "--ldap_uri=ldap://xxx "
+                                                 "--ldap_passwords_in_clear_ok "
+                                                 "--trusted_domain=localhost")
+  def test_duplicate_headers(self):
+    vector = ImpalaTestVector([ImpalaTestVector.Value("protocol", "hs2")])
+    proc = self.__trigger_retry_shell(vector, query="select 1",
+                                      shell_params=['--hs2_x_forward=127.0.0.1',
+                                                    '--ldap',
+                                                    '--ldap_password_cmd=\'echo foo\'',
+                                                    '--auth_creds_ok_in_clear',
+                                                    '--connect_max_tries=1'])
+    proc.expect("1", timeout=300)
+
   def __proc_not_expect(self, proc, pattern):
     """Helper method for pexpect.except to assert that a pattern is not present."""
     proc.expect("^((?!{0}).)*$".format(pattern))

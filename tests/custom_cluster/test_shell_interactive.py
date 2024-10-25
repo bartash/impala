@@ -144,14 +144,15 @@ class TestShellInteractive(CustomClusterTestSuite):
                                                  "--trusted_domain=localhost")
   def test_duplicate_headers(self):
     vector = ImpalaTestVector([ImpalaTestVector.Value("protocol", "hs2-http")])
-    shell_params = ['--hs2_x_forward=127.0.0.1',
+    shell_params = [
+      '--hs2_x_forward=127.0.0.1',
                     '--ldap',
                     '--ldap_password_cmd=date',
                     '--auth_creds_ok_in_clear',
                     '--connect_max_tries=1']
     proc = spawn_shell(get_shell_cmd(vector) + shell_params)
     # Check that we connect OK
-    proc.expect("{0}] default>".format(get_impalad_port(vector)))
+    proc.expect(pattern="{0}] default>".format(get_impalad_port(vector)), timeout=10)
 
 
   def __proc_not_expect(self, proc, pattern):

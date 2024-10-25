@@ -184,21 +184,23 @@ def get_impalad_port(vector):
   return int(get_impalad_host_port(vector).split(":")[1])
 
 
-def get_shell_cmd(vector):
+def get_shell_cmd(vector, host_port=None):
   """Get the basic shell command to start the shell, given the provided test vector.
   Returns the command as a list of string arguments."""
   impala_shell_executable = get_impala_shell_executable(vector)
+  if not host_port:
+    host_port = get_impalad_host_port(vector)
   if vector.get_value_with_default("strict_hs2_protocol", False):
     protocol = vector.get_value("protocol")
     return impala_shell_executable + [
             "--protocol={0}".format(protocol),
             "--strict_hs2_protocol",
             "--use_ldap_test_password",
-            "-i{0}".format(get_impalad_host_port(vector))]
+            "-i{0}".format(host_port)]
   else:
     return impala_shell_executable + [
             "--protocol={0}".format(vector.get_value("protocol")),
-            "-i{0}".format(get_impalad_host_port(vector))]
+            "-i{0}".format(host_port)]
 
 
 def spawn_shell(shell_cmd):
@@ -406,3 +408,11 @@ def stderr_get_first_error_msg(stderr):
   """Seek to the begining of the first error message in stderr of impala-shell."""
   PROMPT = "ERROR: "
   return stderr[(stderr.index(PROMPT) + len(PROMPT)):]
+
+
+def shutdown_server(server):
+  """Helper method to shutdown a http server."""
+  if server.httpd is not None:
+    server.httpd.shutdown()
+  if server.http_server_thread is not None:
+    server.http_server_thread.join()

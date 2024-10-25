@@ -17,17 +17,58 @@
 
 from __future__ import absolute_import, division, print_function
 import pytest
+import socketserver
 
+import mimetools
+import threading
 from multiprocessing.pool import ThreadPool
 from random import randint
+import http.client
+import http.server
+import requests
 
 from tests.common.impala_test_suite import ImpalaTestSuite
 from tests.common.custom_cluster_test_suite import CustomClusterTestSuite
 from tests.common.test_vector import ImpalaTestVector
 from tests.common.test_dimensions import create_client_protocol_dimension
 from tests.shell.util import (get_shell_cmd, get_impalad_port, spawn_shell,
-                              wait_for_query_state)
+                              wait_for_query_state, get_unused_port, shutdown_server)
 
+class TestHTTPServerProxy(object):
+  def __init__(self, clazz):
+    self.HOST = "localhost"
+    self.PORT = get_unused_port()
+    self.httpd = socketserver.TCPServer((self.HOST, self.PORT), clazz)
+
+    self.http_server_thread = threading.Thread(target=self.httpd.serve_forever)
+    self.http_server_thread.start()
+
+class RequestHandlerProxy(http.server.SimpleHTTPRequestHandler):
+  """A custom http handler acts as a http proxy."""
+
+  def __init__(self, request, client_address, server):
+    http.server.SimpleHTTPRequestHandler.__init__(self, request, client_address,
+                                                  server)
+
+  def do_POST(self):
+    data_string = self.rfile.read(int(self.headers['Content-Length']))
+    self.headers['X-Forwarded-For'] = "127.0.0.1"
+    response = requests.post(url="http://localhost:28000/cliservice", headers=self.headers, data=data_string)
+    self.send_response(code=response.status_code)
+    for key, value in response.headers.iteritems():
+      self.send_header(keyword=key, value=value)
+    self.end_headers()
+    self.wfile.write(response.content)
+    self.wfile.close()
+
+@pytest.yield_fixture
+def http_proxy_server():
+  """A fixture that creates an http proxy."""
+  server = TestHTTPServerProxy(RequestHandlerProxy)
+  yield server
+
+  # Cleanup after test.
+  shutdown_server(server)
 
 class TestShellInteractive(CustomClusterTestSuite):
 
@@ -136,15 +177,64 @@ class TestShellInteractive(CustomClusterTestSuite):
     proc.expect("Query Runtime Profile:")
     proc.expect("Query State: FINISHED")
 
+  @pytest.mark.execute_serially
+  @CustomClusterTestSuite.with_args(impalad_args="--trusted_domain_use_xff_header=true "
+                                                 "--enable_ldap_auth=true  "
+                                                 "--ldap_uri=ldap://xxx "
+                                                 "--ldap_passwords_in_clear_ok "
+                                                 "--trusted_domain=localhost")
+  def test_duplicate_headers(self):
+    vector = ImpalaTestVector([ImpalaTestVector.Value("protocol", "hs2-http")])
+    shell_params = [
+      '--hs2_x_forward=127.0.0.1',
+                    '--ldap',
+                    '--ldap_password_cmd=date',
+                    '--auth_creds_ok_in_clear',
+                    '--connect_max_tries=1']
+    proc = spawn_shell(get_shell_cmd(vector, host_port="localhost:28000") + shell_params)
+    # Check that we connect OK
+    proc.expect(pattern="{0}] default>".format(get_impalad_port(vector)), timeout=10)
+
+    # FIXME playing with headers
+    try:
+      from cStringIO import StringIO
+    except ImportError:
+      from StringIO import StringIO
+    noheaders = mimetools.Message(StringIO(), 0)
+    noheaders["a"] = "b"
+    # noheaders.addheader("v", "w") FAIL
+    noheaders.dict["c"] = "d"
+    print(noheaders)
+
+  @pytest.mark.execute_serially
+  @CustomClusterTestSuite.with_args(impalad_args="--trusted_domain_use_xff_header=true "
+                                                 "--enable_ldap_auth=true  "
+                                                 "--ldap_uri=ldap://xxx "
+                                                 "--ldap_passwords_in_clear_ok "
+                                                 "--trusted_domain=localhost")
+  def test_duplicate_headers2(self, http_proxy_server):
+    vector = ImpalaTestVector([ImpalaTestVector.Value("protocol", "hs2-http")])
+    shell_params = [
+                    '--ldap',
+                    '--ldap_password_cmd=date',
+                    '--auth_creds_ok_in_clear',
+                    '--connect_max_tries=1']
+    proc = spawn_shell(get_shell_cmd(vector, host_port="localhost:{0}".format(http_proxy_server.PORT)) + shell_params)
+    # Check that we connect OK
+    proc.expect(pattern="{0}] default>".format(get_impalad_port(vector)), timeout=20)
+
+
   def __proc_not_expect(self, proc, pattern):
     """Helper method for pexpect.except to assert that a pattern is not present."""
     proc.expect("^((?!{0}).)*$".format(pattern))
 
   def __trigger_retry_shell(self, vector, query, shell_params=[]):
     """Runs a query via the impala-shell and triggers a query retry."""
-    vector = ImpalaTestVector([ImpalaTestVector.Value("protocol", "hs2")])
+    # vector = ImpalaTestVector([ImpalaTestVector.Value("protocol", "hs2-http")])
     pool = ThreadPool(processes=1)
-    proc = spawn_shell(get_shell_cmd(vector) + shell_params)
+    params = get_shell_cmd(vector) + shell_params
+    print("params=%s" % params)
+    proc = spawn_shell(params)
     proc.expect("{0}] default>".format(get_impalad_port(vector)))
     proc.sendline("set retry_failed_queries=true;")
     pool.apply_async(lambda: proc.sendline(query + ";"))

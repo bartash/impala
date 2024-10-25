@@ -21,6 +21,8 @@
 from __future__ import absolute_import, division, print_function
 import http.client
 import http.server
+import requests
+
 import logging
 import os
 import pexpect
@@ -48,9 +50,11 @@ from tests.common.test_dimensions import (
   create_uncompressed_text_dimension, create_single_exec_option_dimension)
 from tests.common.test_result_verifier import error_msg_expected
 from tests.shell.util import (assert_var_substitution, ImpalaShell, get_impalad_port,
-  get_shell_cmd, get_open_sessions_metric, spawn_shell, get_unused_port,
-  create_impala_shell_executable_dimension, get_impala_shell_executable,
-  stderr_get_first_error_msg)
+                              get_shell_cmd, get_open_sessions_metric, spawn_shell,
+                              get_unused_port,
+                              create_impala_shell_executable_dimension,
+                              get_impala_shell_executable,
+                              stderr_get_first_error_msg, shutdown_server)
 
 QUERY_FILE_PATH = os.path.join(os.environ['IMPALA_HOME'], 'tests', 'shell')
 
@@ -128,13 +132,41 @@ class TestHTTPServer503(object):
     self.http_server_thread = threading.Thread(target=self.httpd.serve_forever)
     self.http_server_thread.start()
 
+class RequestHandlerProxy(http.server.SimpleHTTPRequestHandler):
+  """A custom http handler acts as an http proxy."""
 
-def shutdown_server(server):
-  """Helper method to shutdown a http server."""
-  if server.httpd is not None:
-    server.httpd.shutdown()
-  if server.http_server_thread is not None:
-    server.http_server_thread.join()
+  def __init__(self, request, client_address, server):
+    http.server.SimpleHTTPRequestHandler.__init__(self, request, client_address,
+                                                   server)
+
+  def do_POST(self):
+
+    data_string = self.rfile.read(int(self.headers['Content-Length']))
+
+    response = requests.post(url="http://localhost:28000/cliservice", headers=self.headers, data=data_string)
+    self.send_response(code=response.status_code)
+    for key, value in response.headers.iteritems():
+      self.send_header(keyword=key, value=value)
+    self.end_headers()
+    self.wfile.write(response.content)
+    self.wfile.close()
+
+class RequestHandlerProxyExtra(RequestHandlerProxy):
+  """"Override RequestHandlerProxy so as to send body text with the Proxy message."""
+
+  def __init__(self, request, client_address, server):
+    RequestHandlerProxy.__init__(self, request, client_address, server)
+
+
+
+class TestHTTPServerProxy(object):
+  def __init__(self, clazz):
+    self.HOST = "localhost"
+    self.PORT = get_unused_port()
+    self.httpd = socketserver.TCPServer((self.HOST, self.PORT), clazz)
+
+    self.http_server_thread = threading.Thread(target=self.httpd.serve_forever)
+    self.http_server_thread.start()
 
 
 @pytest.yield_fixture
@@ -157,6 +189,14 @@ def http_503_server_extra():
   # Cleanup after test.
   shutdown_server(server)
 
+@pytest.yield_fixture
+def http_proxy_server():
+  """A fixture that creates an http proxy."""
+  server = TestHTTPServerProxy(RequestHandlerProxy)
+  yield server
+
+  # Cleanup after test.
+  shutdown_server(server)
 
 class TestImpalaShellInteractive(ImpalaTestSuite):
   """Test the impala shell interactively"""
@@ -1236,6 +1276,21 @@ class TestImpalaShellInteractive(ImpalaTestSuite):
                   "-i{0}:{1}".format(http_503_server.HOST, http_503_server.PORT)]
     shell_proc = spawn_shell(impala_shell_executable + shell_args)
     shell_proc.expect("HTTP code 503", timeout=10)
+
+  def test_duplicate_headers(self, vector, http_proxy_server):
+    """Test interactions with the http server when using hs2-http protocol.
+    Check that the shell prints a good message when the server returns a 503 error."""
+    protocol = vector.get_value("protocol")
+    if protocol != 'hs2-http':
+      pytest.skip()
+
+    impala_shell_executable = get_impala_shell_executable(vector)
+    shell_args = ["--protocol={0}".format(protocol),
+                  "-i{0}:{1}".format(http_proxy_server.HOST, http_proxy_server.PORT)]
+    shell_proc = spawn_shell(impala_shell_executable + shell_args)
+    shell_proc.expect("Opened TCP connection to localhost")
+    # We connect but don't get to banner:
+    shell_proc.expect("Welcome to the Impala shell.")
 
   def test_http_interactions_extra(self, vector, http_503_server_extra):
     """Test interactions with the http server when using hs2-http protocol.

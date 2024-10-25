@@ -144,6 +144,8 @@ class RequestHandlerProxy(http.server.SimpleHTTPRequestHandler):
     for key, value in response.headers.iteritems():
       self.send_header(keyword=key, value=value)
     self.end_headers()
+    self.wfile.write(response.content)
+    self.wfile.close()
 
 class RequestHandlerProxyExtra(RequestHandlerProxy):
   """"Override RequestHandlerProxy so as to send body text with the Proxy message."""
@@ -1268,7 +1270,7 @@ class TestImpalaShellInteractive(ImpalaTestSuite):
     shell_proc = spawn_shell(impala_shell_executable + shell_args)
     shell_proc.expect("Opened TCP connection to localhost")
     # We connect but don't get to banner:
-    # shell_proc.expect("Welcome to the Impala shell.")
+    shell_proc.expect("Welcome to the Impala shell.")
 
   def test_http_interactions_extra(self, vector, http_503_server_extra):
     """Test interactions with the http server when using hs2-http protocol.

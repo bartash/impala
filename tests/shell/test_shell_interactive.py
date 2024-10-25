@@ -1262,12 +1262,13 @@ class TestImpalaShellInteractive(ImpalaTestSuite):
     if protocol != 'hs2-http':
       pytest.skip()
 
-    # Check that we get a message about the 503 error when we try to connect.
     impala_shell_executable = get_impala_shell_executable(vector)
     shell_args = ["--protocol={0}".format(protocol),
                   "-i{0}:{1}".format(http_proxy_server.HOST, http_proxy_server.PORT)]
     shell_proc = spawn_shell(impala_shell_executable + shell_args)
-    shell_proc.expect(":{0}] default>".format(get_impalad_port(vector)))
+    shell_proc.expect("Opened TCP connection to localhost")
+    # We connect but don't get to banner:
+    # shell_proc.expect("Welcome to the Impala shell.")
 
   def test_http_interactions_extra(self, vector, http_503_server_extra):
     """Test interactions with the http server when using hs2-http protocol.

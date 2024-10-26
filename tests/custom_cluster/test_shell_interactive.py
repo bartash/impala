@@ -19,6 +19,7 @@ from __future__ import absolute_import, division, print_function
 import pytest
 import socketserver
 
+import mimetools
 import threading
 from multiprocessing.pool import ThreadPool
 from random import randint
@@ -51,7 +52,7 @@ class RequestHandlerProxy(http.server.SimpleHTTPRequestHandler):
 
   def do_POST(self):
     data_string = self.rfile.read(int(self.headers['Content-Length']))
-    self.headers.add('X-Forwarded-For', "127.0.0.1")
+    self.headers.addheader('X-Forwarded-For', "127.0.0.1")
     response = requests.post(url="http://localhost:28000/cliservice", headers=self.headers, data=data_string)
     self.send_response(code=response.status_code)
     for key, value in response.headers.iteritems():
@@ -193,6 +194,17 @@ class TestShellInteractive(CustomClusterTestSuite):
     proc = spawn_shell(get_shell_cmd(vector, host_port="localhost:28000") + shell_params)
     # Check that we connect OK
     proc.expect(pattern="{0}] default>".format(get_impalad_port(vector)), timeout=10)
+
+    # FIXME playing with headers
+    try:
+      from cStringIO import StringIO
+    except ImportError:
+      from StringIO import StringIO
+    noheaders = mimetools.Message(StringIO(), 0)
+    noheaders["a"] = "b"
+    # noheaders.addheader("v", "w") FAIL
+    noheaders.dict["c"] = "d"
+    print(noheaders)
 
   @pytest.mark.execute_serially
   @CustomClusterTestSuite.with_args(impalad_args="--trusted_domain_use_xff_header=true "

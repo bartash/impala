@@ -17,17 +17,58 @@
 
 from __future__ import absolute_import, division, print_function
 import pytest
+import socketserver
 
+import threading
 from multiprocessing.pool import ThreadPool
 from random import randint
+import http.client
+import http.server
+import requests
 
 from tests.common.impala_test_suite import ImpalaTestSuite
 from tests.common.custom_cluster_test_suite import CustomClusterTestSuite
 from tests.common.test_vector import ImpalaTestVector
 from tests.common.test_dimensions import create_client_protocol_dimension
 from tests.shell.util import (get_shell_cmd, get_impalad_port, spawn_shell,
-                              wait_for_query_state)
+                              wait_for_query_state, get_unused_port)
 
+class TestHTTPServerProxy(object):
+  def __init__(self, clazz):
+    self.HOST = "localhost"
+    self.PORT = get_unused_port()
+    self.httpd = socketserver.TCPServer((self.HOST, self.PORT), clazz)
+
+    self.http_server_thread = threading.Thread(target=self.httpd.serve_forever)
+    self.http_server_thread.start()
+
+class RequestHandlerProxy(http.server.SimpleHTTPRequestHandler):
+  """A custom http handler acts as a http proxy."""
+
+  def __init__(self, request, client_address, server):
+    http.server.SimpleHTTPRequestHandler.__init__(self, request, client_address,
+                                                  server)
+
+  def do_POST(self):
+
+    data_string = self.rfile.read(int(self.headers['Content-Length']))
+
+    response = requests.post(url="http://localhost:28000/cliservice", headers=self.headers, data=data_string)
+    self.send_response(code=response.status_code)
+    for key, value in response.headers.iteritems():
+      self.send_header(keyword=key, value=value)
+    self.end_headers()
+    self.wfile.write(response.content)
+    self.wfile.close()
+
+@pytest.yield_fixture
+def http_proxy_server():
+  """A fixture that creates an http proxy."""
+  server = TestHTTPServerProxy(RequestHandlerProxy)
+  yield server
+
+  # Cleanup after test.
+  shutdown_server(server)
 
 class TestShellInteractive(CustomClusterTestSuite):
 

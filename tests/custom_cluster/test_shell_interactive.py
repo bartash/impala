@@ -31,7 +31,7 @@ from tests.common.custom_cluster_test_suite import CustomClusterTestSuite
 from tests.common.test_vector import ImpalaTestVector
 from tests.common.test_dimensions import create_client_protocol_dimension
 from tests.shell.util import (get_shell_cmd, get_impalad_port, spawn_shell,
-                              wait_for_query_state, get_unused_port)
+                              wait_for_query_state, get_unused_port, shutdown_server)
 
 class TestHTTPServerProxy(object):
   def __init__(self, clazz):

@@ -50,9 +50,11 @@ from tests.common.test_dimensions import (
   create_uncompressed_text_dimension, create_single_exec_option_dimension)
 from tests.common.test_result_verifier import error_msg_expected
 from tests.shell.util import (assert_var_substitution, ImpalaShell, get_impalad_port,
-  get_shell_cmd, get_open_sessions_metric, spawn_shell, get_unused_port,
-  create_impala_shell_executable_dimension, get_impala_shell_executable,
-  stderr_get_first_error_msg)
+                              get_shell_cmd, get_open_sessions_metric, spawn_shell,
+                              get_unused_port,
+                              create_impala_shell_executable_dimension,
+                              get_impala_shell_executable,
+                              stderr_get_first_error_msg, shutdown_server)
 
 QUERY_FILE_PATH = os.path.join(os.environ['IMPALA_HOME'], 'tests', 'shell')
 
@@ -165,14 +167,6 @@ class TestHTTPServerProxy(object):
 
     self.http_server_thread = threading.Thread(target=self.httpd.serve_forever)
     self.http_server_thread.start()
-
-
-def shutdown_server(server):
-  """Helper method to shutdown a http server."""
-  if server.httpd is not None:
-    server.httpd.shutdown()
-  if server.http_server_thread is not None:
-    server.http_server_thread.join()
 
 
 @pytest.yield_fixture

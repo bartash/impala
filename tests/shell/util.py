@@ -408,3 +408,11 @@ def stderr_get_first_error_msg(stderr):
   """Seek to the begining of the first error message in stderr of impala-shell."""
   PROMPT = "ERROR: "
   return stderr[(stderr.index(PROMPT) + len(PROMPT)):]
+
+
+def shutdown_server(server):
+  """Helper method to shutdown a http server."""
+  if server.httpd is not None:
+    server.httpd.shutdown()
+  if server.http_server_thread is not None:
+    server.http_server_thread.join()

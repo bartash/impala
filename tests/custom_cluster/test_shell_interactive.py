@@ -50,9 +50,8 @@ class RequestHandlerProxy(http.server.SimpleHTTPRequestHandler):
                                                   server)
 
   def do_POST(self):
-
     data_string = self.rfile.read(int(self.headers['Content-Length']))
-
+    self.headers.add('X-Forwarded-For', "127.0.0.1")
     response = requests.post(url="http://localhost:28000/cliservice", headers=self.headers, data=data_string)
     self.send_response(code=response.status_code)
     for key, value in response.headers.iteritems():
@@ -208,7 +207,7 @@ class TestShellInteractive(CustomClusterTestSuite):
                     '--ldap_password_cmd=date',
                     '--auth_creds_ok_in_clear',
                     '--connect_max_tries=1']
-    proc = spawn_shell(get_shell_cmd(vector, host_port="localhost:28000") + shell_params)
+    proc = spawn_shell(get_shell_cmd(vector, host_port="localhost:{0}".format(http_proxy_server.PORT)) + shell_params)
     # Check that we connect OK
     proc.expect(pattern="{0}] default>".format(get_impalad_port(vector)), timeout=10)
 

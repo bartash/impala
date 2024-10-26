@@ -150,7 +150,7 @@ class TestShellInteractive(CustomClusterTestSuite):
                     '--ldap_password_cmd=date',
                     '--auth_creds_ok_in_clear',
                     '--connect_max_tries=1']
-    proc = spawn_shell(get_shell_cmd(vector) + shell_params)
+    proc = spawn_shell(get_shell_cmd(vector, host_port="localhost:28000") + shell_params)
     # Check that we connect OK
     proc.expect(pattern="{0}] default>".format(get_impalad_port(vector)), timeout=10)
 

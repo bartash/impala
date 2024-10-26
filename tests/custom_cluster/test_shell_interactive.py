@@ -195,6 +195,23 @@ class TestShellInteractive(CustomClusterTestSuite):
     # Check that we connect OK
     proc.expect(pattern="{0}] default>".format(get_impalad_port(vector)), timeout=10)
 
+  @pytest.mark.execute_serially
+  @CustomClusterTestSuite.with_args(impalad_args="--trusted_domain_use_xff_header=true "
+                                                 "--enable_ldap_auth=true  "
+                                                 "--ldap_uri=ldap://xxx "
+                                                 "--ldap_passwords_in_clear_ok "
+                                                 "--trusted_domain=localhost")
+  def test_duplicate_headers2(self, http_proxy_server):
+    vector = ImpalaTestVector([ImpalaTestVector.Value("protocol", "hs2-http")])
+    shell_params = [
+                    '--ldap',
+                    '--ldap_password_cmd=date',
+                    '--auth_creds_ok_in_clear',
+                    '--connect_max_tries=1']
+    proc = spawn_shell(get_shell_cmd(vector, host_port="localhost:28000") + shell_params)
+    # Check that we connect OK
+    proc.expect(pattern="{0}] default>".format(get_impalad_port(vector)), timeout=10)
+
 
   def __proc_not_expect(self, proc, pattern):
     """Helper method for pexpect.except to assert that a pattern is not present."""

@@ -293,6 +293,9 @@ const string USER_WILDCARD_QUOTA_EXCEEDED = "current per-user load $0 for user $
 const string GROUP_QUOTA_EXCEEDED = "current per-group load $0 for user $1 in group $2 "
                                     "is at or above the group limit $3 in pool $4";
 
+// $0 = user name
+const string BAD_USER_NAME = "cannot parse user name $1";
+
 // Parses the topic key to separate the prefix that helps recognize the kind of update
 // received.
 static inline bool ParseTopicKey(
@@ -1154,17 +1157,16 @@ bool AdmissionController::HasAvailableSlots(const ScheduleState& state,
   return true;
 }
 
-bool AdmissionController::HasSufficientPoolQuotas(const ScheduleState& state,
+bool AdmissionController::HasSufficientPoolQuotas(const string& user,
     const TPoolConfig& pool_cfg, const string& pool_level, int64_t user_load,
     string* quota_exceeded_reason) const {
   if (!HasQuotaConfig(pool_cfg)) {
     // No need to check.
     return true;
   }
-  const string& user = GetEffectiveShortUser(state.request().query_ctx.session);
   bool key_matched = false;
   // Check for non-wildcard user quota, the highest precedence rules.
-  if (!HasSufficientUserQuota(pool_cfg, pool_level, state, user_load, user,
+  if (!HasSufficientUserQuota(user, pool_cfg, pool_level, user_load,
           quota_exceeded_reason, false, &key_matched)) {
     return false;
   }
@@ -1174,8 +1176,8 @@ bool AdmissionController::HasSufficientPoolQuotas(const ScheduleState& state,
     return true;
   }
   // Check for group quota.
-  if (!HasSufficientGroupQuota(pool_cfg, pool_level, state, user_load, user,
-          quota_exceeded_reason, &key_matched)) {
+  if (!HasSufficientGroupQuota(
+          pool_cfg, pool_level, user_load, user, quota_exceeded_reason, &key_matched)) {
     return false;
   }
   if (key_matched) {
@@ -1184,7 +1186,7 @@ bool AdmissionController::HasSufficientPoolQuotas(const ScheduleState& state,
     return true;
   }
   // Check for wildcard user quota.
-  if (!HasSufficientUserQuota(pool_cfg, pool_level, state, user_load, user,
+  if (!HasSufficientUserQuota(user, pool_cfg, pool_level, user_load,
           quota_exceeded_reason, true, &key_matched)) {
     return false;
   }
@@ -1194,10 +1196,9 @@ bool AdmissionController::HasQuotaConfig(const TPoolConfig& pool_cfg) {
   return !pool_cfg.user_query_limits.empty() || !pool_cfg.group_query_limits.empty();
 }
 
-bool AdmissionController::HasSufficientUserQuota(const TPoolConfig& pool_cfg,
-    const string& pool_name, const ScheduleState& state, int64_t user_load,
-    const string& user, string* quota_exceeded_reason, bool use_wildcard,
-    bool* key_matched) {
+bool AdmissionController::HasSufficientUserQuota(const string& user,
+    const TPoolConfig& pool_cfg, const string& pool_name, int64_t user_load,
+    string* quota_exceeded_reason, bool use_wildcard, bool* key_matched) {
   const string& user_for_limits = use_wildcard ? "*" : user;
   auto it = pool_cfg.user_query_limits.find(user_for_limits);
   int64_t user_limit = 0;
@@ -1217,8 +1218,8 @@ bool AdmissionController::HasSufficientUserQuota(const TPoolConfig& pool_cfg,
 }
 
 bool AdmissionController::HasSufficientGroupQuota(const TPoolConfig& pool_cfg,
-    const string& pool_name, const ScheduleState& state, int64_t user_load,
-    const string& user, string* quota_exceeded_reason, bool* key_matched) const {
+    const string& pool_name, int64_t user_load, const string& user,
+    string* quota_exceeded_reason, bool* key_matched) const {
   // Get the groups the user is in.
   TGetHadoopGroupsRequest req;
   req.__set_user(user);
@@ -1307,19 +1308,24 @@ bool AdmissionController::CanAdmitQuota(const ScheduleState& state,
     const TPoolConfig& pool_cfg, const TPoolConfig& root_cfg,
     string* not_admitted_reason) {
   PoolStats* pool_stats = GetPoolStats(state);
-  const string& user = GetEffectiveShortUser(state.request().query_ctx.session);
+  string user;
+  Status status = GetEffectiveShortUser(state.request().query_ctx.session, &user);
+  if (!status.ok()) {
+    *not_admitted_reason = Substitute( BAD_USER_NAME, user);
+  }
+//  const string& user = GetEffectiveShortUser(state.request().query_ctx.session);
 
   // Check quotas at pool level.
   int64_t user_load = pool_stats->GetUserLoad(user);
   if (!HasSufficientPoolQuotas(
-          state, pool_cfg, state.request_pool(), user_load, not_admitted_reason)) {
+          user, pool_cfg, state.request_pool(), user_load, not_admitted_reason)) {
     return false;
   }
 
   // Check quotas at root level.
   int64_t user_load_across_cluster = root_agg_user_loads_.get(user);
   if (!HasSufficientPoolQuotas(
-          state, root_cfg, ROOT_POOL, user_load_across_cluster, not_admitted_reason)) {
+          user, root_cfg, ROOT_POOL, user_load_across_cluster, not_admitted_reason)) {
     return false;
   }
   return true;
@@ -1587,6 +1593,10 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
       return Status::Expected(rejected_msg);
     }
 
+    string user;
+    RETURN_IF_ERROR(GetEffectiveShortUser(
+        queue_node->admission_request.request.query_ctx.session, &user));
+
     if (queue_node->admitted_schedule.get() != nullptr) {
       DCHECK(queue_node->admitted_schedule->query_schedule_pb().get() != nullptr);
       const string& group_name = queue_node->admitted_schedule->executor_group();
@@ -1602,7 +1612,8 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
         return Status::CANCELLED;
       }
       VLOG_QUERY << "Admitting query id=" << PrintId(request.query_id);
-      AdmitQuery(queue_node, false /* was_queued */, is_trivial);
+
+      AdmitQuery(queue_node, false /* was_queued */, is_trivial, user);
       stats->UpdateWaitTime(0);
       VLOG_RPC << "Final: " << stats->DebugString();
       *schedule_result = move(queue_node->admitted_schedule->query_schedule_pb());
@@ -1621,7 +1632,9 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
 
     stats->Queue();
     if (HasQuotaConfig(queue_node->pool_cfg) || HasQuotaConfig(queue_node->root_cfg)) {
-      const string& user = GetEffectiveShortUser(request.request.query_ctx.session);
+//      const string& user = GetEffectiveShortUser(request.request.query_ctx.session);
+//      string user2;
+//      GetEffectiveShortUser(request.request.query_ctx.session);
       stats->IncrementPerUser(user);
     }
     queue->Enqueue(queue_node);
@@ -2510,7 +2523,11 @@ void AdmissionController::TryDequeue() {
       DCHECK(!is_cancelled);
       DCHECK(!is_rejected);
       DCHECK(queue_node->admitted_schedule != nullptr);
-      AdmitQuery(queue_node, true /* was_queued */, is_trivial);
+      string local_user;
+      Status status  = GetEffectiveShortUser(
+          queue_node->admission_request.request.query_ctx.session, &local_user);
+      DCHECK(status.ok()); // Can never happen as user name was checked at query entry.
+      AdmitQuery(queue_node, true /* was_queued */, is_trivial, local_user);
     }
     pools_for_updates_.insert(pool_name);
   }
@@ -2581,7 +2598,8 @@ AdmissionController::PoolStats* AdmissionController::GetPoolStats(
   return &it->second;
 }
 
-void AdmissionController::AdmitQuery(QueueNode* node, bool was_queued, bool is_trivial) {
+void AdmissionController::AdmitQuery(
+    QueueNode* node, bool was_queued, bool is_trivial, string& user) {
   ScheduleState* state = node->admitted_schedule.get();
   VLOG_RPC << "For Query " << PrintId(state->query_id())
            << " per_backend_mem_limit set to: "
@@ -2592,8 +2610,6 @@ void AdmissionController::AdmitQuery(QueueNode* node, bool was_queued, bool is_t
            << PrintBytes(state->coord_backend_mem_limit())
            << " coord_backend_mem_to_admit set to: "
            << PrintBytes(state->coord_backend_mem_to_admit());
-  const std::string& user =
-      GetEffectiveShortUser(node->admission_request.request.query_ctx.session);
 
   // Update memory and number of queries.
   bool track_per_user = HasQuotaConfig(node->pool_cfg) || HasQuotaConfig(node->root_cfg);

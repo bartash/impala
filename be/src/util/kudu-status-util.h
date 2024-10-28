@@ -22,7 +22,7 @@
 #include "kudu/util/status.h"
 
 /// Takes a Kudu status and returns an impala one, if it's not OK.
-/// Evaluates the prepend argument only if the status is not OK.
+/// Evaluates the prepend argument on   ly if the status is not OK.
 #define KUDU_RETURN_IF_ERROR(expr, prepend)                        \
   do {                                                             \
     const kudu::Status& _s = (expr);                               \

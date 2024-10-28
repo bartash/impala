@@ -19,6 +19,12 @@
 #include "common/init.h"
 #include "common/logging.h"
 #include "kudu/security/test/mini_kdc.h"
+
+#include "exec/kudu/kudu-util.h"
+#include "kudu/rpc/sasl_common.h"
+#include "kudu/security/gssapi.h"
+#include "kudu/security/init.h"
+
 #include "rpc/authentication.h"
 #include "rpc/thrift-server.h"
 #include "util/auth-util.h"
@@ -317,6 +323,11 @@ TEST(Auth, UserUtilities) {
   };
   for (const auto& pair : kerberos_name_mappings) {
     ASSERT_EQ(GetShortUsernameFromKerberosPrincipal(pair.first), pair.second);
+    string local_name;
+    kudu::Status kstatus = kudu::security::MapPrincipalToLocalName(pair.first, &local_name);
+    ASSERT_TRUE(kstatus.ok()) << pair.first;
+    ASSERT_EQ(local_name, pair.second);
+
   }
 
   assertEffectiveUser("connected1", "delegated1", "delegated1");
@@ -326,6 +337,10 @@ TEST(Auth, UserUtilities) {
   assertEffectiveShortUser("connected1", "delegated1", "delegated1");
   assertEffectiveShortUser("connected1", "", "connected1");
   assertEffectiveShortUser("impala@ROOT.COMOPS.SITE", "", "impala");
+  string local_name;
+  kudu::Status kstatus = kudu::security::MapPrincipalToLocalName("impala@ROOT.COMOPS.SITE", &local_name);
+  ASSERT_TRUE(kstatus.ok());
+  ASSERT_EQ(local_name, "impala");
 }
 
 }

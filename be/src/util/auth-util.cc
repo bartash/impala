@@ -50,11 +50,11 @@ const string& GetEffectiveUser(const TSessionState& session) {
 string GetEffectiveShortUser(const TSessionState& session) {
   const string& effective_user = GetEffectiveUser(session);
   // If the name is not a kerberos principal, then  return the effective user.;
-  if (effective_user.find('@') != std::string::npos) {
+  if (effective_user.find('@') == std::string::npos) {
     return effective_user;
   }
   // Old implementation - delete?
-//  return GetShortUsernameFromKerberosPrincipal(GetEffectiveUser(session));
+  return GetShortUsernameFromKerberosPrincipal(GetEffectiveUser(session));
 
 
 }

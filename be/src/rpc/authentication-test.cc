@@ -311,7 +311,9 @@ TEST(Auth, UserUtilities) {
   std::pair<const char*, const char*> kerberos_name_mappings[] = {
       {"impala@ROOT.COMOPS.SITE", "impala"},
       {"changepw/kdc1.example.com@EXAMPLE.COM", "changepw"},
-      {"krbtgt/EAST.EXAMPLE.COM@WEST.EXAMPLE.COM", "krbtgt"}
+      {"krbtgt/EAST.EXAMPLE.COM@WEST.EXAMPLE.COM", "krbtgt"},
+      // The '@' before '/' might be considered malformed, text after '@' is ignored.
+      {"buggy@EAST.EXAMPLE.COM/WEST.EXAMPLE.COM", "buggy"}
   };
   for (const auto& pair : kerberos_name_mappings) {
     ASSERT_EQ(GetShortUsernameFromKerberosPrincipal(pair.first), pair.second);

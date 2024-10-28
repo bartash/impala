@@ -928,6 +928,12 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
       *schedule_state, config_e, config_root, &not_admitted_reason));
   EXPECT_STR_CONTAINS(not_admitted_reason,
       "current per-user load 0 for user userH is at or above the user limit 0");
+
+  ScheduleState* bad_user_state = MakeScheduleState(QUEUE_E, config_e, host_count,
+      30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, "a@b.b.com@d.com");
+  ASSERT_FALSE(admission_controller->CanAdmitQuota(
+      *bad_user_state, config_e, config_root, &not_admitted_reason));
+  EXPECT_STR_CONTAINS(not_admitted_reason, "cannot parse user name a@b.b.com@d.com");
 }
 
 /// Test CanAdmitRequest in the context of user and group quotas.

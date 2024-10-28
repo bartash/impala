@@ -18,14 +18,14 @@
 #include "testutil/gtest-util.h"
 #include "common/init.h"
 #include "common/logging.h"
+#include "kudu/rpc/sasl_common.h"
+#include "kudu/security/init.h"
 #include "kudu/security/test/mini_kdc.h"
 #include "rpc/authentication.h"
-#include "rpc/thrift-server.h"
 #include "util/auth-util.h"
 #include "util/kudu-status-util.h"
 #include "util/network-util.h"
 #include "util/openssl-util.h"
-#include "util/thread.h"
 
 #include <ldap.h>
 
@@ -295,7 +295,9 @@ void assertEffectiveShortUser(
   TSessionState session;
   if (!connected_user.empty()) session.__set_connected_user(connected_user);
   if (!delegated_user.empty()) session.__set_delegated_user(delegated_user);
-  ASSERT_EQ(GetEffectiveShortUser(session), expected);
+  string returned_user;
+  ASSERT_OK(GetEffectiveShortUser(session, &returned_user));
+  ASSERT_EQ(returned_user, expected);
 }
 
 // Unit test for GetShortUsernameFromKerberosPrincipal().
@@ -307,6 +309,18 @@ TEST(Auth, UserUtilities) {
     ASSERT_EQ(GetShortUsernameFromKerberosPrincipal(name), name);
   }
 
+  // Illegal kerberos user names.
+  const char* illegal_kerberos_usernames[] = {
+      "buggy@EAST.EXAMPLE.COM/WEST.EXAMPLE.COM",
+      "two_ats@kdc1.example.com@EXAMPLE.COM",
+      "two_slash/kdc1.example.com@/EXAMPLE.COM"
+  };
+  for (auto& bad_name : illegal_kerberos_usernames) {
+    string unused;
+    kudu::Status kstatus = kudu::security::MapPrincipalToLocalName(bad_name, &unused);
+    ASSERT_FALSE(kstatus.ok()) << bad_name;
+  }
+
   // Kerberos usernames and the derived short name.
   std::pair<const char*, const char*> kerberos_name_mappings[] = {
       {"impala@ROOT.COMOPS.SITE", "impala"},
@@ -315,12 +329,18 @@ TEST(Auth, UserUtilities) {
   };
   for (const auto& pair : kerberos_name_mappings) {
     ASSERT_EQ(GetShortUsernameFromKerberosPrincipal(pair.first), pair.second);
+    string local_name;
+    kudu::Status kstatus = kudu::security::MapPrincipalToLocalName(pair.first, &local_name);
+    ASSERT_TRUE(kstatus.ok()) << pair.first;
+    ASSERT_EQ(local_name, pair.second);
   }
 
+  // Test GetEffectiveUser().
   assertEffectiveUser("connected1", "delegated1", "delegated1");
   assertEffectiveUser("connected1", "", "connected1");
   assertEffectiveUser("impala@ROOT.COMOPS.SITE", "", "impala@ROOT.COMOPS.SITE");
 
+  // Test GetEffectiveShortUser().
   assertEffectiveShortUser("connected1", "delegated1", "delegated1");
   assertEffectiveShortUser("connected1", "", "connected1");
   assertEffectiveShortUser("impala@ROOT.COMOPS.SITE", "", "impala");

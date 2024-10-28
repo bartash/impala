@@ -1280,22 +1280,22 @@ class AdmissionController {
   /// pool with config 'pool_cfg'.
   /// Returns true if quotas are not configured.
   /// Must hold admission_ctrl_lock_.
-  bool HasSufficientPoolQuotas(const ScheduleState& state, const TPoolConfig& pool_cfg,
+  bool HasSufficientPoolQuotas(const string& user, const TPoolConfig& pool_cfg,
       const string& pool_level, int64_t user_load, string* quota_exceeded_reason) const;
 
   /// Check that the query will not exceed a per-user limit for the delegated user.
   /// Returns True if there is sufficient quota or if no per-user quota is configured.
   /// When a rule is evaluated, and passed, then *key_matched is set to True.
-  static bool HasSufficientUserQuota(const TPoolConfig& pool_cfg, const string& pool_name,
-      const ScheduleState& state, int64_t user_load, const string& user,
-      string* quota_exceeded_reason, bool use_wildcard, bool* key_matched);
+  static bool HasSufficientUserQuota(const string& user, const TPoolConfig& pool_cfg,
+      const string& pool_name, int64_t user_load, string* quota_exceeded_reason,
+      bool use_wildcard, bool* key_matched);
 
   /// Check that the query will not exceed a per-group limit for the delegated user.
   /// Returns True if there is sufficient quota or if no per-group quota is configured.
   /// When a rule is evaluated, and passed, then *key_matched is set to True.
   bool HasSufficientGroupQuota(const TPoolConfig& pool_cfg, const string& pool_name,
-      const ScheduleState& state, int64_t user_load, const string& user,
-      string* quota_exceeded_reason, bool* key_matched) const;
+      int64_t user_load, const string& user, string* quota_exceeded_reason,
+      bool* key_matched) const;
 
   /// Returns available memory and slots of the executor group.
   const std::pair<int64_t, int64_t> GetAvailableMemAndSlots(

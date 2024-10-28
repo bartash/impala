@@ -48,9 +48,15 @@ const string& GetEffectiveUser(const TSessionState& session) {
 }
 
 string GetEffectiveShortUser(const TSessionState& session) {
-  // If the name is not a kerberos principal, then GetShortUsernameFromKerberosPrincipal()
-  // has no effect.
-  return GetShortUsernameFromKerberosPrincipal(GetEffectiveUser(session));
+  const string& effective_user = GetEffectiveUser(session);
+  // If the name is not a kerberos principal, then  return the effective user.;
+  if (effective_user.find('@') != std::string::npos) {
+    return effective_user;
+  }
+  // Old implementation - delete?
+//  return GetShortUsernameFromKerberosPrincipal(GetEffectiveUser(session));
+
+
 }
 
 const string& GetEffectiveUser(const ImpalaServer::SessionState& session) {

@@ -303,6 +303,15 @@ void assertEffectiveShortUser(
   if (!delegated_user.empty()) session.__set_delegated_user(delegated_user);
   ASSERT_EQ(GetEffectiveShortUser(session), expected);
 }
+void assertEffectiveShortUser2(
+    const string& connected_user, const string& delegated_user, const string& expected) {
+  TSessionState session;
+  if (!connected_user.empty()) session.__set_connected_user(connected_user);
+  if (!delegated_user.empty()) session.__set_delegated_user(delegated_user);
+  string returned_user;
+  ASSERT_OK(GetEffectiveShortUser2(session, &returned_user));
+  ASSERT_EQ(returned_user, expected);
+}
 
 // Unit test for GetShortUsernameFromKerberosPrincipal().
 TEST(Auth, UserUtilities) {
@@ -338,6 +347,10 @@ TEST(Auth, UserUtilities) {
   assertEffectiveShortUser("connected1", "delegated1", "delegated1");
   assertEffectiveShortUser("connected1", "", "connected1");
   assertEffectiveShortUser("impala@ROOT.COMOPS.SITE", "", "impala");
+
+  assertEffectiveShortUser2("connected1", "delegated1", "delegated1");
+  assertEffectiveShortUser2("connected1", "", "connected1");
+  assertEffectiveShortUser2("impala@ROOT.COMOPS.SITE", "", "impala");
   string local_name;
   kudu::Status kstatus = kudu::security::MapPrincipalToLocalName("impala@ROOT.COMOPS.SITE", &local_name);
   ASSERT_TRUE(kstatus.ok());

@@ -1601,11 +1601,10 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
       }
       VLOG_QUERY << "Admitting query id=" << PrintId(request.query_id);
 
-      string local_user;
-      // FIXME return if fails
-      Status status  = GetEffectiveShortUser2(queue_node->admission_request.request.query_ctx.session, &local_user);
-
-      AdmitQuery(queue_node, false /* was_queued */, is_trivial, local_user);
+      string user;
+      RETURN_IF_ERROR(GetEffectiveShortUser2(
+          queue_node->admission_request.request.query_ctx.session, &user));
+      AdmitQuery(queue_node, false /* was_queued */, is_trivial, user);
       stats->UpdateWaitTime(0);
       VLOG_RPC << "Final: " << stats->DebugString();
       *schedule_result = move(queue_node->admitted_schedule->query_schedule_pb());

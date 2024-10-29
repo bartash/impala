@@ -48,7 +48,10 @@ const string& GetEffectiveUser(const TSessionState& session) {
 }
 
 Status GetEffectiveShortUser2(const TSessionState& session, std::string* short_name) {
-
+  const string& effective_user = GetEffectiveUser(session);
+  KUDU_RETURN_IF_ERROR(
+      kudu::security::MapPrincipalToLocalName(effective_user, short_name),
+      "Could not parse Kerberos name");
   return Status::OK();
 }
 

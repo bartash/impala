@@ -47,6 +47,11 @@ const string& GetEffectiveUser(const TSessionState& session) {
   return session.connected_user;
 }
 
+Status GetEffectiveShortUser2(const TSessionState& session, std::string* short_name) {
+
+  return Status::OK();
+}
+
 string GetEffectiveShortUser(const TSessionState& session) {
   const string& effective_user = GetEffectiveUser(session);
   // If the name is not a kerberos principal, then  return the effective user.;

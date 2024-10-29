@@ -2508,6 +2508,9 @@ void AdmissionController::TryDequeue() {
       DCHECK(!is_cancelled);
       DCHECK(!is_rejected);
       DCHECK(queue_node->admitted_schedule != nullptr);
+      string local_user;
+      Status status  = GetEffectiveShortUser2(queue_node->admission_request.request.query_ctx.session, &local_user);
+      DCHECK(status.ok()); // Can never happen as user name was checked at query entry.
       AdmitQuery(queue_node, true /* was_queued */, is_trivial);
     }
     pools_for_updates_.insert(pool_name);

@@ -1309,7 +1309,7 @@ bool AdmissionController::CanAdmitQuota(const ScheduleState& state,
     string* not_admitted_reason) {
   PoolStats* pool_stats = GetPoolStats(state);
   string user;
-  Status status = GetEffectiveShortUser2(state.request().query_ctx.session, &user);
+  Status status = GetEffectiveShortUser(state.request().query_ctx.session, &user);
   if (!status.ok()) {
     *not_admitted_reason = Substitute( BAD_USER_NAME, user);
   }
@@ -1594,7 +1594,7 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
     }
 
     string user;
-    RETURN_IF_ERROR(GetEffectiveShortUser2(
+    RETURN_IF_ERROR(GetEffectiveShortUser(
         queue_node->admission_request.request.query_ctx.session, &user));
 
     if (queue_node->admitted_schedule.get() != nullptr) {
@@ -2524,7 +2524,8 @@ void AdmissionController::TryDequeue() {
       DCHECK(!is_rejected);
       DCHECK(queue_node->admitted_schedule != nullptr);
       string local_user;
-      Status status  = GetEffectiveShortUser2(queue_node->admission_request.request.query_ctx.session, &local_user);
+      Status status  = GetEffectiveShortUser(
+          queue_node->admission_request.request.query_ctx.session, &local_user);
       DCHECK(status.ok()); // Can never happen as user name was checked at query entry.
       AdmitQuery(queue_node, true /* was_queued */, is_trivial, local_user);
     }

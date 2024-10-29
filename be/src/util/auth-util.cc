@@ -47,22 +47,12 @@ const string& GetEffectiveUser(const TSessionState& session) {
   return session.connected_user;
 }
 
-Status GetEffectiveShortUser2(const TSessionState& session, std::string* short_name) {
+Status GetEffectiveShortUser(const TSessionState& session, std::string* short_name) {
   const string& effective_user = GetEffectiveUser(session);
   KUDU_RETURN_IF_ERROR(
       kudu::security::MapPrincipalToLocalName(effective_user, short_name),
       "Could not parse Kerberos name");
   return Status::OK();
-}
-
-string GetEffectiveShortUser(const TSessionState& session) {
-  const string& effective_user = GetEffectiveUser(session);
-  // If the name is not a kerberos principal, then  return the effective user.;
-  if (effective_user.find('@') == std::string::npos) {
-    return effective_user;
-  }
-  // Old implementation - delete?
-  return GetShortUsernameFromKerberosPrincipal(GetEffectiveUser(session));
 }
 
 const string& GetEffectiveUser(const ImpalaServer::SessionState& session) {

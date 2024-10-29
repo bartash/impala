@@ -42,10 +42,7 @@ const std::string& GetEffectiveUser(const TSessionState& session);
 const std::string& GetEffectiveUser(const ImpalaServer::SessionState& session);
 
 /// As the above GetEffectiveUser(), but returns the short form of the name.
-std::string GetEffectiveShortUser(const TSessionState& session);
-
-// FIXME
-Status GetEffectiveShortUser2(const TSessionState& session, std::string* short_name);
+Status GetEffectiveShortUser(const TSessionState& session, std::string* short_name);
 
 
 /// Checks if 'user' can access the runtime profile or execution summary of a

@@ -309,7 +309,7 @@ void assertEffectiveShortUser2(
   if (!connected_user.empty()) session.__set_connected_user(connected_user);
   if (!delegated_user.empty()) session.__set_delegated_user(delegated_user);
   string returned_user;
-  ASSERT_OK(GetEffectiveShortUser2(session, &returned_user));
+  ASSERT_OK(GetEffectiveShortUser(session, &returned_user));
   ASSERT_EQ(returned_user, expected);
 }
 

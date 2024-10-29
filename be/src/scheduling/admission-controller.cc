@@ -1600,7 +1600,12 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
         return Status::CANCELLED;
       }
       VLOG_QUERY << "Admitting query id=" << PrintId(request.query_id);
-      AdmitQuery(queue_node, false /* was_queued */, is_trivial);
+
+      string local_user;
+      // FIXME return if fails
+      Status status  = GetEffectiveShortUser2(queue_node->admission_request.request.query_ctx.session, &local_user);
+
+      AdmitQuery(queue_node, false /* was_queued */, is_trivial, local_user);
       stats->UpdateWaitTime(0);
       VLOG_RPC << "Final: " << stats->DebugString();
       *schedule_result = move(queue_node->admitted_schedule->query_schedule_pb());
@@ -2511,7 +2516,7 @@ void AdmissionController::TryDequeue() {
       string local_user;
       Status status  = GetEffectiveShortUser2(queue_node->admission_request.request.query_ctx.session, &local_user);
       DCHECK(status.ok()); // Can never happen as user name was checked at query entry.
-      AdmitQuery(queue_node, true /* was_queued */, is_trivial);
+      AdmitQuery(queue_node, true /* was_queued */, is_trivial, local_user);
     }
     pools_for_updates_.insert(pool_name);
   }
@@ -2582,7 +2587,8 @@ AdmissionController::PoolStats* AdmissionController::GetPoolStats(
   return &it->second;
 }
 
-void AdmissionController::AdmitQuery(QueueNode* node, bool was_queued, bool is_trivial) {
+void AdmissionController::AdmitQuery(
+    QueueNode* node, bool was_queued, bool is_trivial, string& user) {
   ScheduleState* state = node->admitted_schedule.get();
   VLOG_RPC << "For Query " << PrintId(state->query_id())
            << " per_backend_mem_limit set to: "
@@ -2593,8 +2599,6 @@ void AdmissionController::AdmitQuery(QueueNode* node, bool was_queued, bool is_t
            << PrintBytes(state->coord_backend_mem_limit())
            << " coord_backend_mem_to_admit set to: "
            << PrintBytes(state->coord_backend_mem_to_admit());
-  const std::string& user =
-      GetEffectiveShortUser(node->admission_request.request.query_ctx.session);
 
   // Update memory and number of queries.
   bool track_per_user = HasQuotaConfig(node->pool_cfg) || HasQuotaConfig(node->root_cfg);

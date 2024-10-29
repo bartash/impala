@@ -1230,7 +1230,7 @@ class AdmissionController {
   /// Sets the per host mem limit and mem admitted in the schedule and does the necessary
   /// accounting and logging on successful submission.
   /// Caller must hold 'admission_ctrl_lock_'.
-  void AdmitQuery(QueueNode* node, bool was_queued, bool is_trivial);
+  void AdmitQuery(QueueNode* node, bool was_queued, bool is_trivial, string& user);
 
   /// Same as PoolToJson() but requires 'admission_ctrl_lock_' to be held by the caller.
   /// Is a helper method used by both PoolToJson() and AllPoolsToJson()

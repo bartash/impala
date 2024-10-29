@@ -294,7 +294,7 @@ const string GROUP_QUOTA_EXCEEDED = "current per-group load $0 for user $1 in gr
                                     "is at or above the group limit $3 in pool $4";
 
 // $0 = user name
-const string BAD_USER_NAME = "cannot parse user name $1";
+const string BAD_USER_NAME = "cannot parse user name $0";
 
 // Parses the topic key to separate the prefix that helps recognize the kind of update
 // received.
@@ -1309,11 +1309,12 @@ bool AdmissionController::CanAdmitQuota(const ScheduleState& state,
     string* not_admitted_reason) {
   PoolStats* pool_stats = GetPoolStats(state);
   string user;
-  Status status = GetEffectiveShortUser(state.request().query_ctx.session, &user);
+  const TSessionState& session = state.request().query_ctx.session;
+  Status status = GetEffectiveShortUser(session, &user);
   if (!status.ok()) {
-    *not_admitted_reason = Substitute( BAD_USER_NAME, user);
+    *not_admitted_reason = Substitute(BAD_USER_NAME,  GetEffectiveUser(session));
+    return false;
   }
-//  const string& user = GetEffectiveShortUser(state.request().query_ctx.session);
 
   // Check quotas at pool level.
   int64_t user_load = pool_stats->GetUserLoad(user);

@@ -346,7 +346,6 @@ TEST(Auth, UserUtilities) {
     kudu::Status kstatus = kudu::security::MapPrincipalToLocalName(pair.first, &local_name);
     ASSERT_TRUE(kstatus.ok()) << pair.first;
     ASSERT_EQ(local_name, pair.second);
-
   }
 
   assertEffectiveUser("connected1", "delegated1", "delegated1");

@@ -63,8 +63,6 @@ string GetEffectiveShortUser(const TSessionState& session) {
   }
   // Old implementation - delete?
   return GetShortUsernameFromKerberosPrincipal(GetEffectiveUser(session));
-
-
 }
 
 const string& GetEffectiveUser(const ImpalaServer::SessionState& session) {

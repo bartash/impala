@@ -293,6 +293,9 @@ const string USER_WILDCARD_QUOTA_EXCEEDED = "current per-user load $0 for user $
 const string GROUP_QUOTA_EXCEEDED = "current per-group load $0 for user $1 in group $2 "
                                     "is at or above the group limit $3 in pool $4";
 
+// $0 = user name
+const string BAD_USER_NAME = "cannot parse user name $1";
+
 // Parses the topic key to separate the prefix that helps recognize the kind of update
 // received.
 static inline bool ParseTopicKey(
@@ -1305,7 +1308,12 @@ bool AdmissionController::CanAdmitQuota(const ScheduleState& state,
     const TPoolConfig& pool_cfg, const TPoolConfig& root_cfg,
     string* not_admitted_reason) {
   PoolStats* pool_stats = GetPoolStats(state);
-  const string& user = GetEffectiveShortUser(state.request().query_ctx.session);
+  string user;
+  Status status = GetEffectiveShortUser2(state.request().query_ctx.session, &user);
+  if (!status.ok()) {
+    *not_admitted_reason = Substitute( BAD_USER_NAME, user);
+  }
+//  const string& user = GetEffectiveShortUser(state.request().query_ctx.session);
 
   // Check quotas at pool level.
   int64_t user_load = pool_stats->GetUserLoad(user);
@@ -1585,6 +1593,10 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
       return Status::Expected(rejected_msg);
     }
 
+    string user;
+    RETURN_IF_ERROR(GetEffectiveShortUser2(
+        queue_node->admission_request.request.query_ctx.session, &user));
+
     if (queue_node->admitted_schedule.get() != nullptr) {
       DCHECK(queue_node->admitted_schedule->query_schedule_pb().get() != nullptr);
       const string& group_name = queue_node->admitted_schedule->executor_group();
@@ -1601,9 +1613,6 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
       }
       VLOG_QUERY << "Admitting query id=" << PrintId(request.query_id);
 
-      string user;
-      RETURN_IF_ERROR(GetEffectiveShortUser2(
-          queue_node->admission_request.request.query_ctx.session, &user));
       AdmitQuery(queue_node, false /* was_queued */, is_trivial, user);
       stats->UpdateWaitTime(0);
       VLOG_RPC << "Final: " << stats->DebugString();
@@ -1623,7 +1632,9 @@ Status AdmissionController::SubmitForAdmission(const AdmissionRequest& request,
 
     stats->Queue();
     if (HasQuotaConfig(queue_node->pool_cfg) || HasQuotaConfig(queue_node->root_cfg)) {
-      const string& user = GetEffectiveShortUser(request.request.query_ctx.session);
+//      const string& user = GetEffectiveShortUser(request.request.query_ctx.session);
+//      string user2;
+//      GetEffectiveShortUser(request.request.query_ctx.session);
       stats->IncrementPerUser(user);
     }
     queue->Enqueue(queue_node);

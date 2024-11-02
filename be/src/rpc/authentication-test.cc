@@ -321,11 +321,19 @@ TEST(Auth, UserUtilities) {
       {"impala@ROOT.COMOPS.SITE", "impala"},
       {"changepw/kdc1.example.com@example.com", "changepw"},
       {"krbtgt/EAST.EXAMPLE.COM@WEST.EXAMPLE.COM", "krbtgt"},
-      {"User1/admin/STAFF/employees@WEST.EXAMPLE.COM", "User1"}
+      {"User1/admin/STAFF/employees@WEST.EXAMPLE.COM", "User1"},
+      {"/User1/admin/STAFF/employees@WEST.EXAMPLE.COM", ""}
   };
   for (const auto& pair : kerberos_name_mappings) {
     assertEffectiveShortUser(pair.first, "", pair.second);
   }
+  string name;
+  kudu::Status kstatus = kudu::security::MapPrincipalToLocalName("/User1/admin/STAFF/employees@WEST.EXAMPLE.COM", &name);
+  ASSERT_TRUE(kstatus.ok());
+  ASSERT_TRUE(name.empty());
+  std::cout << "name=" << name << std::endl;
+  std::cout << "ksattus=" << kstatus.ToString()  << std::endl;
+
 
   // Test GetEffectiveUser() logic.
   assertEffectiveUser("connected1", "delegated1", "delegated1");

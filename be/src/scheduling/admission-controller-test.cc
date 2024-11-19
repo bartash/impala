@@ -1025,7 +1025,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
 
 /// Test CanAdmitRequest in the context of user and group quotas.
 // Group membership is injected in AdmissionControllerTest::Setup().
-// The user 'bob' is in group 'it'.
+// The users 'bob' and 'fiona' are in group 'it'.
 // The user 'howard' is in group 'support'.
 TEST_F(AdmissionControllerTest, QuotaExamples) {
   // Pass the paths of the configuration files as command line flags.
@@ -1033,21 +1033,21 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   FLAGS_llama_site_path = GetResourceFile("llama-site-test2.xml");
   string not_admitted_reason;
 
-  // Bob can run 2 queries, because the more specific group rule for 'it' overrides
-  // the less-specific wildcard rule.
-  ASSERT_TRUE(can_queue("bob", 1, 1, true, &not_admitted_reason));
-  ASSERT_FALSE(can_queue("bob", 2, 1, true, &not_admitted_reason));
-  ASSERT_EQ("current per-group load 2 for user bob in group it is at or above the group "
-            "limit 2 in pool "
-          + QUEUE_SMALL,
-      not_admitted_reason);
-
   // Alice can run 3 queries, because the more specific rule for 'alice' overrides
   // the less-specific wildcard rule.
   ASSERT_TRUE(can_queue("alice", 3, 2, true, &not_admitted_reason));
   ASSERT_FALSE(can_queue("alice", 4, 12, true, &not_admitted_reason));
   ASSERT_EQ(
       "current per-user load 4 for user alice is at or above the user limit 4 in pool "
+          + QUEUE_SMALL,
+      not_admitted_reason);
+
+  // Bob can run 2 queries, because the more specific group rule for 'it' overrides
+  // the less-specific wildcard rule.
+  ASSERT_TRUE(can_queue("bob", 1, 1, true, &not_admitted_reason));
+  ASSERT_FALSE(can_queue("bob", 2, 1, true, &not_admitted_reason));
+  ASSERT_EQ("current per-group load 2 for user bob in group it is at or above the group "
+            "limit 2 in pool "
           + QUEUE_SMALL,
       not_admitted_reason);
 

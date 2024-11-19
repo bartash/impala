@@ -865,6 +865,10 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestCount) {
   TPoolConfig config_root;
   ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_ROOT, &config_root));
 
+  // Get the PoolConfig for QUEUE_C ("root.queueC").
+  TPoolConfig config_c;
+  ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_C, &config_c));
+
   // Get the PoolConfig for QUEUE_D ("root.queueD").
   TPoolConfig config_d;
   ASSERT_OK(request_pool_service->GetPoolConfig(QUEUE_D, &config_d));
@@ -902,6 +906,14 @@ TEST_F(AdmissionControllerTest, CanAdmitRequestCount) {
   EXPECT_STR_CONTAINS(
       not_admitted_reason, "number of running queries 7 is at or over limit 6");
   ASSERT_FALSE(coordinator_resource_limited);
+
+  // Test aclSubmitApps blocks User2 on queueC.
+  ScheduleState* schedule_state_acl_fail =  MakeScheduleState(QUEUE_C, config_c, host_count, 10L * MEGABYTE,
+      ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, USER2);
+  ASSERT_FALSE(admission_controller->CanAdmitRequest(*schedule_state_acl_fail, config_c,
+      config_root, true, &not_admitted_reason, nullptr, coordinator_resource_limited));
+  EXPECT_STR_CONTAINS(not_admitted_reason,
+      "xxxxx");
 }
 
 /// Test CanAdmitQuota in the context of user and group quotas.

@@ -1035,6 +1035,15 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
 
   ASSERT_TRUE(can_queue("bob", 1, 1, true, &not_admitted_reason));
 
+  // Alice can run 3 queries, because the specifc rule for 'alice' overrides
+  // the less-specific wildcard rule.
+  ASSERT_TRUE(can_queue("alice", 3, 2, true, &not_admitted_reason));
+  ASSERT_FALSE(can_queue("alice", 4, 12, true, &not_admitted_reason));
+  ASSERT_EQ(
+      "current per-user load 4 for user alice is at or above the user limit 4 in pool "
+          + QUEUE_SMALL,
+      not_admitted_reason);
+
   // Howard has a limit of 4 at root level.
   ASSERT_FALSE(can_queue("howard", 3, 1, true, &not_admitted_reason));
   ASSERT_EQ(

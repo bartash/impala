@@ -1051,6 +1051,15 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
           + QUEUE_SMALL,
       not_admitted_reason);
 
+  // Fiona can run 3 queries, because the more specific user rule overrides
+  // the less-specific group rule.
+  ASSERT_TRUE(can_queue("fiona", 2, 1, true, &not_admitted_reason));
+  ASSERT_FALSE(can_queue("fiona", 3, 1, true, &not_admitted_reason));
+  ASSERT_EQ(
+      "current per-user load 3 for user fiona is at or above the user limit 3 in pool "
+          + QUEUE_SMALL,
+      not_admitted_reason);
+
   // Howard has a limit of 4 at root level.
   ASSERT_FALSE(can_queue("howard", 3, 1, true, &not_admitted_reason));
   ASSERT_EQ(

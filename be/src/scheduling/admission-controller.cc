@@ -1240,21 +1240,28 @@ bool AdmissionController::HasSufficientGroupQuota(const string& user,
     return false;
   }
 
-  // For every group see if there is a limit and enforce it.
-
+  // Find the highest group limit and enforce it.
+  int64_t highest_group_limit = -1;
+  string highest_group;
   for (const string& group : res.groups) {
     auto it = pool_cfg.group_query_limits.find(group);
     int64_t group_limit = 0;
     if (it != pool_cfg.group_query_limits.end()) {
       // There is a per-user limit for the delegated user.
       group_limit = it->second;
-      if (user_load + 1 > group_limit) {
-        *quota_exceeded_reason = Substitute(
-            GROUP_QUOTA_EXCEEDED, user_load, user, group, group_limit, pool_name);
-        return false;
+      if (group_limit > highest_group_limit) {
+        highest_group_limit = group_limit;
+        highest_group = group;
       }
-      *key_matched = true;
     }
+  }
+  if (highest_group_limit != -1) {
+    if (user_load + 1 > highest_group_limit) {
+      *quota_exceeded_reason = Substitute(GROUP_QUOTA_EXCEEDED, user_load, user,
+          highest_group, highest_group_limit, pool_name);
+      return false;
+    }
+    *key_matched = true;
   }
   return true;
 }

@@ -338,6 +338,7 @@ public class TestRequestPoolService {
       {
         put("*", 1);
         put("alice", 4);
+        put("fiona", 3);
       }
     };
     Assert.assertEquals(smallUserExpected, smallConfig.user_query_limits);

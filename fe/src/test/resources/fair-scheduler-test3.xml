@@ -44,6 +44,12 @@
         <user>alice</user>
         <totalCount>4</totalCount>
       </userQueryLimit>
+
+      <!-- The user 'fiona' can run 3 queries in the small pool -->
+      <userQueryLimit>
+        <user>fiona</user>
+        <totalCount>3</totalCount>
+      </userQueryLimit>
     </queue>
 
     <queue name="group-set-large">

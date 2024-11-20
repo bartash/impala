@@ -246,8 +246,21 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
       <conbody>
 
         <p>
-          User Quotas are blah
+          User Quotas can be used to define rules which limit the total count of queries
+          that a user can run concurrently. The rules are based on either usernames or
+          group membership. The username is the short username,
+          groups are
+          <xref
+              href="https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/GroupsMapping.html"
+              scope="external" format="html">Hadoop Groups
+          </xref>.
         </p>
+
+        <p>
+
+        </p>
+
+
       </conbody>
 
     </concept>

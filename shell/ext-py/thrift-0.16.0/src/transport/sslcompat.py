@@ -7,7 +7,7 @@
 # "license"); you may not use this file except in compliance
 # with the license. you may obtain a copy of the license at
 #
-#   http://www.apache.org/licenses/license-2.0
+#   https://www.apache.org/licenses/LICENSE-2.0
 #
 # unless required by applicable law or agreed to in writing,
 # software distributed under the license is distributed on an

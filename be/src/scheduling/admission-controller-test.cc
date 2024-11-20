@@ -6,7 +6,7 @@
 // "License"); you may not use this file except in compliance
 // with the License.  You may obtain a copy of the License at
 //
-//   http://www.apache.org/licenses/LICENSE-2.0
+//   https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing,
 // software distributed under the License is distributed on an
@@ -33,7 +33,7 @@
 
 // Access the flags that are defined in RequestPoolService.
 DECLARE_string(fair_scheduler_allocation_path);
-DECLARE_string(llama_site_path);
+DECLARE_string(llama_site_pat
 DECLARE_bool(clamp_query_mem_limit_backend_mem_limit);
 
 namespace impala {

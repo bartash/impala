@@ -239,7 +239,21 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
 
     </concept>
 
+  <concept id="user_quotas">
+
+      <title>Configuring User Quotas in the Admission Control Configuration</title>
+
+      <conbody>
+
+        <p>
+          User Quotas are blah
+        </p>
+      </conbody>
+
+    </concept>
+
   </concept>
+
 
   <concept id="concept_zy4_vxz_jgb">
 
@@ -433,7 +447,7 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
               that can go in this file, as described below. For details about all the Fair
               Scheduler configuration settings, see the
               <xref
-                href="http://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/FairScheduler.html#Configuration"
+                href="https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/FairScheduler.html#Configuration"
                 scope="external" format="html">Apache
               wiki</xref>.
             </p>

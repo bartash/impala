@@ -89,7 +89,7 @@ under the License.
         concurrent and queued queries, for different categories of users within your
         organization. For details about all the Fair Scheduler configuration settings, see the
         <xref
-          href="http://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/FairScheduler.html#Configuration"
+          href="https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/FairScheduler.html#Configuration"
           scope="external" format="html">Apache
         wiki</xref>.
       </p>

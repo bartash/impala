@@ -254,6 +254,31 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
               href="https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/GroupsMapping.html"
               scope="external" format="html">Hadoop Groups
           </xref>.
+          Queries are counted from when they are queued to when they are released.
+        </p>
+
+        <p>
+          There are three type of rules
+          <ul>
+            <li>
+              User Rules (based on a username)
+            </li>
+            <li>
+              Group Rules (based on a user’s membership of a group)
+            </li>
+            <li>
+              Wildcard Rules (which match any username)
+            </li>
+          </ul>
+          The rules can be placed at the Pool level or the Root level
+          <ul>
+            <li>
+              A rule at the Pool level is evaluated against the number of queries a user has running in the pool
+            </li>
+            <li>
+              A rule at the Root level is evaluated against the total number of queries a user has running across all pools.
+            </li>
+          </ul>
         </p>
 
         <p>

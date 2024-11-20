@@ -287,12 +287,13 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
             The users ‘alice’ and ‘bob’ are each limited to running 3 queries
             This rule could be placed at the Pool level or the Root level
           </p>
-
-          <p>
-            EXAMPLE HERE
-          </p>
-
-
+          <codeblock>
+            &lt;userQueryLimit&gt;
+              &lt;user&gt;alice&lt;/user&gt;
+              &lt;user&gt;bob&lt;/user&gt;
+              &lt;totalCount&gt;3&lt;/totalCount&gt;
+            &lt;/userQueryLimit&gt;
+          </codeblock>
         </section>
 
 

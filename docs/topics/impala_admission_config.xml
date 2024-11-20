@@ -281,7 +281,7 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
           </ul>
         </p>
 
-        <section id="example_user_rule1">
+        <section>
           <title>A User Rule</title>
           <p>
             The users ‘alice’ and ‘bob’ are each limited to running 3 queries
@@ -293,6 +293,24 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
               &lt;user&gt;bob&lt;/user&gt;
               &lt;totalCount&gt;3&lt;/totalCount&gt;
             &lt;/userQueryLimit&gt;
+          </codeblock>
+        </section>
+
+        <section>
+          <title>A Root Level Wildcard Rule</title>
+          <p>
+            A wildcard rule on pool root.queueE which limits
+            all users to 2 queries in this pool
+          </p>
+          <codeblock>
+            &lt;queue name=&quot;root&quot;&gt;
+              &lt;queue name=&quot;queueE&quot;&gt;
+                &lt;userQueryLimit&gt;
+                  &lt;user&gt;*&lt;/user&gt;
+                  &lt;totalCount&gt;2&lt;/totalCount&gt;
+                &lt;/userQueryLimit&gt;
+              &lt;/queue&gt;
+            &lt;/queue&gt;
           </codeblock>
         </section>
 

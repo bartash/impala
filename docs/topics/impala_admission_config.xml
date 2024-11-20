@@ -281,9 +281,19 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
           </ul>
         </p>
 
-        <p>
+        <section id="example_user_rule1">
+          <title>A User Rule</title>
+          <p>
+            The users ‘alice’ and ‘bob’ are each limited to running 3 queries
+            This rule could be placed at the Pool level or the Root level
+          </p>
 
-        </p>
+          <p>
+            EXAMPLE HERE
+          </p>
+
+
+        </section>
 
 
       </conbody>

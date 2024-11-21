@@ -246,7 +246,7 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
       <conbody>
 
         <p>
-          User Quotas can be used to define rules which limit the total count of queries
+          User Quotas are used to define rules which limit the total count of queries
           that a user can run concurrently. The rules are based on either usernames or
           group membership. The username is the short username,
           groups are
@@ -254,7 +254,12 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
               href="https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/GroupsMapping.html"
               scope="external" format="html">Hadoop Groups
           </xref>.
+        </p>
+        <p>
           Queries are counted from when they are queued to when they are released.
+          In a cluster without an Admission Daemon, the count of queries is synchronized
+          across all coordinators through the Statestore. In this configuration
+          over-admission is possible.
         </p>
 
         <p>
@@ -279,6 +284,29 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
               A rule at the Root level is evaluated against the total number of queries a user has running across all pools.
             </li>
           </ul>
+        </p>
+
+        <p>
+          The XML tags used for User Quotas are
+          <ul>
+            <li>
+              <b>userQueryLimit</b> - used to define a User Rule
+            </li>
+            <li>
+              <b>groupQueryLimit</b> - used to define a Group Rule
+            </li>
+            <li>
+              <b>totalCount</b> - used to define the limit on queries that the rule will enforce.
+            </li>
+            <li>
+              <b>user</b> - in a User rule, used to specify a username that the rule applies to.
+              This can also be the wildcard '*'.
+            </li>
+            <li>
+              <b>group</b> - in a Group rule, used to specify a group name that the rule applies to.
+            </li>
+          </ul>
+          If these seem confusing, the examples below should make things clearer.
         </p>
 
         <p>

@@ -247,9 +247,9 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
 
         <p>
           User Quotas are used to define rules which limit the total count of queries
-          that a user can run concurrently. The rules are based on either usernames or
-          group membership. The username is the short username,
-          groups are
+          that a user can run concurrently.
+          The rules are based on either usernames or group membership.
+          The username is the short username, and groups are
           <xref
               href="https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/GroupsMapping.html"
               scope="external" format="html">Hadoop Groups
@@ -258,12 +258,12 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
         <p>
           Queries are counted from when they are queued to when they are released.
           In a cluster without an Admission Daemon, the count of queries is synchronized
-          across all coordinators through the Statestore. In this configuration
-          over-admission is possible.
+          across all coordinators through the Statestore.
+          In this configuration over-admission is possible.
         </p>
 
         <p>
-          There are three type of rules
+          There are three type of rules:
           <ul>
             <li>
               User Rules (based on a username)
@@ -275,7 +275,7 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
               Wildcard Rules (which match any username)
             </li>
           </ul>
-          The rules can be placed at the Pool level or the Root level
+          The rules can be placed at the Pool level or the Root level:
           <ul>
             <li>
               A rule at the Pool level is evaluated against the number of queries a user has running in the pool
@@ -287,7 +287,7 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
         </p>
 
         <p>
-          The XML tags used for User Quotas are
+          The XML tags used for User Quotas are:
           <ul>
             <li>
               <b>userQueryLimit</b> - used to define a User Rule
@@ -296,14 +296,17 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
               <b>groupQueryLimit</b> - used to define a Group Rule
             </li>
             <li>
-              <b>totalCount</b> - used to define the limit on queries that the rule will enforce.
+              <b>totalCount</b> - used to define the limit on queries that the rule will
+              enforce.
             </li>
             <li>
-              <b>user</b> - in a User rule, used to specify a username that the rule applies to.
+              <b>user</b> - in a User rule, used to specify a username that the rule
+              applies to.
               This can also be the wildcard '*'.
             </li>
             <li>
-              <b>group</b> - in a Group rule, used to specify a group name that the rule applies to.
+              <b>group</b> - in a Group rule, used to specify a group name that the
+              rule applies to.
             </li>
           </ul>
           If these seem confusing, the examples below should make things clearer.
@@ -320,14 +323,14 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
         <p>
           Note that the examples of User Quota rules below are incomplete xml snippets
           that would form part of an Admission Control configuration.
-          In particular, they omit the essential aclSubmitApps tag
+          In particular, they omit the essential <b>aclSubmitApps</b> tag.
         </p>
 
         <section>
           <title>A User Rule</title>
           <p>
-            The users ‘alice’ and ‘bob’ are each limited to running 3 queries
-            This rule could be placed at the Pool level or the Root level
+            This rule limits the users ‘alice’ and ‘bob’ to each running 3 queries.
+            This rule could be placed at the Pool level or the Root level.
           </p>
           <codeblock>
             &lt;userQueryLimit&gt;
@@ -341,8 +344,8 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
         <section>
           <title>A Pool Level Wildcard Rule</title>
           <p>
-            A wildcard rule on pool root.queueE which limits
-            all users to 2 queries in that pool.
+            This is a wildcard rule on pool root.queueE which limits
+            all users to running 2 queries in that pool.
           </p>
           <codeblock>
             &lt;queue name=&quot;root&quot;&gt;
@@ -398,7 +401,8 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
           <p>
             With this rule, the user ‘alice’ can run 4 queries in "root.group-set-small".
             The more specific rule overrides the wildcard rule.
-            A user that is not ‘alice’ would be able to run 1 query, per the wildcard rule
+            A user that is not ‘alice’ would be able to run 1 query, per the wildcard
+            rule.
           </p>
           <codeblock>
             &lt;queue name=&quot;group-set-small&quot;&gt;
@@ -422,7 +426,8 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
             Another Example of More Specific Rules Overriding Less Specific Rules
           </title>
           <p>
-            Assuming the user ‘bob’ is in the ‘it’ group, they can run 2 queries in "root.group-set-small"
+            Assuming the user ‘bob’ is in the ‘it’ group, they can run 2 queries
+            in "root.group-set-small".
             The more specific rule overrides the wildcard rule.
           </p>
           <codeblock>
@@ -443,11 +448,12 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
 
         <section>
           <title>
-            User rules are more specific than group rules
+            User rules are more specific than group rules.
           </title>
           <p>
-            Assuming the user ‘fiona’ is in the ‘it’ group, they can run 4 queries in "root.group-set-small"
-            The more specific user  rule overrides the group rule.
+            Assuming the user ‘fiona’ is in the ‘it’ group, they can run 4 queries
+            in "root.group-set-small".
+            The more specific user rule overrides the group rule.
           </p>
           <codeblock>
             &lt;queue name=&quot;group-set-small&quot;&gt;
@@ -471,10 +477,11 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
           </title>
           <p>
             Members of group 'support' are limited to run 6 queries across all the pools.
-            Members of groups 'dev' and 'support' can run 5 queries in "root.group-set-small".
+            Members of groups 'dev' and 'support' can run 5 queries
+            in "root.group-set-small".
             To run, both rules must be passed.
-            The pool level rule is evaluated first, so that error will be seen in the
-            case where both rules fail.
+            The pool level rule is evaluated first, so that an error mentioning that pool
+            will be seen in the case where both rules would fail.
           </p>
           <codeblock>
             &lt;queue name=&quot;root&quot;&gt;
@@ -492,7 +499,6 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
             ...
           </codeblock>
         </section>
-
 
       </conbody>
 

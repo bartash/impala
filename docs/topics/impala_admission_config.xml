@@ -355,6 +355,32 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
           </codeblock>
         </section>
 
+        <section>
+          <title>
+            More Specific Rules Override The Less Specific
+          </title>
+          <p>
+            With this rule, the user ‘alice’ can run 4 queries in "root.group-set-small".
+            The more specific rule overrides the wildcard rule.
+            A user that is not ‘alice’ would be able to run 1 query, per the wildcard rule
+          </p>
+          <codeblock>
+            &lt;queue name=&quot;group-set-small&quot;&gt;
+              &lt;!-- A user not matched by any other rule can run 1 query in the small pool --&gt;
+              &lt;userQueryLimit&gt;
+                  &lt;user&gt;*&lt;/user&gt;
+                  &lt;totalCount&gt;1&lt;/totalCount&gt;
+              &lt;/userQueryLimit&gt;
+              &lt;!-- The user &apos;alice&apos; can run 4 queries in the small pool --&gt;
+              &lt;userQueryLimit&gt;
+                &lt;user&gt;alice&lt;/user&gt;
+                &lt;totalCount&gt;4&lt;/totalCount&gt;
+              &lt;/userQueryLimit&gt;
+            &lt;/queue&gt;
+            ...
+          </codeblock>
+        </section>
+
 
       </conbody>
 

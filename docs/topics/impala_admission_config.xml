@@ -405,6 +405,30 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
           </codeblock>
         </section>
 
+        <section>
+          <title>
+            User rules are more specific than group rules
+          </title>
+          <p>
+            Assuming the user ‘fiona’ is in the ‘it’ group, they can run 4 queries in "root.group-set-small"
+            The more specific user  rule overrides the group rule.
+          </p>
+          <codeblock>
+            &lt;queue name=&quot;group-set-small&quot;&gt;
+              &lt;!-- Members of the group &apos;it&apos; can run 2 queries in the small pool --&gt;
+              &lt;groupQueryLimit&gt;
+                &lt;group&gt;it&lt;/group&gt;
+                &lt;totalCount&gt;2&lt;/totalCount&gt;
+              &lt;/groupQueryLimit&gt;
+              &lt;!-- The user &apos;fiona&apos; can run 3 queries in the small pool --&gt;
+              &lt;userQueryLimit&gt;
+                &lt;user&gt;fiona&lt;/user&gt;
+                &lt;totalCount&gt;3&lt;/totalCount&gt;
+              &lt;/userQueryLimit&gt;
+            ...
+          </codeblock>
+        </section>
+
 
       </conbody>
 

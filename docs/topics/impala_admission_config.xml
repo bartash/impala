@@ -297,10 +297,10 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
         </section>
 
         <section>
-          <title>A Root Level Wildcard Rule</title>
+          <title>A Pool Level Wildcard Rule</title>
           <p>
             A wildcard rule on pool root.queueE which limits
-            all users to 2 queries in this pool
+            all users to 2 queries in this pool.
           </p>
           <codeblock>
             &lt;queue name=&quot;root&quot;&gt;
@@ -310,7 +310,24 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
                   &lt;totalCount&gt;2&lt;/totalCount&gt;
                 &lt;/userQueryLimit&gt;
               &lt;/queue&gt;
-            &lt;/queue&gt;
+            ...
+          </codeblock>
+        </section>
+
+        <section>
+          <title>A Root Level Wildcard Rule</title>
+          <p>
+            A root level rule which limits userD to 2 queries across all pools.
+          </p>
+          <codeblock>
+            &lt;queue name=&quot;root&quot;&gt;
+              &lt;queue name=&quot;queueE&quot;&gt;
+                &lt;userQueryLimit&gt;
+                  &lt;user&gt;*&lt;/user&gt;
+                  &lt;totalCount&gt;2&lt;/totalCount&gt;
+                &lt;/userQueryLimit&gt;
+              &lt;/queue&gt;
+            ...
           </codeblock>
         </section>
 

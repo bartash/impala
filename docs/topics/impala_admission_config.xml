@@ -429,6 +429,34 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
           </codeblock>
         </section>
 
+        <section>
+          <title>
+            Both pool and root rules must be passed.
+          </title>
+          <p>
+            Members of group 'support' are limited to run 6 queries across all the pools.
+            Members of groups 'dev' and 'support' can run 5 queries in "root.group-set-small".
+            To run, both rules must be passed.
+            The pool level rule is evaluated first, so that error will be seen in the
+            case where both rules fail.
+          </p>
+          <codeblock>
+            &lt;queue name=&quot;root&quot;&gt;
+              &lt;groupQueryLimit&gt;
+                &lt;group&gt;support&lt;/group&gt;
+                &lt;totalCount&gt;6&lt;/totalCount&gt;
+              &lt;/groupQueryLimit&gt;
+              &lt;queue name=&quot;group-set-small&quot;&gt;
+                &lt;groupQueryLimit&gt;
+                  &lt;group&gt;dev&lt;/group&gt;
+                  &lt;group&gt;support&lt;/group&gt;
+                  &lt;totalCount&gt;5&lt;/totalCount&gt;
+                &lt;/groupQueryLimit&gt;
+              &lt;/queue&gt;
+            ...
+          </codeblock>
+        </section>
+
 
       </conbody>
 

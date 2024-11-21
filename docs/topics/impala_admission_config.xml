@@ -282,6 +282,14 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
         </p>
 
         <p>
+          More specific rules override more general rules.
+          A user rule overrides a group rule or wildcard rule.
+          A group rule overrides a wildcard rule.
+          Pool level rules are evaluated first.
+          If  Pool level rules pass, then root level rules are evaluated.
+        </p>
+
+        <p>
           Note that the examples of User Quota rules below are incomplete xml snippets
           that would form part of an Admission Control configuration.
           In particular, they omit the essential aclSubmitApps tag

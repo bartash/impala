@@ -281,6 +281,12 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
           </ul>
         </p>
 
+        <p>
+          Note that the examples of User Quota rules below are incomplete xml snippets
+          that would form part of an Admission Control configuration.
+          In particular, they omit the essential aclSubmitApps tag
+        </p>
+
         <section>
           <title>A User Rule</title>
           <p>
@@ -300,7 +306,7 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
           <title>A Pool Level Wildcard Rule</title>
           <p>
             A wildcard rule on pool root.queueE which limits
-            all users to 2 queries in this pool.
+            all users to 2 queries in that pool.
           </p>
           <codeblock>
             &lt;queue name=&quot;root&quot;&gt;

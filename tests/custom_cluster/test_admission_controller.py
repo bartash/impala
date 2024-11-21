@@ -2450,7 +2450,7 @@ class TestAdmissionControllerStress(TestAdmissionControllerBase):
 
       # The queue timeout is set high for these tests, so we don't expect any queries to
       # time out.
-      assert metric_deltas['admitted'] >= expected_admitted, "FIXME asherman fails"
+      assert metric_deltas['admitted'] >= expected_admitted
       assert metric_deltas['timed-out'] == 0
       self.wait_for_admitted_threads(metric_deltas['admitted'])
       # Wait a few topic updates to ensure the admission controllers have reached a steady
@@ -2460,7 +2460,7 @@ class TestAdmissionControllerStress(TestAdmissionControllerBase):
     final_metrics = self.get_consistent_admission_metrics(num_queries)
     log_metrics("Final metrics: ", final_metrics)
     metric_deltas = compute_metric_deltas(final_metrics, initial_metrics)
-    assert metric_deltas['timed-out'] == 0, "FIXME asherman fails"
+    assert metric_deltas['timed-out'] == 0
 
     if round_robin_submission:
       min_expected_admitted = MAX_NUM_CONCURRENT_QUERIES + MAX_NUM_QUEUED_QUERIES

@@ -256,6 +256,10 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
           </xref>.
         </p>
         <p>
+          If a query fails to pass the User Quota rules then the query will be
+          rejected when it is submitted.
+        </p>
+        <p>
           Queries are counted from when they are queued to when they are released.
           In a cluster without an Admission Daemon, the count of queries is synchronized
           across all coordinators through the Statestore.

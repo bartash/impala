@@ -315,9 +315,9 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
         </section>
 
         <section>
-          <title>A Root Level Wildcard Rule</title>
+          <title>A Root Level User Rule</title>
           <p>
-            A root level rule which limits userD to 2 queries across all pools.
+            A root level user rule which limits userD to 2 queries across all pools.
           </p>
           <codeblock>
             &lt;queue name=&quot;root&quot;&gt;

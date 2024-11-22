@@ -300,8 +300,8 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
               <b>groupQueryLimit</b> - used to define a Group Rule
             </li>
             <li>
-              <b>totalCount</b> - used to define the limit on queries that the rule will
-              enforce.
+              <b>totalCount</b> - used to define the number of queries that can run
+              concurrently.
             </li>
             <li>
               <b>user</b> - used to specify a username to define a User Rule,
@@ -369,12 +369,10 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
           </p>
           <codeblock>
             &lt;queue name=&quot;root&quot;&gt;
-              &lt;queue name=&quot;queueE&quot;&gt;
-                &lt;userQueryLimit&gt;
-                  &lt;user&gt;*&lt;/user&gt;
-                  &lt;totalCount&gt;2&lt;/totalCount&gt;
-                &lt;/userQueryLimit&gt;
-              &lt;/queue&gt;
+              &lt;userQueryLimit&gt;
+                &lt;user&gt;userD&lt;/user&gt;
+                &lt;totalCount&gt;2&lt;/totalCount&gt;
+              &lt;/userQueryLimit&gt;
             ...
           </codeblock>
         </section>
@@ -403,7 +401,7 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
           </title>
           <p>
             With this rule, the user ‘alice’ can run 4 queries in "root.group-set-small".
-            The more specific rule overrides the wildcard rule.
+            The more specific User rule overrides the wildcard rule.
             A user that is not ‘alice’ would be able to run 1 query, per the wildcard
             rule.
           </p>
@@ -431,7 +429,7 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
           <p>
             Assuming the user ‘bob’ is in the ‘it’ group, they can run 2 queries
             in "root.group-set-small".
-            The more specific rule overrides the wildcard rule.
+            The more specific Group rule overrides the wildcard rule.
           </p>
           <codeblock>
             &lt;queue name=&quot;group-set-small&quot;&gt;

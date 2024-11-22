@@ -373,7 +373,8 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
             ...
           </codeblock>
           <p>
-            A root level user rule which limits userD to 2 queries across all pools.
+            This is a root level user rule which limits userD to 2 queries across all
+            pools.
           </p>
         </section>
 

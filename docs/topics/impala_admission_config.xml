@@ -256,14 +256,14 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
           </xref>.
         </p>
         <p>
-          If a query fails to pass the User Quota rules then the query will be
-          rejected when it is submitted.
-        </p>
-        <p>
           Queries are counted from when they are queued to when they are released.
           In a cluster without an Admission Daemon, the count of queries is synchronized
           across all coordinators through the Statestore.
           In this configuration over-admission is possible.
+        </p>
+        <p>
+          If a query fails to pass the User Quota rules then the query will be
+          rejected when it is submitted.
         </p>
 
         <p>
@@ -273,10 +273,10 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
               User Rules (based on a username)
             </li>
             <li>
-              Group Rules (based on a user’s membership of a group)
+              Wildcard Rules (which match any username)
             </li>
             <li>
-              Wildcard Rules (which match any username)
+              Group Rules (based on a user’s membership of a group)
             </li>
           </ul>
           The rules can be placed at the Pool level or the Root level:
@@ -304,9 +304,8 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
               enforce.
             </li>
             <li>
-              <b>user</b> - in a User rule, used to specify a username that the rule
-              applies to.
-              This can also be the wildcard '*'.
+              <b>user</b> - used to specify a username to define a User Rule,
+              or, by using the wildcard '*', to define a Wildcard Rule.
             </li>
             <li>
               <b>group</b> - in a Group rule, used to specify a group name that the
@@ -383,7 +382,7 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
         <section>
           <title>A Group Rule</title>
           <p>
-            This rule limits any user in groups group1 or group2 to 2 queries
+            This rule limits any user in groups group1 or group2 to running 2 queries
             in pool root.queueE.
           </p>
           <codeblock>

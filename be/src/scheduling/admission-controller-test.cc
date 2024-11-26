@@ -105,7 +105,7 @@ class AdmissionControllerTest : public testing::Test {
     FLAGS_injected_group_members_debug_only = "group0:userA;"
                                               "group1:user1,user3;"
                                               "dev:alice,deborah;"
-                                              "it:bob,fiona;"
+                                              "it:bob,fiona,geeta;"
                                               "support:claire,geeta,howard;";
     ASSERT_OK(test_env_->Init());
   }
@@ -1057,6 +1057,18 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   ASSERT_FALSE(can_queue("fiona", 3, 1, true, &not_admitted_reason));
   ASSERT_EQ(
       "current per-user load 3 for user fiona is at or above the user limit 3 in pool "
+          + QUEUE_SMALL,
+      not_admitted_reason);
+
+  // Geeta is in 2 groups: 'it' and 'support'.
+  // Group 'it' restricts her to running 2 queries in the small pool.
+  // Group 'support' restricts her to running 5 queries in the small pool.
+  // So she can run 2 queries in the small pool.
+  ASSERT_FALSE(can_queue("geeta", 2, 1, true, &not_admitted_reason));
+  ASSERT_TRUE(can_queue("geeta", 1, 1, true, &not_admitted_reason));
+  ASSERT_EQ(
+      "current per-group load 2 for user geeta in group it is at or above the group "
+      "limit 2 in pool "
           + QUEUE_SMALL,
       not_admitted_reason);
 

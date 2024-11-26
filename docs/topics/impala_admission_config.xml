@@ -499,6 +499,12 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
             The Pool level rule is evaluated first, so that an error mentioning that pool
             will be seen in the case where both rules would fail.
           </p>
+          <p>
+            A user may be a member of more than one group, which means that more than one
+            Group Rule may apply to a user at the Pool or Root level.
+            In this case, at each level, all the applicable Group Rules must be passed
+            in order that the query can run.
+          </p>
         </section>
 
       </conbody>

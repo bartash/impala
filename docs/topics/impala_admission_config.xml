@@ -105,6 +105,15 @@ llama.am.throttling.maximum.queued.reservations.<varname>queue_name</varname>
 impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph>
 </codeblock>
 
+      <p>
+        The <codeph>llama.am.throttling.maximum.placed.reservations.<varname>queue_name</varname></codeph>
+        setting specifies the number of queries that are allowed to run concurrently in this pool.
+      </p>
+      <p>
+        The <codeph>llama.am.throttling.maximum.queued.reservations.<varname>queue_name</varname></codeph>
+        setting specifies the number of queries that are allowed to be queued in this pool.
+      </p>
+
       <p rev="2.5.0 IMPALA-2538">
         The <codeph>impala.admission-control.pool-queue-timeout-ms</codeph> setting specifies
         the timeout value for this pool in milliseconds.
@@ -239,15 +248,15 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
 
     </concept>
 
-  <concept id="user_quotas">
+  <concept rev="4.5.0" id="user_quotas">
 
       <title>Configuring User Quotas in the Admission Control Configuration</title>
 
       <conbody>
 
         <p>
-          User Quotas are used to define rules that limit the total count of queries
-          that a user can run concurrently.
+          Since <keyword keyref="impala45"/>, User Quotas can be used to define rules
+          that limit the total count of queries that a user can run concurrently.
           The rules are based on either usernames or group membership.
           The username is the short username, and groups are
           <xref
@@ -312,7 +321,7 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
               rule applies to.
             </li>
           </ul>
-          If these seem confusing, the examples below should make things clearer.
+          Examples are provided below.
         </p>
 
         <p>
@@ -320,7 +329,7 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
           A user rule overrides a group rule or wildcard rule.
           A group rule overrides a wildcard rule.
           Pool level rules are evaluated first.
-          If  Pool level rules pass, then Root level rules are evaluated.
+          If Pool level rules pass, then Root level rules are evaluated.
         </p>
 
         <p>
@@ -332,11 +341,11 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
         <section>
           <title>A User Rule</title>
           <codeblock>
-            &lt;userQueryLimit&gt;
-              &lt;user&gt;alice&lt;/user&gt;
-              &lt;user&gt;bob&lt;/user&gt;
-              &lt;totalCount&gt;3&lt;/totalCount&gt;
-            &lt;/userQueryLimit&gt;
+&lt;userQueryLimit&gt;
+  &lt;user&gt;alice&lt;/user&gt;
+  &lt;user&gt;bob&lt;/user&gt;
+  &lt;totalCount&gt;3&lt;/totalCount&gt;
+&lt;/userQueryLimit&gt;
           </codeblock>
           <p>
             This rule limits the users ‘alice’ and ‘bob’ to each running 3 queries.
@@ -347,14 +356,14 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
         <section>
           <title>A Pool Level Wildcard Rule</title>
           <codeblock>
-            &lt;queue name=&quot;root&quot;&gt;
-              &lt;queue name=&quot;queueE&quot;&gt;
-                &lt;userQueryLimit&gt;
-                  &lt;user&gt;*&lt;/user&gt;
-                  &lt;totalCount&gt;2&lt;/totalCount&gt;
-                &lt;/userQueryLimit&gt;
-              &lt;/queue&gt;
-            ...
+&lt;queue name=&quot;root&quot;&gt;
+  &lt;queue name=&quot;queueE&quot;&gt;
+    &lt;userQueryLimit&gt;
+      &lt;user&gt;*&lt;/user&gt;
+      &lt;totalCount&gt;2&lt;/totalCount&gt;
+    &lt;/userQueryLimit&gt;
+  &lt;/queue&gt;
+...
           </codeblock>
           <p>
             This is a wildcard rule on pool root.queueE that limits
@@ -365,12 +374,12 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
         <section>
           <title>A Root Level User Rule</title>
           <codeblock>
-            &lt;queue name=&quot;root&quot;&gt;
-              &lt;userQueryLimit&gt;
-                &lt;user&gt;userD&lt;/user&gt;
-                &lt;totalCount&gt;2&lt;/totalCount&gt;
-              &lt;/userQueryLimit&gt;
-            ...
+&lt;queue name=&quot;root&quot;&gt;
+  &lt;userQueryLimit&gt;
+    &lt;user&gt;userD&lt;/user&gt;
+    &lt;totalCount&gt;2&lt;/totalCount&gt;
+  &lt;/userQueryLimit&gt;
+...
           </codeblock>
           <p>
             This is a Root level user rule that limits userD to 2 queries across all
@@ -381,18 +390,18 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
         <section>
           <title>A Group Rule</title>
           <codeblock>
-            &lt;queue name=&quot;root&quot;&gt;
-              &lt;queue name=&quot;queueE&quot;&gt;
-                &lt;groupQueryLimit&gt;
-                  &lt;group&gt;group1&lt;/group&gt;
-                  &lt;group&gt;group2&lt;/group&gt;
-                  &lt;totalCount&gt;2&lt;/totalCount&gt;
-                &lt;/groupQueryLimit&gt;
-            ...
+&lt;queue name=&quot;root&quot;&gt;
+  &lt;queue name=&quot;queueE&quot;&gt;
+    &lt;groupQueryLimit&gt;
+      &lt;group&gt;group1&lt;/group&gt;
+      &lt;group&gt;group2&lt;/group&gt;
+      &lt;totalCount&gt;2&lt;/totalCount&gt;
+    &lt;/groupQueryLimit&gt;
+...
           </codeblock>
           <p>
             This rule limits any user in groups group1 or group2 to running 2 queries
-            in pool root.queueE.
+            in pool root.queueE. Note this rule could also be placed at the root level.
           </p>
         </section>
 
@@ -401,18 +410,18 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
             More Specific Rules Override The Less Specific
           </title>
           <codeblock>
-            &lt;queue name=&quot;group-set-small&quot;&gt;
-              &lt;!-- A user not matched by any other rule can run 1 query in the small pool --&gt;
-              &lt;userQueryLimit&gt;
-                  &lt;user&gt;*&lt;/user&gt;
-                  &lt;totalCount&gt;1&lt;/totalCount&gt;
-              &lt;/userQueryLimit&gt;
-              &lt;!-- The user &apos;alice&apos; can run 4 queries in the small pool --&gt;
-              &lt;userQueryLimit&gt;
-                &lt;user&gt;alice&lt;/user&gt;
-                &lt;totalCount&gt;4&lt;/totalCount&gt;
-              &lt;/userQueryLimit&gt;
-            ...
+&lt;queue name=&quot;group-set-small&quot;&gt;
+  &lt;!-- A user not matched by any other rule can run 1 query in the small pool --&gt;
+  &lt;userQueryLimit&gt;
+      &lt;user&gt;*&lt;/user&gt;
+      &lt;totalCount&gt;1&lt;/totalCount&gt;
+  &lt;/userQueryLimit&gt;
+  &lt;!-- The user &apos;alice&apos; can run 4 queries in the small pool --&gt;
+  &lt;userQueryLimit&gt;
+    &lt;user&gt;alice&lt;/user&gt;
+    &lt;totalCount&gt;4&lt;/totalCount&gt;
+  &lt;/userQueryLimit&gt;
+...
           </codeblock>
           <p>
             With this rule, the user ‘alice’ can run 4 queries in "root.group-set-small".
@@ -427,18 +436,18 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
             Another Example of More Specific Rules Overriding Less Specific Rules
           </title>
           <codeblock>
-            &lt;queue name=&quot;group-set-small&quot;&gt;
-              &lt;!-- A user not matched by any other rule can run 1 query in the small pool --&gt;
-              &lt;userQueryLimit&gt;
-                  &lt;user&gt;*&lt;/user&gt;
-                  &lt;totalCount&gt;1&lt;/totalCount&gt;
-              &lt;/userQueryLimit&gt;
-              &lt;!-- Members of the group &apos;it&apos; can run 2 queries in the small pool --&gt;
-              &lt;groupQueryLimit&gt;
-                &lt;group&gt;it&lt;/group&gt;
-                &lt;totalCount&gt;2&lt;/totalCount&gt;
-              &lt;/groupQueryLimit&gt;
-            ...
+&lt;queue name=&quot;group-set-small&quot;&gt;
+  &lt;!-- A user not matched by any other rule can run 1 query in the small pool --&gt;
+  &lt;userQueryLimit&gt;
+      &lt;user&gt;*&lt;/user&gt;
+      &lt;totalCount&gt;1&lt;/totalCount&gt;
+  &lt;/userQueryLimit&gt;
+  &lt;!-- Members of the group &apos;it&apos; can run 2 queries in the small pool --&gt;
+  &lt;groupQueryLimit&gt;
+    &lt;group&gt;it&lt;/group&gt;
+    &lt;totalCount&gt;2&lt;/totalCount&gt;
+  &lt;/groupQueryLimit&gt;
+...
           </codeblock>
           <p>
             Assuming the user ‘bob’ is in the ‘it’ group, they can run 2 queries
@@ -452,22 +461,22 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
             User rules are more specific than group rules.
           </title>
           <codeblock>
-            &lt;queue name=&quot;group-set-small&quot;&gt;
-              &lt;!-- Members of the group &apos;it&apos; can run 2 queries in the small pool --&gt;
-              &lt;groupQueryLimit&gt;
-                &lt;group&gt;it&lt;/group&gt;
-                &lt;totalCount&gt;2&lt;/totalCount&gt;
-              &lt;/groupQueryLimit&gt;
-              &lt;!-- The user &apos;fiona&apos; can run 3 queries in the small pool --&gt;
-              &lt;userQueryLimit&gt;
-                &lt;user&gt;fiona&lt;/user&gt;
-                &lt;totalCount&gt;3&lt;/totalCount&gt;
-              &lt;/userQueryLimit&gt;
-            ...
+&lt;queue name=&quot;group-set-small&quot;&gt;
+  &lt;!-- Members of the group &apos;it&apos; can run 2 queries in the small pool --&gt;
+  &lt;groupQueryLimit&gt;
+    &lt;group&gt;it&lt;/group&gt;
+    &lt;totalCount&gt;2&lt;/totalCount&gt;
+  &lt;/groupQueryLimit&gt;
+  &lt;!-- The user &apos;fiona&apos; can run 3 queries in the small pool --&gt;
+  &lt;userQueryLimit&gt;
+    &lt;user&gt;fiona&lt;/user&gt;
+    &lt;totalCount&gt;3&lt;/totalCount&gt;
+  &lt;/userQueryLimit&gt;
+...
           </codeblock>
           <p>
-            Assuming the user ‘fiona’ is in the ‘it’ group, they can run 4 queries
-            in "root.group-set-small".
+            The user 'fiona' can run 4 queries in "root.group-set-small", despite also
+            matching the 'it' group.
             The more specific user rule overrides the group rule.
           </p>
         </section>
@@ -477,19 +486,19 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
             Both pool and root rules must be passed.
           </title>
           <codeblock>
-            &lt;queue name=&quot;root&quot;&gt;
-              &lt;groupQueryLimit&gt;
-                &lt;group&gt;support&lt;/group&gt;
-                &lt;totalCount&gt;6&lt;/totalCount&gt;
-              &lt;/groupQueryLimit&gt;
-              &lt;queue name=&quot;group-set-small&quot;&gt;
-                &lt;groupQueryLimit&gt;
-                  &lt;group&gt;dev&lt;/group&gt;
-                  &lt;group&gt;support&lt;/group&gt;
-                  &lt;totalCount&gt;5&lt;/totalCount&gt;
-                &lt;/groupQueryLimit&gt;
-              &lt;/queue&gt;
-            ...
+&lt;queue name=&quot;root&quot;&gt;
+  &lt;groupQueryLimit&gt;
+    &lt;group&gt;support&lt;/group&gt;
+    &lt;totalCount&gt;6&lt;/totalCount&gt;
+  &lt;/groupQueryLimit&gt;
+  &lt;queue name=&quot;group-set-small&quot;&gt;
+    &lt;groupQueryLimit&gt;
+      &lt;group&gt;dev&lt;/group&gt;
+      &lt;group&gt;support&lt;/group&gt;
+      &lt;totalCount&gt;5&lt;/totalCount&gt;
+    &lt;/groupQueryLimit&gt;
+  &lt;/queue&gt;
+...
           </codeblock>
           <p>
             Members of group 'support' are limited to run 6 queries across all the pools.
@@ -498,6 +507,12 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
             To run, both rules must be passed.
             The Pool level rule is evaluated first, so that an error mentioning that pool
             will be seen in the case where both rules would fail.
+          </p>
+          <p>
+            A user may be a member of more than one group, which means that more than one
+            Group Rule may apply to a user at the Pool or Root level.
+            In this case, at each level, all the applicable Group Rules must be passed
+            in order that the query can run.
           </p>
         </section>
 

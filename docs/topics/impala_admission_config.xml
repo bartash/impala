@@ -320,7 +320,7 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
           A user rule overrides a group rule or wildcard rule.
           A group rule overrides a wildcard rule.
           Pool level rules are evaluated first.
-          If  Pool level rules pass, then Root level rules are evaluated.
+          If Pool level rules pass, then Root level rules are evaluated.
         </p>
 
         <p>

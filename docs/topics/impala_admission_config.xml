@@ -466,8 +466,8 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
             ...
           </codeblock>
           <p>
-            Assuming the user ‘fiona’ is in the ‘it’ group, they can run 4 queries
-            in "root.group-set-small".
+            The user 'fiona' can run 4 queries in "root.group-set-small", despite also
+            matching the 'it' group.
             The more specific user rule overrides the group rule.
           </p>
         </section>

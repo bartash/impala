@@ -239,15 +239,15 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
 
     </concept>
 
-  <concept id="user_quotas">
+  <concept rev="4.5.0" id="user_quotas">
 
       <title>Configuring User Quotas in the Admission Control Configuration</title>
 
       <conbody>
 
         <p>
-          User Quotas are used to define rules that limit the total count of queries
-          that a user can run concurrently.
+          Since <keyword keyref="impala45"/>, User Quotas can be used to define rules
+          that limit the total count of queries that a user can run concurrently.
           The rules are based on either usernames or group membership.
           The username is the short username, and groups are
           <xref

@@ -392,7 +392,7 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
           </codeblock>
           <p>
             This rule limits any user in groups group1 or group2 to running 2 queries
-            in pool root.queueE.
+            in pool root.queueE. Note this rule could also be placed at the root level.
           </p>
         </section>
 

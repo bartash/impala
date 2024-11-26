@@ -104,7 +104,7 @@ class AdmissionControllerTest : public testing::Test {
     // This is done here as the flags are copied to Java space at Jni initiation time.
     FLAGS_injected_group_members_debug_only = "group0:userA;"
                                               "group1:user1,user3;"
-                                              "dev:alice,deborah;"
+                                              "dev:alice,deborah,fiona;"
                                               "it:bob,fiona;"
                                               "support:claire,geeta,howard;";
     ASSERT_OK(test_env_->Init());

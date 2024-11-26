@@ -312,7 +312,7 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
               rule applies to.
             </li>
           </ul>
-          If these seem confusing, the examples below should make things clearer.
+          Examples are provided below.
         </p>
 
         <p>

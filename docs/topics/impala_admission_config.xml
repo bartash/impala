@@ -452,18 +452,18 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
             User rules are more specific than group rules.
           </title>
           <codeblock>
-            &lt;queue name=&quot;group-set-small&quot;&gt;
-              &lt;!-- Members of the group &apos;it&apos; can run 2 queries in the small pool --&gt;
-              &lt;groupQueryLimit&gt;
-                &lt;group&gt;it&lt;/group&gt;
-                &lt;totalCount&gt;2&lt;/totalCount&gt;
-              &lt;/groupQueryLimit&gt;
-              &lt;!-- The user &apos;fiona&apos; can run 3 queries in the small pool --&gt;
-              &lt;userQueryLimit&gt;
-                &lt;user&gt;fiona&lt;/user&gt;
-                &lt;totalCount&gt;3&lt;/totalCount&gt;
-              &lt;/userQueryLimit&gt;
-            ...
+&lt;queue name=&quot;group-set-small&quot;&gt;
+  &lt;!-- Members of the group &apos;it&apos; can run 2 queries in the small pool --&gt;
+  &lt;groupQueryLimit&gt;
+    &lt;group&gt;it&lt;/group&gt;
+    &lt;totalCount&gt;2&lt;/totalCount&gt;
+  &lt;/groupQueryLimit&gt;
+  &lt;!-- The user &apos;fiona&apos; can run 3 queries in the small pool --&gt;
+  &lt;userQueryLimit&gt;
+    &lt;user&gt;fiona&lt;/user&gt;
+    &lt;totalCount&gt;3&lt;/totalCount&gt;
+  &lt;/userQueryLimit&gt;
+...
           </codeblock>
           <p>
             The user 'fiona' can run 4 queries in "root.group-set-small", despite also
@@ -477,19 +477,19 @@ impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph
             Both pool and root rules must be passed.
           </title>
           <codeblock>
-            &lt;queue name=&quot;root&quot;&gt;
-              &lt;groupQueryLimit&gt;
-                &lt;group&gt;support&lt;/group&gt;
-                &lt;totalCount&gt;6&lt;/totalCount&gt;
-              &lt;/groupQueryLimit&gt;
-              &lt;queue name=&quot;group-set-small&quot;&gt;
-                &lt;groupQueryLimit&gt;
-                  &lt;group&gt;dev&lt;/group&gt;
-                  &lt;group&gt;support&lt;/group&gt;
-                  &lt;totalCount&gt;5&lt;/totalCount&gt;
-                &lt;/groupQueryLimit&gt;
-              &lt;/queue&gt;
-            ...
+&lt;queue name=&quot;root&quot;&gt;
+  &lt;groupQueryLimit&gt;
+    &lt;group&gt;support&lt;/group&gt;
+    &lt;totalCount&gt;6&lt;/totalCount&gt;
+  &lt;/groupQueryLimit&gt;
+  &lt;queue name=&quot;group-set-small&quot;&gt;
+    &lt;groupQueryLimit&gt;
+      &lt;group&gt;dev&lt;/group&gt;
+      &lt;group&gt;support&lt;/group&gt;
+      &lt;totalCount&gt;5&lt;/totalCount&gt;
+    &lt;/groupQueryLimit&gt;
+  &lt;/queue&gt;
+...
           </codeblock>
           <p>
             Members of group 'support' are limited to run 6 queries across all the pools.

@@ -105,6 +105,15 @@ llama.am.throttling.maximum.queued.reservations.<varname>queue_name</varname>
 impala.admission-control.pool-queue-timeout-ms.<varname>queue_name</varname></ph>
 </codeblock>
 
+      <p>
+        The <codeph>llama.am.throttling.maximum.placed.reservations.<varname>queue_name</varname></codeph>
+        setting specifies the number of queries that are allowed to run concurrently in this pool.
+      </p>
+      <p>
+        The <codeph>llama.am.throttling.maximum.queued.reservations.<varname>queue_name</varname></codeph>
+        setting specifies the number of queries that are allowed to be queued in this pool.
+      </p>
+
       <p rev="2.5.0 IMPALA-2538">
         The <codeph>impala.admission-control.pool-queue-timeout-ms</codeph> setting specifies
         the timeout value for this pool in milliseconds.

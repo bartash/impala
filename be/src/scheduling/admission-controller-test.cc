@@ -1060,6 +1060,18 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
           + QUEUE_SMALL,
       not_admitted_reason);
 
+  // Geeta is in 2 groups: 'it' and 'support'.
+  // Group 'it' restricts her to running 2 queries in the small pool.
+  // Group 'support' restricts her to running 5 queries in the small pool.
+  // So she can run 2 queries in the small pool.
+  ASSERT_FALSE(can_queue("geeta", 2, 1, true, &not_admitted_reason));
+  ASSERT_TRUE(can_queue("geeta", 1, 1, true, &not_admitted_reason));
+  ASSERT_EQ(
+      "current per-group load 2 for user geeta in group it is at or above the group "
+      "limit 2 in pool "
+          + QUEUE_SMALL,
+      not_admitted_reason);
+
   // Howard has a limit of 4 at root level.
   ASSERT_FALSE(can_queue("howard", 3, 1, true, &not_admitted_reason));
   ASSERT_EQ(

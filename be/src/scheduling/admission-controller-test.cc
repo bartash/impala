@@ -1038,17 +1038,17 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   ASSERT_TRUE(can_queue("alice", 3, 2, true, &not_admitted_reason));
   ASSERT_FALSE(can_queue("alice", 4, 12, true, &not_admitted_reason));
   ASSERT_EQ(
-      "current per-user load 4 for user alice is at or above the user limit 4 in pool "
-          + QUEUE_SMALL,
+      "current per-user load 4 for user 'alice' is at or above the user limit 4 in pool "
+      "'" + QUEUE_SMALL + "'",
       not_admitted_reason);
 
   // Bob can run 2 queries, because the more specific group rule for 'it' overrides
   // the less-specific wildcard rule.
   ASSERT_TRUE(can_queue("bob", 1, 1, true, &not_admitted_reason));
   ASSERT_FALSE(can_queue("bob", 2, 1, true, &not_admitted_reason));
-  ASSERT_EQ("current per-group load 2 for user bob in group it is at or above the group "
-            "limit 2 in pool "
-          + QUEUE_SMALL,
+  ASSERT_EQ("current per-group load 2 for user 'bob' in group 'it' is at or above the group "
+            "limit 2 in pool '"
+          + QUEUE_SMALL + "'",
       not_admitted_reason);
 
   // Fiona can run 3 queries, because the more specific user rule overrides
@@ -1056,8 +1056,8 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   ASSERT_TRUE(can_queue("fiona", 2, 1, true, &not_admitted_reason));
   ASSERT_FALSE(can_queue("fiona", 3, 1, true, &not_admitted_reason));
   ASSERT_EQ(
-      "current per-user load 3 for user fiona is at or above the user limit 3 in pool "
-          + QUEUE_SMALL,
+      "current per-user load 3 for user 'fiona' is at or above the user limit 3 in pool '"
+          + QUEUE_SMALL + "'",
       not_admitted_reason);
 
   // Geeta is in 2 groups: 'it' and 'support'.
@@ -1068,9 +1068,9 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   ASSERT_TRUE(can_queue("geeta", 4, 1, true, &not_admitted_reason));
   ASSERT_FALSE(can_queue("geeta", 5, 1, true, &not_admitted_reason));
   ASSERT_EQ(
-      "current per-group load 5 for user geeta in group support is at or above the group "
-      "limit 5 in pool "
-          + QUEUE_SMALL,
+      "current per-group load 5 for user 'geeta' in group 'support' is at or above the group "
+      "limit 5 in pool '"
+          + QUEUE_SMALL + + "'",
       not_admitted_reason);
 
   // Howard has a limit of 4 at root level.

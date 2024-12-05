@@ -1046,8 +1046,9 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   // the less-specific wildcard rule.
   ASSERT_TRUE(can_queue("bob", 1, 1, true, &not_admitted_reason));
   ASSERT_FALSE(can_queue("bob", 2, 1, true, &not_admitted_reason));
-  ASSERT_EQ("current per-group load 2 for user 'bob' in group 'it' is at or above the group "
-            "limit 2 in pool '"
+  ASSERT_EQ(
+      "current per-group load 2 for user 'bob' in group 'it' is at or above the group "
+      "limit 2 in pool '"
           + QUEUE_SMALL + "'",
       not_admitted_reason);
 
@@ -1067,24 +1068,25 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   // pool.
   ASSERT_TRUE(can_queue("geeta", 4, 1, true, &not_admitted_reason));
   ASSERT_FALSE(can_queue("geeta", 5, 1, true, &not_admitted_reason));
-  ASSERT_EQ(
-      "current per-group load 5 for user 'geeta' in group 'support' is at or above the group "
-      "limit 5 in pool '"
-          + QUEUE_SMALL + + "'",
+  ASSERT_EQ("current per-group load 5 for user 'geeta' in group 'support' is at or above "
+            "the group limit 5 in pool '"
+          + QUEUE_SMALL + +"'",
       not_admitted_reason);
 
   // Howard has a limit of 4 at root level.
   ASSERT_FALSE(can_queue("howard", 3, 1, true, &not_admitted_reason));
   ASSERT_EQ(
       "current per-user load 4 for user 'howard' is at or above the user limit 4 in pool"
-      " '" + QUEUE_ROOT + "'",
+      " '" + QUEUE_ROOT
+          + "'",
       not_admitted_reason);
 
   // Iris is not in any groups and so hits the large pool wildcard limit.
   ASSERT_FALSE(can_queue("iris", 0, 1, false, &not_admitted_reason));
   ASSERT_EQ(
       "current per-user load 1 for user 'iris' is at or above the wildcard limit 1 in "
-      "pool '" + QUEUE_LARGE +"'",
+      "pool '"
+          + QUEUE_LARGE + "'",
       not_admitted_reason);
 }
 

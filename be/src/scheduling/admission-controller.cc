@@ -1267,7 +1267,13 @@ bool AdmissionController::HasSufficientGroupQuota(const string& user,
     }
   }
   if (!extra_groups.empty()) {
-    extra_group_desc = "xxxx"
+    std::stringstream ss;
+    ss << " (unused groups";
+    for (const auto& pair : extra_groups) {
+      ss << " " << pair.first << ":" << pair.second;
+    }
+    ss << ")";
+    extra_group_desc = ss.str();
   }
   if (highest_group_limit != -1) {
     if (user_load + 1 > highest_group_limit) {

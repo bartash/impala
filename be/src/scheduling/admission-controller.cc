@@ -298,7 +298,8 @@ const string USER_WILDCARD_QUOTA_EXCEEDED = "current per-user load $0 for user '
 // $0 = current load for user, $1 = user name, $2 = group name, $3 = per-user quota,
 // $4 is pool name.
 const string GROUP_QUOTA_EXCEEDED = "current per-group load $0 for user '$1' in group "
-                                    "'$2' is at or above the group limit $3 in pool '$4'";
+                                    "'$2' is at or above the group limit $3 in pool '$4'"
+                                    "$5";
 
 // $0 = user name
 const string BAD_USER_NAME = "cannot parse user name $0";
@@ -1259,7 +1260,7 @@ bool AdmissionController::HasSufficientGroupQuota(const string& user,
   if (highest_group_limit != -1) {
     if (user_load + 1 > highest_group_limit) {
       *quota_exceeded_reason = Substitute(GROUP_QUOTA_EXCEEDED, user_load, user,
-          highest_group, highest_group_limit, pool_name);
+          highest_group, highest_group_limit, pool_name, "");
       return false;
     }
     *key_matched = true;

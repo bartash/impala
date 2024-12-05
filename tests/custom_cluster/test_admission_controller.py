@@ -1328,8 +1328,8 @@ class TestAdmissionController(TestAdmissionControllerBase, HS2TestSuite):
     except Exception as e:
       # Construct the expected error message.
       expected = ("Rejected query from pool {pool}: current per-{type} load {limit} for "
-                  "user {user}{group_description} is at or above the {err_type} limit "
-                  "{limit} in pool {pool_that_fails}".
+                  "user '{user}{group_description}' is at or above the {err_type} limit "
+                  "{limit} in pool '{pool_that_fails}'".
                   format(pool=pool, type=type, limit=limit, user=user,
                          group_description=group_description, err_type=err_type,
                          pool_that_fails=pool_that_fails))

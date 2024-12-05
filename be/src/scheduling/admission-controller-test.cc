@@ -973,7 +973,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   ASSERT_FALSE(admission_controller->CanAdmitQuota(
       *schedule_state, config_e, config_root, &not_admitted_reason));
   EXPECT_STR_CONTAINS(not_admitted_reason,
-      "current per-user load 3 for user userA is at or above the user limit 3");
+      "current per-user load 3 for user 'userA' is at or above the user limit 3");
 
   // If UserA's load is 2 it should be admitted because the user rule takes precedence
   // over the wildcard rule.
@@ -990,7 +990,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   ASSERT_FALSE(admission_controller->CanAdmitQuota(
       *schedule_state, config_e, config_root, &not_admitted_reason));
   EXPECT_STR_CONTAINS(not_admitted_reason,
-      "current per-user load 3 for user user2 is at or above the wildcard limit 1");
+      "current per-user load 3 for user 'user2' is at or above the wildcard limit 1");
 
   pool_stats->agg_user_loads_.clear_key(USER2);
   ASSERT_TRUE(admission_controller->CanAdmitQuota(
@@ -1004,7 +1004,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   ASSERT_FALSE(admission_controller->CanAdmitQuota(
       *schedule_state, config_e, config_root, &not_admitted_reason));
   EXPECT_STR_CONTAINS(not_admitted_reason,
-      "current per-group load 2 for user user3 in group group1 is at or above the group "
+      "current per-group load 2 for user 'user3' in group 'group1' is at or above the group "
       "limit 2");
 
   // Quota set to 0 disallows entry.
@@ -1014,7 +1014,7 @@ TEST_F(AdmissionControllerTest, UserAndGroupQuotas) {
   ASSERT_FALSE(admission_controller->CanAdmitQuota(
       *schedule_state, config_e, config_root, &not_admitted_reason));
   EXPECT_STR_CONTAINS(not_admitted_reason,
-      "current per-user load 0 for user userH is at or above the user limit 0");
+      "current per-user load 0 for user 'userH' is at or above the user limit 0");
 
   ScheduleState* bad_user_state = MakeScheduleState(QUEUE_E, config_e, host_count,
       30L * MEGABYTE, ImpalaServer::DEFAULT_EXECUTOR_GROUP_NAME, "a@b.b.com@d.com");
@@ -1076,15 +1076,15 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   // Howard has a limit of 4 at root level.
   ASSERT_FALSE(can_queue("howard", 3, 1, true, &not_admitted_reason));
   ASSERT_EQ(
-      "current per-user load 4 for user howard is at or above the user limit 4 in pool "
-          + QUEUE_ROOT,
+      "current per-user load 4 for user 'howard' is at or above the user limit 4 in pool"
+      " '" + QUEUE_ROOT + "'",
       not_admitted_reason);
 
   // Iris is not in any groups and so hits the large pool wildcard limit.
   ASSERT_FALSE(can_queue("iris", 0, 1, false, &not_admitted_reason));
   ASSERT_EQ(
-      "current per-user load 1 for user iris is at or above the wildcard limit 1 in pool "
-          + QUEUE_LARGE,
+      "current per-user load 1 for user 'iris' is at or above the wildcard limit 1 in "
+      "pool '" + QUEUE_LARGE +"'",
       not_admitted_reason);
 }
 

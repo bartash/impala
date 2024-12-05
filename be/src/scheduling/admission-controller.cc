@@ -1255,22 +1255,23 @@ bool AdmissionController::HasSufficientGroupQuota(const string& user,
       group_limit = it->second;
       if (group_limit > highest_group_limit) {
         if (highest_group_limit != -1) {
-          // replacing old group
+          // Replacing old group, save it for error string.
           extra_groups.emplace_back(highest_group, highest_group_limit);
         }
         highest_group_limit = group_limit;
         highest_group = group;
       } else {
-        // ignoring group
+        // Ignoring this, group, save it for error string.
         extra_groups.emplace_back(group,group_limit);
       }
     }
   }
   if (!extra_groups.empty()) {
+    // Describe the Group Quotas we did not use.
     std::stringstream ss;
-    ss << " (unused groups";
+    ss << " (Ignored Group Quotas";
     for (const auto& pair : extra_groups) {
-      ss << " " << pair.first << ":" << pair.second;
+      ss << " '" << pair.first << "':" << pair.second;
     }
     ss << ")";
     extra_group_desc = ss.str();

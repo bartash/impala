@@ -1070,7 +1070,7 @@ TEST_F(AdmissionControllerTest, QuotaExamples) {
   ASSERT_FALSE(can_queue("geeta", 5, 1, true, &not_admitted_reason));
   ASSERT_EQ("current per-group load 5 for user 'geeta' in group 'support' is at or above "
             "the group limit 5 in pool '"
-          + QUEUE_SMALL + +"'",
+          + QUEUE_SMALL + "' (Ignored Group Quotas 'it':2)",
       not_admitted_reason);
 
   // Howard has a limit of 4 at root level.

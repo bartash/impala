@@ -1246,6 +1246,7 @@ bool AdmissionController::HasSufficientGroupQuota(const string& user,
   int64_t highest_group_limit = -1;
   string highest_group;
   string extra_group_desc;
+  std::vector<std::pair<std::string, int>> extra_groups;
   for (const string& group : res.groups) {
     auto it = pool_cfg.group_query_limits.find(group);
     int64_t group_limit = 0;
@@ -1255,14 +1256,18 @@ bool AdmissionController::HasSufficientGroupQuota(const string& user,
       if (group_limit > highest_group_limit) {
         if (highest_group_limit != -1) {
           // replacing old group
-
+          extra_groups.emplace_back(highest_group, highest_group_limit);
         }
         highest_group_limit = group_limit;
         highest_group = group;
       } else {
         // ignoring group
+        extra_groups.emplace_back(group,group_limit);
       }
     }
+  }
+  if (!extra_groups.empty()) {
+    extra_group_desc = "xxxx"
   }
   if (highest_group_limit != -1) {
     if (user_load + 1 > highest_group_limit) {

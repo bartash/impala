@@ -174,7 +174,10 @@ void THttpServer::parseHeader(char* header) {
     chunked_ = false;
     contentLength_ = atoi(value);
   } else if (MatchesHeader(header, HEADER_X_FORWARDED_FOR, sz)) {
-    origin_ = value;
+    // Only set the origin field the first time that we see the 'X-Forwarded-For' header.
+    if (origin_.empty()) {
+      origin_ = value;
+    }
   } else if ((has_ldap_ || has_kerberos_ || has_saml_ || has_jwt_ || has_oauth_)
       && MatchesHeader(header, HEADER_AUTHORIZATION, sz)) {
     auth_value_ = string(value);

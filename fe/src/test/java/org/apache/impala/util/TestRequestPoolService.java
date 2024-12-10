@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.impala.thrift.TVerifyRequestPoolResult;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -219,6 +220,13 @@ public class TestRequestPoolService {
     checkPoolAcls("root.queueA", asList("userA", "userB", "userZ"), EMPTY_LIST);
     checkPoolAcls("root.queueB", asList("userB", "root"), asList("userA", "userZ"));
     checkPoolAcls("root.queueD", asList("userB", "userA"), asList("userZ"));
+  }
+
+  @Test
+  public void testVerifyConfiguration() throws Exception {
+    createPoolService(ALLOCATION_FILE, LLAMA_CONFIG_FILE);
+    TVerifyRequestPoolResult verifyRequestPoolResult = poolService_.verifyConfiguration();
+    Assert.assertEquals(0, verifyRequestPoolResult.getWarningsSize());
   }
 
   /**

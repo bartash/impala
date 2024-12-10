@@ -424,6 +424,15 @@ public class RequestPoolService {
 
       }
 
+      /*
+
+      Questions
+
+      How does ./fe/src/test/resources/fair-scheduler-allocation.xml
+      work
+      it's used in a test but it has no acl on it??
+
+       */
 
     } catch (Exception e) {
       throw  new InternalException("Error verifying allocation file " + allocFile, e);

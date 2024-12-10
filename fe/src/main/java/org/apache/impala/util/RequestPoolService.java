@@ -401,11 +401,25 @@ public class RequestPoolService {
                                         .collect(Collectors.toList());
       for (int i = 0; i < rootQueue.size(); i++) {
         Element element = rootQueue.get(i);
-        System.out.println("element = " + element);
+        System.out.println("element = " + element.getTagName());
         NodeList childNodes = element.getChildNodes();
-        for (Iterator<Element> iterator = rootQueue.iterator(); iterator.hasNext(); ) {
-          Element next = iterator.next();
-          System.out.println("next = " + next);
+        for (int j = 0; j < childNodes.getLength(); j++) {
+          Node childNode = childNodes.item(j);
+
+          // Check if the node is an element node
+          if (childNode.getNodeType() == Node.ELEMENT_NODE) {
+            System.out.println("Element Name: " + childNode.getNodeName());
+
+            // Iterate over the child nodes of the current book element
+            NodeList bookChildNodes = childNode.getChildNodes();
+            for (int k = 0; k < bookChildNodes.getLength(); k++) {
+              Node bookChildNode = bookChildNodes.item(k);
+              if (bookChildNode.getNodeType() == Node.ELEMENT_NODE) {
+                System.out.println("  Element Name: " + bookChildNode.getNodeName());
+                System.out.println("  Element Value: " + bookChildNode.getTextContent());
+              }
+            }
+          }
         }
 
       }

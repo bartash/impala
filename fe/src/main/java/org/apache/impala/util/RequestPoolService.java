@@ -22,10 +22,13 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -385,19 +388,26 @@ public class RequestPoolService {
       DocumentBuilder builder = docBuilderFactory.newDocumentBuilder();
       Document doc = builder.parse(allocFile);
       Element root = doc.getDocumentElement();
-      // This is the allocations element, if it were not, an exception would have been thrown from reloadAllocations()
+      // This is the allocations element, if it were not, an exception would have been
+      // thrown from reloadAllocations()
       NodeList elements = root.getChildNodes();
-      List<Element> queueElements = new ArrayList<Element>();
-      Element placementPolicyElement = null;
-      for (int i = 0; i < elements.getLength(); i++) {
-        Node node = elements.item(i);
-        if (node instanceof Element) {
-          Element element = (Element) node;
-          if ("queue".equals(element.getTagName()) ||
-              "pool".equals(element.getTagName())) {
-            queueElements.add(element);
-          }
+      List<Element> rootQueue = IntStream.range(0, elements.getLength())
+                                        .mapToObj(elements::item)
+                                        .filter(node -> node instanceof Element)
+                                        .map(node -> (Element) node)
+                                        .filter(element
+                                            -> "queue".equals(element.getTagName())
+                                                || "pool".equals(element.getTagName()))
+                                        .collect(Collectors.toList());
+      for (int i = 0; i < rootQueue.size(); i++) {
+        Element element = rootQueue.get(i);
+        System.out.println("element = " + element);
+        NodeList childNodes = element.getChildNodes();
+        for (Iterator<Element> iterator = rootQueue.iterator(); iterator.hasNext(); ) {
+          Element next = iterator.next();
+          System.out.println("next = " + next);
         }
+
       }
 
 

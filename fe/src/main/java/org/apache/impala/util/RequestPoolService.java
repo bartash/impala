@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -57,6 +59,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -384,6 +387,20 @@ public class RequestPoolService {
       Element root = doc.getDocumentElement();
       // This is the allocations element, if it were not, an exception would have been thrown from reloadAllocations()
       NodeList elements = root.getChildNodes();
+      List<Element> queueElements = new ArrayList<Element>();
+      Element placementPolicyElement = null;
+      for (int i = 0; i < elements.getLength(); i++) {
+        Node node = elements.item(i);
+        if (node instanceof Element) {
+          Element element = (Element) node;
+          if ("queue".equals(element.getTagName()) ||
+              "pool".equals(element.getTagName())) {
+            queueElements.add(element);
+          }
+        }
+      }
+
+
     } catch (Exception e) {
       throw  new InternalException("Error verifying allocation file " + allocFile, e);
     }

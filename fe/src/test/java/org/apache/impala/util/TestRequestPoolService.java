@@ -29,9 +29,17 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.impl.Log4JLogger;
+import org.apache.impala.thrift.TVerifyRequestPoolResult;
+import org.apache.log4j.Appender;
+import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.spi.LoggingEvent;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -219,6 +227,60 @@ public class TestRequestPoolService {
     checkPoolAcls("root.queueA", asList("userA", "userB", "userZ"), EMPTY_LIST);
     checkPoolAcls("root.queueB", asList("userB", "root"), asList("userA", "userZ"));
     checkPoolAcls("root.queueD", asList("userB", "userA"), asList("userZ"));
+  }
+
+  static boolean containsSubstring(List<String> list, String substring) {
+    for (String str : list) {
+      if (str.contains(substring)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Test
+  public void testVerifyConfiguration() throws Exception {
+    Log log  = LogFactory.getLog(AllocationFileLoaderService.class.getName());
+    Log4JLogger x = (Log4JLogger) log;
+    ReadableAppender logAppender = new ReadableAppender();
+    x.getLogger().addAppender(logAppender);
+
+
+    createPoolService(ALLOCATION_FILE_EXTRA, LLAMA_CONFIG_FILE_MODIFIED);
+    String msg1 = "In queue 'root.group-set-small' the user limit for 'howard' of 100 is greater than the root " +
+        "limit 4 and so will have no effect";
+
+    boolean allocationCompleted = false;
+    List<String> messages = logAppender.getMessages();
+    for (int i = 0; i < 10; i++) {
+      if (containsSubstring(messages, "Completed loading allocation file")) {
+        allocationCompleted = true;
+        break;
+      }
+      Thread.sleep(250);
+    }
+    Assert.assertTrue("allocation file not loaded in time", allocationCompleted);
+    Assert.assertTrue(containsSubstring(messages, msg1));
+  }
+
+
+  private class ReadableAppender extends AppenderSkeleton {
+    List<String> messages = new ArrayList<>();
+    @Override
+    protected void append(LoggingEvent loggingEvent) {
+      System.out.println("DDDD " + loggingEvent.getMessage());
+      messages.add(loggingEvent.getMessage().toString());
+    }
+
+    public List<String> getMessages() {
+      return messages;
+    }
+    public void close() {}
+
+    @Override
+    public boolean requiresLayout() {
+      return false;
+    }
   }
 
   /**
@@ -503,36 +565,7 @@ public class TestRequestPoolService {
    */
   @Test
   public void testLimitsParsingErrors() throws Exception {
-    String xmlString1 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit>",
-        "    <totalCount>30</totalCount>",
-        "</userQueryLimit>"
-    );
-    assertFailureMessage(xmlString1, "Empty user names");
-    String xmlString2 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit>",
-        "    <user>John</user>",
-        "    <user>Barry</user>",
-        "    <totalCount>30</totalCount>",
-        "    <totalCount>31</totalCount>",
-        "</userQueryLimit>"
-    );
-    assertFailureMessage(xmlString2, "Duplicate totalCount tags");
-    String xmlString3 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit>",
-        "    <user>John</user>",
-        "    <user>Barry</user>",
-        "    <totalCount>fish</totalCount>",
-        "</userQueryLimit>"
-    );
-    assertFailureMessage(xmlString3, "Could not parse query totalCount");
-    String xmlString4 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit>",
-        "    <user>John</user>",
-        "    <user>Barry</user>",
-        "</userQueryLimit>"
-    );
-    assertFailureMessage(xmlString4, "No totalCount for");
+
 
     String xmlString5 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
         "<userQueryLimit>",

@@ -786,7 +786,7 @@ class TestExecutorGroups(CustomClusterTestSuite):
       "admission-controller.executor-group.num-queries-executing.root.queue1-group",
       1, timeout=30)
     profile = self.client.get_runtime_profile(handle_long_running_queue1)
-    "Executor Group: root.queue1-group" in profile
+    assert "Executor Group: root.queue1-group" in profile
 
     # Try to execute another query on group 'queue1'. This one should queue.
     handle_queued_query_queue1 = self.execute_query_async(TEST_QUERY)

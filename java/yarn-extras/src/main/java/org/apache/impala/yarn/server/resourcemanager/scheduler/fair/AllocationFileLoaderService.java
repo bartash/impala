@@ -45,6 +45,8 @@ import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.hadoop.yarn.util.resource.Resources;
 import org.apache.impala.yarn.server.resourcemanager.resource.ResourceWeights;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -61,6 +63,8 @@ public class AllocationFileLoaderService extends AbstractService {
   
   public static final Log LOG = LogFactory.getLog(
       AllocationFileLoaderService.class.getName());
+
+  public static final Logger LOG2 = LoggerFactory.getLogger(AllocationFileLoaderService.class);
   
   /** Time to wait between checks of the allocation file */
   public static final long ALLOC_RELOAD_INTERVAL_MS = 10 * 1000;
@@ -447,6 +451,10 @@ public class AllocationFileLoaderService extends AbstractService {
     lastSuccessfulReload = clock.getTime();
     lastReloadAttemptFailed = false;
 
+    verifyConfiguration(info);
+
+    LOG.info("Completed loading allocation file " + allocFile);
+
     reloadListener.onReload(info);
   }
 
@@ -588,6 +596,44 @@ public class AllocationFileLoaderService extends AbstractService {
           String.format("Queue %s has max resources %s less than "
               + "min resources %s", queueName, maxQueueResources.get(queueName),
               minQueueResources.get(queueName)));
+    }
+  }
+
+
+  public void verifyConfiguration(AllocationConfiguration allocationConfiguration) {
+
+    Map<FSQueueType, Set<String>> configuredQueues = allocationConfiguration.getConfiguredQueues();
+    Set<String> parentQueues = configuredQueues.get(FSQueueType.PARENT);
+    Set<String> leafQueues = configuredQueues.get(FSQueueType.LEAF);
+    String root = "root";
+    if (parentQueues.size() == 1 && parentQueues.contains(root)) {
+      Map<String, Integer> rootUserQueryLimits = allocationConfiguration.getUserQueryLimits(root);
+      Map<String, Integer> rootGroupQueryLimits = allocationConfiguration.getGroupQueryLimits(root);
+      for (String leafQueue : leafQueues) {
+        if (leafQueue.startsWith(root)) {
+          Map<String, Integer> groupQueryLimits = allocationConfiguration.getGroupQueryLimits(leafQueue);
+          Map<String, Integer> userQueryLimits = allocationConfiguration.getUserQueryLimits(leafQueue);
+          verifyQueryLimits(leafQueue, "user", rootUserQueryLimits, userQueryLimits);
+          verifyQueryLimits(leafQueue, "group", rootGroupQueryLimits, groupQueryLimits);
+        }
+      }
+    }
+
+
+
+  }
+
+  private void verifyQueryLimits(String leafQueue, String type, Map<String, Integer> rootQueryLimits,
+                                 Map<String, Integer> queryLimits) {
+    for (Map.Entry<String, Integer> stringIntegerEntry : rootQueryLimits.entrySet()) {
+      String key = stringIntegerEntry.getKey();
+      int rootLimit = stringIntegerEntry.getValue();
+      System.out.println("verifyQueryLimits queue " + leafQueue + " type=" + type + " root key=" + key + " value=" +rootLimit);
+      Integer leafLimit = queryLimits.get(key);
+      if (leafLimit != null && leafLimit > rootLimit) {
+       LOG.warn("In queue '" + leafQueue + "' the " + type + " limit for '" + key + "' of " + leafLimit +
+            " is greater than the root limit " + rootLimit + " and so will have no effect");
+      }
     }
   }
 

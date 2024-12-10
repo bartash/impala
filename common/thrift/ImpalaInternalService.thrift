@@ -161,6 +161,17 @@ struct TResolveRequestPoolResult {
   3: optional Status.TStatus status
 }
 
+// Parameters for RequestPoolService.verifyConfiguration()
+// FIXME maybe this is unneeded? No Java class generated for empty class?
+struct TVerifyRequestPoolParams {
+}
+
+// Returned by RequestPoolService.verifyConfiguration()
+struct TVerifyRequestPoolResult {
+   // A list of warnings about the RequestPoolService configuration.
+  1: required list<string> warnings
+}
+
 // Parameters for RequestPoolService.getPoolConfig()
 // TODO: why is this here?
 struct TPoolConfigParams {

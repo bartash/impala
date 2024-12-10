@@ -373,73 +373,6 @@ public class RequestPoolService {
     return result;
   }
 
-  public TVerifyRequestPoolResult verifyConfiguration() throws InternalException {
-
-    // As allocation file is already been read, we can get the File fom AllocationFileLoaderService.
-    File allocFile = allocLoader_.getAllocFile();
-    try {
-      if (allocFile == null) {
-        throw new RuntimeException("verifyConfiguration cannot fimd allocation file");
-      }
-      // Read and reparse the allocations file.
-      DocumentBuilderFactory docBuilderFactory =
-          DocumentBuilderFactory.newInstance();
-      docBuilderFactory.setIgnoringComments(true);
-      DocumentBuilder builder = docBuilderFactory.newDocumentBuilder();
-      Document doc = builder.parse(allocFile);
-      Element root = doc.getDocumentElement();
-      // This is the allocations element, if it were not, an exception would have been
-      // thrown from reloadAllocations()
-      NodeList elements = root.getChildNodes();
-      List<Element> rootQueue = IntStream.range(0, elements.getLength())
-                                        .mapToObj(elements::item)
-                                        .filter(node -> node instanceof Element)
-                                        .map(node -> (Element) node)
-                                        .filter(element
-                                            -> "queue".equals(element.getTagName())
-                                                || "pool".equals(element.getTagName()))
-                                        .collect(Collectors.toList());
-      for (int i = 0; i < rootQueue.size(); i++) {
-        Element element = rootQueue.get(i);
-        System.out.println("element = " + element.getTagName());
-        NodeList childNodes = element.getChildNodes();
-        for (int j = 0; j < childNodes.getLength(); j++) {
-          Node childNode = childNodes.item(j);
-
-          // Check if the node is an element node
-          if (childNode.getNodeType() == Node.ELEMENT_NODE) {
-            System.out.println("Element Name: " + childNode.getNodeName());
-
-            // Iterate over the child nodes of the current book element
-            NodeList bookChildNodes = childNode.getChildNodes();
-            for (int k = 0; k < bookChildNodes.getLength(); k++) {
-              Node bookChildNode = bookChildNodes.item(k);
-              if (bookChildNode.getNodeType() == Node.ELEMENT_NODE) {
-                System.out.println("  Element Name: " + bookChildNode.getNodeName());
-                System.out.println("  Element Value: " + bookChildNode.getTextContent());
-              }
-            }
-          }
-        }
-
-      }
-
-      /*
-
-      Questions
-
-      How does ./fe/src/test/resources/fair-scheduler-allocation.xml
-      work
-      it's used in a test but it has no acl on it??
-
-       */
-
-    } catch (Exception e) {
-      throw  new InternalException("Error verifying allocation file " + allocFile, e);
-    }
-    return new TVerifyRequestPoolResult();
-  }
-
   /**
    * Gets the pool configuration values for the specified pool.
    *
@@ -592,5 +525,73 @@ public class RequestPoolService {
   AllocationConfiguration getAllocationConfig() {
     Preconditions.checkState(RuntimeEnv.INSTANCE.isTestEnv());
     return allocationConf_.get();
+  }
+
+
+  public TVerifyRequestPoolResult verifyConfiguration() throws InternalException {
+
+    // As allocation file is already been read, we can get the File fom AllocationFileLoaderService.
+    File allocFile = allocLoader_.getAllocFile();
+    try {
+      if (allocFile == null) {
+        throw new RuntimeException("verifyConfiguration cannot find allocation file");
+      }
+      // Read and reparse the allocations file.
+      DocumentBuilderFactory docBuilderFactory =
+          DocumentBuilderFactory.newInstance();
+      docBuilderFactory.setIgnoringComments(true);
+      DocumentBuilder builder = docBuilderFactory.newDocumentBuilder();
+      Document doc = builder.parse(allocFile);
+      Element root = doc.getDocumentElement();
+      // This is the allocations element, if it were not, an exception would have been
+      // thrown from reloadAllocations()
+      NodeList elements = root.getChildNodes();
+      List<Element> rootQueue = IntStream.range(0, elements.getLength())
+          .mapToObj(elements::item)
+          .filter(node -> node instanceof Element)
+          .map(node -> (Element) node)
+          .filter(element
+              -> "queue".equals(element.getTagName())
+              || "pool".equals(element.getTagName()))
+          .collect(Collectors.toList());
+      for (int i = 0; i < rootQueue.size(); i++) {
+        Element element = rootQueue.get(i);
+        System.out.println("element = " + element.getTagName());
+        NodeList childNodes = element.getChildNodes();
+        for (int j = 0; j < childNodes.getLength(); j++) {
+          Node childNode = childNodes.item(j);
+
+          // Check if the node is an element node
+          if (childNode.getNodeType() == Node.ELEMENT_NODE) {
+            System.out.println("Element Name: " + childNode.getNodeName());
+
+            // Iterate over the child nodes of the current book element
+            NodeList bookChildNodes = childNode.getChildNodes();
+            for (int k = 0; k < bookChildNodes.getLength(); k++) {
+              Node bookChildNode = bookChildNodes.item(k);
+              if (bookChildNode.getNodeType() == Node.ELEMENT_NODE) {
+                System.out.println("  Element Name: " + bookChildNode.getNodeName());
+                System.out.println("  Element Value: " + bookChildNode.getTextContent());
+              }
+            }
+          }
+        }
+
+      }
+
+      /*
+
+      Questions
+
+      How does ./fe/src/test/resources/fair-scheduler-allocation.xml
+      work
+      it's used in a test but it has no acl on it??
+
+       */
+
+    } catch (Exception e) {
+      throw  new InternalException("Error verifying allocation file " + allocFile, e);
+    }
+    return new TVerifyRequestPoolResult();
   }
 }

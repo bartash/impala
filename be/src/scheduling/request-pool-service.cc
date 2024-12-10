@@ -145,6 +145,11 @@ RequestPoolService::RequestPoolService(MetricGroup* metrics) :
   jobject jni_request_pool_service = jni_env->NewObject(jni_request_pool_service_class_,
       ctor_, cfg_bytes, fair_scheduler_config_path, llama_site_path, is_be_test);
   ABORT_IF_EXC(jni_env);
+
+  // FIXME asherman call RequestPoolService.verifyConfiguration() before
+  // service is started.
+
+
   ABORT_IF_ERROR(JniUtil::LocalToGlobalRef(
       jni_env, jni_request_pool_service, &jni_request_pool_service_));
   jni_env->CallObjectMethod(jni_request_pool_service_, start_id);

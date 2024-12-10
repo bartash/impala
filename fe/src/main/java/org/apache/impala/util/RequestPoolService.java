@@ -29,6 +29,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.api.records.QueueACL;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.impala.thrift.TVerifyRequestPoolResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -356,6 +357,10 @@ public class RequestPoolService {
           result.resolved_pool, result.has_access);
     }
     return result;
+  }
+
+  public TVerifyRequestPoolResult verifyConfiguration() throws InternalException {
+    return new TVerifyRequestPoolResult();
   }
 
   /**

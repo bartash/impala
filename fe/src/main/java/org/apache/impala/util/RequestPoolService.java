@@ -30,6 +30,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.api.records.QueueACL;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.impala.thrift.TVerifyRequestPoolResult;
+import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +55,13 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 /**
  * Admission control utility class that provides user to request pool mapping, ACL
@@ -360,6 +368,25 @@ public class RequestPoolService {
   }
 
   public TVerifyRequestPoolResult verifyConfiguration() throws InternalException {
+
+    // As allocation file is already been read, we can get the File fom AllocationFileLoaderService.
+    File allocFile = allocLoader_.getAllocFile();
+    try {
+      if (allocFile == null) {
+        throw new RuntimeException("verifyConfiguration cannot fimd allocation file");
+      }
+      // Read and reparse the allocations file.
+      DocumentBuilderFactory docBuilderFactory =
+          DocumentBuilderFactory.newInstance();
+      docBuilderFactory.setIgnoringComments(true);
+      DocumentBuilder builder = docBuilderFactory.newDocumentBuilder();
+      Document doc = builder.parse(allocFile);
+      Element root = doc.getDocumentElement();
+      // This is the allocations element, if it were not, an exception would have been thrown from reloadAllocations()
+      NodeList elements = root.getChildNodes();
+    } catch (Exception e) {
+      throw  new InternalException("Error verifying allocation file " + allocFile, e);
+    }
     return new TVerifyRequestPoolResult();
   }
 

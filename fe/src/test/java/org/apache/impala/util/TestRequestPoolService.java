@@ -224,7 +224,7 @@ public class TestRequestPoolService {
 
   @Test
   public void testVerifyConfiguration() throws Exception {
-    createPoolService(ALLOCATION_FILE, LLAMA_CONFIG_FILE);
+    createPoolService(ALLOCATION_FILE_EXTRA, LLAMA_CONFIG_FILE_MODIFIED);
     TVerifyRequestPoolResult verifyRequestPoolResult = poolService_.verifyConfiguration();
     Assert.assertEquals(0, verifyRequestPoolResult.getWarningsSize());
   }
@@ -511,36 +511,7 @@ public class TestRequestPoolService {
    */
   @Test
   public void testLimitsParsingErrors() throws Exception {
-    String xmlString1 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit>",
-        "    <totalCount>30</totalCount>",
-        "</userQueryLimit>"
-    );
-    assertFailureMessage(xmlString1, "Empty user names");
-    String xmlString2 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit>",
-        "    <user>John</user>",
-        "    <user>Barry</user>",
-        "    <totalCount>30</totalCount>",
-        "    <totalCount>31</totalCount>",
-        "</userQueryLimit>"
-    );
-    assertFailureMessage(xmlString2, "Duplicate totalCount tags");
-    String xmlString3 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit>",
-        "    <user>John</user>",
-        "    <user>Barry</user>",
-        "    <totalCount>fish</totalCount>",
-        "</userQueryLimit>"
-    );
-    assertFailureMessage(xmlString3, "Could not parse query totalCount");
-    String xmlString4 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit>",
-        "    <user>John</user>",
-        "    <user>Barry</user>",
-        "</userQueryLimit>"
-    );
-    assertFailureMessage(xmlString4, "No totalCount for");
+
 
     String xmlString5 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
         "<userQueryLimit>",

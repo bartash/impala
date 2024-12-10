@@ -591,6 +591,13 @@ public class AllocationFileLoaderService extends AbstractService {
     }
   }
 
+  /**
+   * @return allocation file, this may be null if service initialization is incomplete.
+   */
+  public File getAllocFile() {
+    return allocFile;
+  }
+
   public interface Listener {
     public void onReload(AllocationConfiguration info);
   }

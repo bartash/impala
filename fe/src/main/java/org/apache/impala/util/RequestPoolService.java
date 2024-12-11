@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -522,7 +523,7 @@ public class RequestPoolService {
   }
 
 
-  List<String> verifyQueues = new ArrayList<>();
+
 
   public TVerifyRequestPoolResult verifyConfiguration() throws InternalException {
 
@@ -532,6 +533,22 @@ public class RequestPoolService {
   }
 
   class Verifier {
+
+    List<String> verifyQueues_ = new ArrayList<>();
+    Map<String,List<Limit>> limits_ = new HashMap<>();
+
+    class Limit {
+
+      String name;
+      int value;
+
+      public Limit(String name, int value) {
+        this.name = name;
+        this.value = value;
+      }
+
+    }
+
     private void doVerify() throws InternalException {
       // As allocation file is already been read, we can get the File fom AllocationFileLoaderService.
       File allocFile = allocLoader_.getAllocFile();

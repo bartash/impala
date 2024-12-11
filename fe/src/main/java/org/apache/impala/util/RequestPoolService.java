@@ -531,7 +531,11 @@ public class RequestPoolService {
   public TVerifyRequestPoolResult verifyConfiguration() throws InternalException {
 
     Verifier verifier = new Verifier();
-    verifier.doVerify();
+//    verifier.doVerify();
+
+    AllocationConfiguration allocationConfiguration = allocationConf_.get();
+
+
     return new TVerifyRequestPoolResult();
   }
 

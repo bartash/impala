@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,18 +34,14 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.api.records.QueueACL;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.impala.thrift.TVerifyRequestPoolResult;
-import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.impala.authorization.User;
 import org.apache.impala.common.ByteUnits;
-import org.apache.impala.common.ImpalaException;
 import org.apache.impala.common.InternalException;
-import org.apache.impala.common.JniUtil;
 import org.apache.impala.common.RuntimeEnv;
 import org.apache.impala.thrift.TErrorCode;
-import org.apache.impala.thrift.TPoolConfigParams;
 import org.apache.impala.thrift.TPoolConfig;
 import org.apache.impala.thrift.TResolveRequestPoolParams;
 import org.apache.impala.thrift.TResolveRequestPoolResult;
@@ -67,7 +62,6 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 /**
  * Admission control utility class that provides user to request pool mapping, ACL
@@ -560,7 +554,7 @@ public class RequestPoolService {
         // Only look at the queue=root.
         if (element.getTagName().equals("queue") && element.getAttribute("name").equals("root")) {
           verifyQueues.add("root");
-          verifyQueue("root", element);
+          verifyQueue("", "root", element);
           NodeList childNodes = element.getChildNodes();
           for (int j = 0; j < childNodes.getLength(); j++) {
             Node childNode = childNodes.item(j);
@@ -600,7 +594,7 @@ public class RequestPoolService {
     return new TVerifyRequestPoolResult();
   }
 
-  private void verifyQueue(String name, Element element) {
+  private void verifyQueue(String parent, String name, Element element) {
     System.out.println("verify queue:" + name);
     NodeList childNodes = element.getChildNodes();
     for (int j = 0; j < childNodes.getLength(); j++) {
@@ -614,7 +608,7 @@ public class RequestPoolService {
         switch (nodeName) {
           case "queue":
             System.out.println("saw queue");
-            verifyQueue(childElement.getAttribute("name"), childElement);
+            verifyQueue(name, name + "." + childElement.getAttribute("name"), childElement);
             break;
           case "userQueryLimit":
             System.out.println("saw userQueryLimit quota");

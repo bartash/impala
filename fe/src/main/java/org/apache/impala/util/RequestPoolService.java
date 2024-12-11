@@ -534,7 +534,7 @@ public class RequestPoolService {
 
   class Verifier {
 
-    List<String> verifyQueues_ = new ArrayList<>();
+    List<String> queueNames_ = new ArrayList<>();
     Map<String,List<Limit>> limits_ = new HashMap<>();
 
     class Limit {
@@ -577,7 +577,6 @@ public class RequestPoolService {
         for (Element element : rootQueue) {
           // Only look at the queue=root.
           if (element.getTagName().equals("queue") && element.getAttribute("name").equals("root")) {
-            verifyQueues.add("root");
             verifyQueue("", "root", element);
             NodeList childNodes = element.getChildNodes();
             for (int j = 0; j < childNodes.getLength(); j++) {
@@ -601,6 +600,9 @@ public class RequestPoolService {
           }
 
         }
+        for (String queueName : queueNames_) {
+          System.out.println("END queueName = " + queueName);
+        }
 
       /*
 
@@ -617,8 +619,9 @@ public class RequestPoolService {
       }
     }
 
-    private void verifyQueue(String parent, String name, Element element) {
-      System.out.println("verify queue:" + name);
+    private void verifyQueue(String parent, String queueName, Element element) {
+      System.out.println("verify queue:" + queueName);
+      queueNames_.add(queueName);
       NodeList childNodes = element.getChildNodes();
       for (int j = 0; j < childNodes.getLength(); j++) {
         Node childNode = childNodes.item(j);
@@ -631,7 +634,7 @@ public class RequestPoolService {
           switch (nodeName) {
             case "queue":
               System.out.println("saw queue");
-              verifyQueue(name, name + "." + childElement.getAttribute("name"), childElement);
+              verifyQueue(queueName, queueName + "." + childElement.getAttribute("name"), childElement);
               break;
             case "userQueryLimit":
               System.out.println("saw userQueryLimit quota");

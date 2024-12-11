@@ -23,8 +23,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -36,6 +38,7 @@ import org.apache.hadoop.yarn.api.records.QueueACL;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.impala.thrift.TVerifyRequestPoolResult;
 import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationConfigurationException;
+import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.FSQueueType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -534,6 +537,21 @@ public class RequestPoolService {
 //    verifier.doVerify();
 
     AllocationConfiguration allocationConfiguration = allocationConf_.get();
+
+    Map<FSQueueType, Set<String>> configuredQueues = allocationConfiguration.getConfiguredQueues();
+    Set<String> parentQueues = configuredQueues.get(FSQueueType.PARENT);
+    Set<String> leafQueues = configuredQueues.get(FSQueueType.LEAF);
+    String root = "root";
+    if (parentQueues.size() == 1 && parentQueues.contains(root)) {
+      Map<String, Integer> rootUserQueryLimits = allocationConfiguration.getUserQueryLimits(root);
+      Map<String, Integer> rootGroupQueryLimits = allocationConfiguration.getGroupQueryLimits(root);
+      for (String leafQueue : leafQueues) {
+        if (leafQueue.startsWith(root)) {
+          Map<String, Integer> groupQueryLimits = allocationConfiguration.getGroupQueryLimits(leafQueue);
+          Map<String, Integer> userQueryLimits = allocationConfiguration.getUserQueryLimits(leafQueue);
+        }
+      }
+    }
 
 
     return new TVerifyRequestPoolResult();

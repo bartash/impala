@@ -563,7 +563,18 @@ public class RequestPoolService {
 
             // Check if the node is an element node
             if (childNode.getNodeType() == Node.ELEMENT_NODE) {
-              System.out.println("Element Name: " + childNode.getNodeName());
+              String nodeName = childNode.getNodeName();
+              System.out.println("Element Name: " + nodeName);
+              switch (nodeName) {
+                case "queue":
+                  System.out.println("saw queue");
+                  break;
+                case "userQueryLimit":
+                  System.out.println("saw userQueryLimit quota");
+                case "groupQueryLimit":
+                  System.out.println("saw groupQueryLimit quota");
+              }
+
 
               // Iterate over the child nodes of the current book element
               NodeList bookChildNodes = childNode.getChildNodes();

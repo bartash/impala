@@ -532,6 +532,7 @@ public class RequestPoolService {
 
 
   public TVerifyRequestPoolResult verifyConfiguration() throws InternalException {
+    TVerifyRequestPoolResult verifyRequestPoolResult = new TVerifyRequestPoolResult();
 
     Verifier verifier = new Verifier();
 //    verifier.doVerify();
@@ -549,12 +550,26 @@ public class RequestPoolService {
         if (leafQueue.startsWith(root)) {
           Map<String, Integer> groupQueryLimits = allocationConfiguration.getGroupQueryLimits(leafQueue);
           Map<String, Integer> userQueryLimits = allocationConfiguration.getUserQueryLimits(leafQueue);
+          verifyQueryLimits(verifyRequestPoolResult, leafQueue, "user", rootUserQueryLimits, userQueryLimits);
+          verifyQueryLimits(verifyRequestPoolResult, leafQueue, "group", rootGroupQueryLimits, groupQueryLimits);
         }
       }
     }
 
 
-    return new TVerifyRequestPoolResult();
+
+    return verifyRequestPoolResult;
+  }
+
+  private void verifyQueryLimits(TVerifyRequestPoolResult verifyRequestPoolResult,
+      String leafQueue, String type, Map<String, Integer> rootQueryLimits,
+      Map<String, Integer> queryLimits) {
+    for (Map.Entry<String, Integer> stringIntegerEntry : rootQueryLimits.entrySet()) {
+      String key = stringIntegerEntry.getKey();
+      Integer value = stringIntegerEntry.getValue();
+      System.out.println("verifyQueryLimits queue " + leafQueue + " type=" + type + " root key=" + key + " value=" +value);
+
+    }
   }
 
   class Verifier {

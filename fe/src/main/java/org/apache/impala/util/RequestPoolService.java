@@ -554,24 +554,25 @@ public class RequestPoolService {
               -> "queue".equals(element.getTagName())
               || "pool".equals(element.getTagName()))
           .collect(Collectors.toList());
-      for (int i = 0; i < rootQueue.size(); i++) {
-        Element element = rootQueue.get(i);
-        System.out.println("element = " + element.getTagName());
-        NodeList childNodes = element.getChildNodes();
-        for (int j = 0; j < childNodes.getLength(); j++) {
-          Node childNode = childNodes.item(j);
+      for (Element element : rootQueue) {
+        // Only look at the queue=root.
+        if (element.getTagName().equals("queue") && element.getAttribute("name").equals("root")) {
+          NodeList childNodes = element.getChildNodes();
+          for (int j = 0; j < childNodes.getLength(); j++) {
+            Node childNode = childNodes.item(j);
 
-          // Check if the node is an element node
-          if (childNode.getNodeType() == Node.ELEMENT_NODE) {
-            System.out.println("Element Name: " + childNode.getNodeName());
+            // Check if the node is an element node
+            if (childNode.getNodeType() == Node.ELEMENT_NODE) {
+              System.out.println("Element Name: " + childNode.getNodeName());
 
-            // Iterate over the child nodes of the current book element
-            NodeList bookChildNodes = childNode.getChildNodes();
-            for (int k = 0; k < bookChildNodes.getLength(); k++) {
-              Node bookChildNode = bookChildNodes.item(k);
-              if (bookChildNode.getNodeType() == Node.ELEMENT_NODE) {
-                System.out.println("  Element Name: " + bookChildNode.getNodeName());
-                System.out.println("  Element Value: " + bookChildNode.getTextContent());
+              // Iterate over the child nodes of the current book element
+              NodeList bookChildNodes = childNode.getChildNodes();
+              for (int k = 0; k < bookChildNodes.getLength(); k++) {
+                Node bookChildNode = bookChildNodes.item(k);
+                if (bookChildNode.getNodeType() == Node.ELEMENT_NODE) {
+                  System.out.println("  Element Name: " + bookChildNode.getNodeName());
+                  System.out.println("  Element Value: " + bookChildNode.getTextContent());
+                }
               }
             }
           }

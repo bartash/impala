@@ -35,6 +35,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.api.records.QueueACL;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.impala.thrift.TVerifyRequestPoolResult;
+import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +64,8 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+
+import static org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationFileLoaderService.addQueryLimits;
 
 /**
  * Admission control utility class that provides user to request pool mapping, ACL
@@ -612,6 +615,8 @@ public class RequestPoolService {
       work
       it's used in a test but it has no acl on it??
 
+      Is it useful to have INFO as well as WARNING messages?
+
        */
 
       } catch (Exception e) {
@@ -619,29 +624,33 @@ public class RequestPoolService {
       }
     }
 
-    private void verifyQueue(String parent, String queueName, Element element) {
+    private void verifyQueue(String parent, String queueName, Element element) throws AllocationConfigurationException {
       System.out.println("verify queue:" + queueName);
       queueNames_.add(queueName);
-      NodeList childNodes = element.getChildNodes();
-      for (int j = 0; j < childNodes.getLength(); j++) {
-        Node childNode = childNodes.item(j);
+      NodeList queueNodes = element.getChildNodes();
+      for (int j = 0; j < queueNodes.getLength(); j++) {
+        Node queueNode = queueNodes.item(j);
 
         // Check if the node is an element node
-        if (childNode.getNodeType() == Node.ELEMENT_NODE) {
-          Element childElement = (Element) childNode;
-          String nodeName = childNode.getNodeName();
+        if (queueNode.getNodeType() == Node.ELEMENT_NODE) {
+          Element queueElement = (Element) queueNode;
+          String nodeName = queueNode.getNodeName();
 
           System.out.println("Element Name: " + nodeName);
           switch (nodeName) {
             case "queue":
               System.out.println("saw queue");
-              String fullQueueName = parent + "." + childElement.getAttribute("name");
-              verifyQueue(queueName, fullQueueName, childElement);
+              String fullQueueName = parent + "." + queueElement.getAttribute("name");
+              verifyQueue(queueName, fullQueueName, queueElement);
               break;
             case "userQueryLimit":
               System.out.println("saw userQueryLimit quota");
+              Map<String, Map<String, Integer>> userLimitsMap = new HashMap<>();
+              addQueryLimits(queueName, queueElement, "userQueryLimit", userLimitsMap, "user");
             case "groupQueryLimit":
               System.out.println("saw groupQueryLimit quota");
+              Map<String, Map<String, Integer>> groupLimitsMap = new HashMap<>();
+              addQueryLimits(queueName, queueElement, "groupQueryLimit", groupLimitsMap, "user");
           }
 
 

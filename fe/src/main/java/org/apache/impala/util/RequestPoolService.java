@@ -526,57 +526,64 @@ public class RequestPoolService {
 
   public TVerifyRequestPoolResult verifyConfiguration() throws InternalException {
 
-    // As allocation file is already been read, we can get the File fom AllocationFileLoaderService.
-    File allocFile = allocLoader_.getAllocFile();
-    try {
-      if (allocFile == null) {
-        throw new RuntimeException("verifyConfiguration cannot find allocation file");
-      }
-      // Read and reparse the allocations file.
-      DocumentBuilderFactory docBuilderFactory =
-          DocumentBuilderFactory.newInstance();
-      docBuilderFactory.setIgnoringComments(true);
-      DocumentBuilder builder = docBuilderFactory.newDocumentBuilder();
-      Document doc = builder.parse(allocFile);
-      Element root = doc.getDocumentElement();
-      // This is the allocations element, if it were not, an exception would have been
-      // thrown from reloadAllocations()
-      NodeList elements = root.getChildNodes();
-      List<Element> rootQueue = IntStream.range(0, elements.getLength())
-          .mapToObj(elements::item)
-          .filter(node -> node instanceof Element)
-          .map(node -> (Element) node)
-          .filter(element
-              -> "queue".equals(element.getTagName())
-              || "pool".equals(element.getTagName()))
-          .collect(Collectors.toList());
-      for (Element element : rootQueue) {
-        // Only look at the queue=root.
-        if (element.getTagName().equals("queue") && element.getAttribute("name").equals("root")) {
-          verifyQueues.add("root");
-          verifyQueue("", "root", element);
-          NodeList childNodes = element.getChildNodes();
-          for (int j = 0; j < childNodes.getLength(); j++) {
-            Node childNode = childNodes.item(j);
+    Verifier verifier = new Verifier();
+    verifier.doVerify();
+    return new TVerifyRequestPoolResult();
+  }
 
-            // Check if the node is an element node
-            if (childNode.getNodeType() == Node.ELEMENT_NODE) {
+  class Verifier {
+    private void doVerify() throws InternalException {
+      // As allocation file is already been read, we can get the File fom AllocationFileLoaderService.
+      File allocFile = allocLoader_.getAllocFile();
+      try {
+        if (allocFile == null) {
+          throw new RuntimeException("verifyConfiguration cannot find allocation file");
+        }
+        // Read and reparse the allocations file.
+        DocumentBuilderFactory docBuilderFactory =
+            DocumentBuilderFactory.newInstance();
+        docBuilderFactory.setIgnoringComments(true);
+        DocumentBuilder builder = docBuilderFactory.newDocumentBuilder();
+        Document doc = builder.parse(allocFile);
+        Element root = doc.getDocumentElement();
+        // This is the allocations element, if it were not, an exception would have been
+        // thrown from reloadAllocations()
+        NodeList elements = root.getChildNodes();
+        List<Element> rootQueue = IntStream.range(0, elements.getLength())
+            .mapToObj(elements::item)
+            .filter(node -> node instanceof Element)
+            .map(node -> (Element) node)
+            .filter(element
+                -> "queue".equals(element.getTagName())
+                || "pool".equals(element.getTagName()))
+            .collect(Collectors.toList());
+        for (Element element : rootQueue) {
+          // Only look at the queue=root.
+          if (element.getTagName().equals("queue") && element.getAttribute("name").equals("root")) {
+            verifyQueues.add("root");
+            verifyQueue("", "root", element);
+            NodeList childNodes = element.getChildNodes();
+            for (int j = 0; j < childNodes.getLength(); j++) {
+              Node childNode = childNodes.item(j);
+
+              // Check if the node is an element node
+              if (childNode.getNodeType() == Node.ELEMENT_NODE) {
 
 
-              // Iterate over the child nodes of the current book element
-              NodeList bookChildNodes = childNode.getChildNodes();
-              for (int k = 0; k < bookChildNodes.getLength(); k++) {
-                Node bookChildNode = bookChildNodes.item(k);
-                if (bookChildNode.getNodeType() == Node.ELEMENT_NODE) {
-                  System.out.println("  Element Name: " + bookChildNode.getNodeName());
-                  System.out.println("  Element Value: " + bookChildNode.getTextContent());
+                // Iterate over the child nodes of the current book element
+                NodeList bookChildNodes = childNode.getChildNodes();
+                for (int k = 0; k < bookChildNodes.getLength(); k++) {
+                  Node bookChildNode = bookChildNodes.item(k);
+                  if (bookChildNode.getNodeType() == Node.ELEMENT_NODE) {
+                    System.out.println("  Element Name: " + bookChildNode.getNodeName());
+                    System.out.println("  Element Value: " + bookChildNode.getTextContent());
+                  }
                 }
               }
             }
           }
-        }
 
-      }
+        }
 
       /*
 
@@ -588,36 +595,38 @@ public class RequestPoolService {
 
        */
 
-    } catch (Exception e) {
-      throw  new InternalException("Error verifying allocation file " + allocFile, e);
+      } catch (Exception e) {
+        throw  new InternalException("Error verifying allocation file " + allocFile, e);
+      }
     }
-    return new TVerifyRequestPoolResult();
-  }
 
-  private void verifyQueue(String parent, String name, Element element) {
-    System.out.println("verify queue:" + name);
-    NodeList childNodes = element.getChildNodes();
-    for (int j = 0; j < childNodes.getLength(); j++) {
-      Node childNode = childNodes.item(j);
+    private void verifyQueue(String parent, String name, Element element) {
+      System.out.println("verify queue:" + name);
+      NodeList childNodes = element.getChildNodes();
+      for (int j = 0; j < childNodes.getLength(); j++) {
+        Node childNode = childNodes.item(j);
 
-      // Check if the node is an element node
-      if (childNode.getNodeType() == Node.ELEMENT_NODE) {
-        Element childElement = (Element) childNode;
-        String nodeName = childNode.getNodeName();
-        System.out.println("Element Name: " + nodeName);
-        switch (nodeName) {
-          case "queue":
-            System.out.println("saw queue");
-            verifyQueue(name, name + "." + childElement.getAttribute("name"), childElement);
-            break;
-          case "userQueryLimit":
-            System.out.println("saw userQueryLimit quota");
-          case "groupQueryLimit":
-            System.out.println("saw groupQueryLimit quota");
+        // Check if the node is an element node
+        if (childNode.getNodeType() == Node.ELEMENT_NODE) {
+          Element childElement = (Element) childNode;
+          String nodeName = childNode.getNodeName();
+          System.out.println("Element Name: " + nodeName);
+          switch (nodeName) {
+            case "queue":
+              System.out.println("saw queue");
+              verifyQueue(name, name + "." + childElement.getAttribute("name"), childElement);
+              break;
+            case "userQueryLimit":
+              System.out.println("saw userQueryLimit quota");
+            case "groupQueryLimit":
+              System.out.println("saw groupQueryLimit quota");
+          }
+
+
         }
-
-
       }
     }
   }
+
+
 }

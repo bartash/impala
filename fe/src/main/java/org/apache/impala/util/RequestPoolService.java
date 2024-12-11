@@ -570,7 +570,7 @@ public class RequestPoolService {
       System.out.println("verifyQueryLimits queue " + leafQueue + " type=" + type + " root key=" + key + " value=" +rootLimit);
       int leafLimit = queryLimits.get(key);
       if (leafLimit > rootLimit) {
-        verifyRequestPoolResult.getWarnings().add("In queue " + leafQueue + " the " + type + " limit " + leafLimit +
+        verifyRequestPoolResult.addToWarnings("In queue " + leafQueue + " the " + type + " limit " + leafLimit +
             " is greater than the root limit " + rootLimit + " and so will have no effect");
       }
     }

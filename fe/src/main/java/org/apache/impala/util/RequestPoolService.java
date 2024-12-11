@@ -528,6 +528,8 @@ public class RequestPoolService {
   }
 
 
+  List<String> verifyQueues = new ArrayList<>();
+
   public TVerifyRequestPoolResult verifyConfiguration() throws InternalException {
 
     // As allocation file is already been read, we can get the File fom AllocationFileLoaderService.
@@ -557,23 +559,14 @@ public class RequestPoolService {
       for (Element element : rootQueue) {
         // Only look at the queue=root.
         if (element.getTagName().equals("queue") && element.getAttribute("name").equals("root")) {
+          verifyQueues.add("root");
+          verifyQueue("root", element);
           NodeList childNodes = element.getChildNodes();
           for (int j = 0; j < childNodes.getLength(); j++) {
             Node childNode = childNodes.item(j);
 
             // Check if the node is an element node
             if (childNode.getNodeType() == Node.ELEMENT_NODE) {
-              String nodeName = childNode.getNodeName();
-              System.out.println("Element Name: " + nodeName);
-              switch (nodeName) {
-                case "queue":
-                  System.out.println("saw queue");
-                  break;
-                case "userQueryLimit":
-                  System.out.println("saw userQueryLimit quota");
-                case "groupQueryLimit":
-                  System.out.println("saw groupQueryLimit quota");
-              }
 
 
               // Iterate over the child nodes of the current book element
@@ -605,5 +598,32 @@ public class RequestPoolService {
       throw  new InternalException("Error verifying allocation file " + allocFile, e);
     }
     return new TVerifyRequestPoolResult();
+  }
+
+  private void verifyQueue(String name, Element element) {
+    System.out.println("verify queue:" + name);
+    NodeList childNodes = element.getChildNodes();
+    for (int j = 0; j < childNodes.getLength(); j++) {
+      Node childNode = childNodes.item(j);
+
+      // Check if the node is an element node
+      if (childNode.getNodeType() == Node.ELEMENT_NODE) {
+        Element childElement = (Element) childNode;
+        String nodeName = childNode.getNodeName();
+        System.out.println("Element Name: " + nodeName);
+        switch (nodeName) {
+          case "queue":
+            System.out.println("saw queue");
+            verifyQueue(childElement.getAttribute("name"), childElement);
+            break;
+          case "userQueryLimit":
+            System.out.println("saw userQueryLimit quota");
+          case "groupQueryLimit":
+            System.out.println("saw groupQueryLimit quota");
+        }
+
+
+      }
+    }
   }
 }

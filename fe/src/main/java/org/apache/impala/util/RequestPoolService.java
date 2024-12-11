@@ -630,11 +630,13 @@ public class RequestPoolService {
         if (childNode.getNodeType() == Node.ELEMENT_NODE) {
           Element childElement = (Element) childNode;
           String nodeName = childNode.getNodeName();
+
           System.out.println("Element Name: " + nodeName);
           switch (nodeName) {
             case "queue":
               System.out.println("saw queue");
-              verifyQueue(queueName, queueName + "." + childElement.getAttribute("name"), childElement);
+              String fullQueueName = parent + "." + childElement.getAttribute("name");
+              verifyQueue(queueName, fullQueueName, childElement);
               break;
             case "userQueryLimit":
               System.out.println("saw userQueryLimit quota");

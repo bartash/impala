@@ -568,9 +568,9 @@ public class RequestPoolService {
       String key = stringIntegerEntry.getKey();
       int rootLimit = stringIntegerEntry.getValue();
       System.out.println("verifyQueryLimits queue " + leafQueue + " type=" + type + " root key=" + key + " value=" +rootLimit);
-      int leafLimit = queryLimits.get(key);
-      if (leafLimit > rootLimit) {
-        verifyRequestPoolResult.addToWarnings("In queue " + leafQueue + " the " + type + " limit " + leafLimit +
+      Integer leafLimit = queryLimits.get(key);
+      if (leafLimit != null && leafLimit > rootLimit) {
+        verifyRequestPoolResult.addToWarnings("In queue '" + leafQueue + "' the " + type + " limit for '" + key + "' of " + leafLimit +
             " is greater than the root limit " + rootLimit + " and so will have no effect");
       }
     }

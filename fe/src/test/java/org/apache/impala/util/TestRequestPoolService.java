@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -226,7 +227,12 @@ public class TestRequestPoolService {
   public void testVerifyConfiguration() throws Exception {
     createPoolService(ALLOCATION_FILE_EXTRA, LLAMA_CONFIG_FILE_MODIFIED);
     TVerifyRequestPoolResult verifyRequestPoolResult = poolService_.verifyConfiguration();
-    Assert.assertEquals(0, verifyRequestPoolResult.getWarningsSize());
+    Assert.assertEquals(1, verifyRequestPoolResult.getWarningsSize());
+    List<String> warnings = verifyRequestPoolResult.getWarnings();
+    for (String warning : warnings) {
+      System.out.println("warning= " + warning);
+    }
+    Assert.assertTrue(warnings.contains("In queue 'root.group-set-small' the user limit for 'howard' of 100 is greater than the root limit 4 and so will have no effect"));
   }
 
   /**

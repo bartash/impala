@@ -34,7 +34,6 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.hadoop.classification.InterfaceAudience.Public;
 import org.apache.hadoop.classification.InterfaceStability.Unstable;
 import org.apache.hadoop.conf.Configuration;
@@ -46,11 +45,6 @@ import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.hadoop.yarn.util.resource.Resources;
 import org.apache.impala.yarn.server.resourcemanager.resource.ResourceWeights;
-import org.apache.log4j.Appender;
-import org.apache.log4j.Layout;
-import org.apache.log4j.spi.ErrorHandler;
-import org.apache.log4j.spi.Filter;
-import org.apache.log4j.spi.LoggingEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -457,7 +451,7 @@ public class AllocationFileLoaderService extends AbstractService {
     lastSuccessfulReload = clock.getTime();
     lastReloadAttemptFailed = false;
 
-
+    verifyConfiguration(info);
 
     LOG.info("Completed loading allocation file " + allocFile);
 
@@ -606,13 +600,7 @@ public class AllocationFileLoaderService extends AbstractService {
   }
 
 
-  public TVerifyRequestPoolResult verifyConfiguration() throws InternalException {
-    TVerifyRequestPoolResult verifyRequestPoolResult = new TVerifyRequestPoolResult();
-
-    Verifier verifier = new Verifier();
-//    verifier.doVerify();
-
-    AllocationConfiguration allocationConfiguration = allocationConf_.get();
+  public void verifyConfiguration(AllocationConfiguration allocationConfiguration) {
 
     Map<FSQueueType, Set<String>> configuredQueues = allocationConfiguration.getConfiguredQueues();
     Set<String> parentQueues = configuredQueues.get(FSQueueType.PARENT);
@@ -625,19 +613,17 @@ public class AllocationFileLoaderService extends AbstractService {
         if (leafQueue.startsWith(root)) {
           Map<String, Integer> groupQueryLimits = allocationConfiguration.getGroupQueryLimits(leafQueue);
           Map<String, Integer> userQueryLimits = allocationConfiguration.getUserQueryLimits(leafQueue);
-          verifyQueryLimits(verifyRequestPoolResult, leafQueue, "user", rootUserQueryLimits, userQueryLimits);
-          verifyQueryLimits(verifyRequestPoolResult, leafQueue, "group", rootGroupQueryLimits, groupQueryLimits);
+          verifyQueryLimits(leafQueue, "user", rootUserQueryLimits, userQueryLimits);
+          verifyQueryLimits(leafQueue, "group", rootGroupQueryLimits, groupQueryLimits);
         }
       }
     }
 
 
 
-    return verifyRequestPoolResult;
   }
 
-  private void verifyQueryLimits(TVerifyRequestPoolResult verifyRequestPoolResult,
-                                 String leafQueue, String type, Map<String, Integer> rootQueryLimits,
+  private void verifyQueryLimits(String leafQueue, String type, Map<String, Integer> rootQueryLimits,
                                  Map<String, Integer> queryLimits) {
     for (Map.Entry<String, Integer> stringIntegerEntry : rootQueryLimits.entrySet()) {
       String key = stringIntegerEntry.getKey();
@@ -645,7 +631,7 @@ public class AllocationFileLoaderService extends AbstractService {
       System.out.println("verifyQueryLimits queue " + leafQueue + " type=" + type + " root key=" + key + " value=" +rootLimit);
       Integer leafLimit = queryLimits.get(key);
       if (leafLimit != null && leafLimit > rootLimit) {
-        verifyRequestPoolResult.addToWarnings("In queue '" + leafQueue + "' the " + type + " limit for '" + key + "' of " + leafLimit +
+       LOG.warn("In queue '" + leafQueue + "' the " + type + " limit for '" + key + "' of " + leafLimit +
             " is greater than the root limit " + rootLimit + " and so will have no effect");
       }
     }

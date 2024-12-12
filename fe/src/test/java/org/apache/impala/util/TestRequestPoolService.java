@@ -247,15 +247,8 @@ public class TestRequestPoolService {
 
 
     createPoolService(ALLOCATION_FILE_EXTRA, LLAMA_CONFIG_FILE_MODIFIED);
-    TVerifyRequestPoolResult verifyRequestPoolResult = poolService_.verifyConfiguration();
-    Assert.assertEquals(1, verifyRequestPoolResult.getWarningsSize());
-    List<String> warnings = verifyRequestPoolResult.getWarnings();
-    for (String warning : warnings) {
-      System.out.println("warning= " + warning);
-    }
     String msg1 = "In queue 'root.group-set-small' the user limit for 'howard' of 100 is greater than the root " +
         "limit 4 and so will have no effect";
-    Assert.assertTrue(warnings.contains(msg1));
 
     boolean allocationCompleted = false;
     List<String> messages = logAppender.getMessages();

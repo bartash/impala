@@ -245,7 +245,13 @@ public class AllocationFileLoaderService extends AbstractService {
     if (number == -1) {
       throw new AllocationConfigurationException("No totalCount for " + parentName);
     }
-    for (String name : nameList) { limits.put(name, number); }
+    for (String name : nameList) {
+      Integer oldVal = limits.put(name, number);
+      if (oldVal != null) {
+        throw new AllocationConfigurationException("Duplicate entry for " + tagName + " in pool " + queueName +
+            " has multiple values " + oldVal + " and " + number);
+      }
+    }
   }
 
   /**

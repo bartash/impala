@@ -127,12 +127,12 @@ public class TestRequestPoolService {
    */
   private void createPoolService(String allocationFile, String llamaConfFile)
       throws Exception {
-    allocationConfFile_ = tempFolder.newFile("fair-scheduler-temp-file.xml");
+    allocationConfFile_ = tempFolder.newFile();
     Files.copy(getClasspathFile(allocationFile), allocationConfFile_);
 
     String llamaConfPath = null;
     if (llamaConfFile != null) {
-      llamaConfFile_ = tempFolder.newFile("llama-conf-temp-file.xml");
+      llamaConfFile_ = tempFolder.newFile();
       Files.copy(getClasspathFile(llamaConfFile), llamaConfFile_);
       llamaConfPath = llamaConfFile_.getAbsolutePath();
     }
@@ -241,7 +241,16 @@ public class TestRequestPoolService {
   public void testBadConfiguration() throws Exception {
     String expected = "Duplicate entry for user 'alice' in pool 'root.group-set-small' has multiple values 4 and 5";
     try {
-      createPoolService("bad_duplicate_user_limit.xml", LLAMA_CONFIG_FILE_MODIFIED);
+      createPoolService("bad_configurations/bad_duplicate_user_limit_leaf.xml", LLAMA_CONFIG_FILE);
+      Assert.fail("should have got exception");
+    }
+    catch (Exception e) {
+      System.out.println("e.getMessage() = " + e.getMessage());
+      Assert.assertTrue(e.getMessage().contains(expected));
+    }
+    expected = "Duplicate entry for user 'alice' in pool 'root' has multiple values 4 and 5";
+    try {
+      createPoolService("bad_configurations/bad_duplicate_user_limit_root.xml", LLAMA_CONFIG_FILE);
       Assert.fail("should have got exception");
     }
     catch (Exception e) {

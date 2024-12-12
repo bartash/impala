@@ -237,6 +237,10 @@ public class TestRequestPoolService {
     return false;
   }
 
+  /**
+   * Test the ecceptions taht are thrown if the fair-scheduler configuration file contains
+   * errors.
+   */
   @Test
   public void testBadConfiguration() throws Exception {
     List<String> bad_configs = Arrays.asList(
@@ -267,6 +271,9 @@ public class TestRequestPoolService {
     }
   }
 
+  /**
+   * Test the warnings that are produced after the fair-scheduler file has been read.
+   */
   @Test
   public void testVerifyConfiguration() throws Exception {
     Log log  = LogFactory.getLog(AllocationFileLoaderService.class.getName());

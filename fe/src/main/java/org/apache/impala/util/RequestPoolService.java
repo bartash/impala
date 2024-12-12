@@ -36,7 +36,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.api.records.QueueACL;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
-import org.apache.impala.thrift.TVerifyRequestPoolResult;
 import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationConfigurationException;
 import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.FSQueueType;
 import org.slf4j.Logger;

@@ -34,6 +34,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.hadoop.classification.InterfaceAudience.Public;
 import org.apache.hadoop.classification.InterfaceStability.Unstable;
 import org.apache.hadoop.conf.Configuration;
@@ -45,6 +46,13 @@ import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.hadoop.yarn.util.resource.Resources;
 import org.apache.impala.yarn.server.resourcemanager.resource.ResourceWeights;
+import org.apache.log4j.Appender;
+import org.apache.log4j.Layout;
+import org.apache.log4j.spi.ErrorHandler;
+import org.apache.log4j.spi.Filter;
+import org.apache.log4j.spi.LoggingEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -61,6 +69,8 @@ public class AllocationFileLoaderService extends AbstractService {
   
   public static final Log LOG = LogFactory.getLog(
       AllocationFileLoaderService.class.getName());
+
+  public static final Logger LOG2 = LoggerFactory.getLogger(AllocationFileLoaderService.class);
   
   /** Time to wait between checks of the allocation file */
   public static final long ALLOC_RELOAD_INTERVAL_MS = 10 * 1000;
@@ -446,6 +456,10 @@ public class AllocationFileLoaderService extends AbstractService {
         newPlacementPolicy, configuredQueues, nonPreemptableQueues);
     lastSuccessfulReload = clock.getTime();
     lastReloadAttemptFailed = false;
+
+
+
+    LOG.info("Completed loading allocation file " + allocFile);
 
     reloadListener.onReload(info);
   }

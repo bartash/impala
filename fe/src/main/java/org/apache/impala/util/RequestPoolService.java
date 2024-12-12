@@ -285,6 +285,7 @@ public class RequestPoolService {
   public void start() {
     Preconditions.checkState(!running_.get());
     allocLoader_.setReloadListener(allocationConf_::set);
+    // FIXME asherman shoudl reload liostener run verification?
     allocLoader_.start();
     try {
       allocLoader_.reloadAllocations();
@@ -299,6 +300,15 @@ public class RequestPoolService {
     }
     if (confWatcher_ != null) confWatcher_.start();
     running_.set(true);
+
+
+    try {
+      Thread.sleep(5000);
+    } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+    }
+    LOG.warn("zzzzzzzzzzzzzRPS");
+
   }
 
   /**

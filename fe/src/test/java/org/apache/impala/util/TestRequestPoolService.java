@@ -33,7 +33,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.impala.thrift.TVerifyRequestPoolResult;
+import org.apache.log4j.Appender;
+import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.spi.LoggingEvent;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -225,6 +231,12 @@ public class TestRequestPoolService {
 
   @Test
   public void testVerifyConfiguration() throws Exception {
+    Log log  = LogFactory.getLog(AllocationFileLoaderService.class.getName());
+    Log4JLogger x = (Log4JLogger) log;
+    ReadableAppender logAppender = new ReadableAppender();
+    x.getLogger().addAppender(logAppender);
+
+
     createPoolService(ALLOCATION_FILE_EXTRA, LLAMA_CONFIG_FILE_MODIFIED);
     TVerifyRequestPoolResult verifyRequestPoolResult = poolService_.verifyConfiguration();
     Assert.assertEquals(1, verifyRequestPoolResult.getWarningsSize());
@@ -232,7 +244,29 @@ public class TestRequestPoolService {
     for (String warning : warnings) {
       System.out.println("warning= " + warning);
     }
-    Assert.assertTrue(warnings.contains("In queue 'root.group-set-small' the user limit for 'howard' of 100 is greater than the root limit 4 and so will have no effect"));
+    String msg1 = "In queue 'root.group-set-small' the user limit for 'howard' of 100 is greater than the root " +
+        "limit 4 and so will have no effect";
+    Assert.assertTrue(warnings.contains(msg1));
+    Assert. assertTrue(logAppender.getMessages().contains(msg1));
+  }
+
+  private class ReadableAppender extends AppenderSkeleton {
+    List<String> messages = new ArrayList<>();
+    @Override
+    protected void append(LoggingEvent loggingEvent) {
+      System.out.println("DDDD " + loggingEvent.getMessage());
+      messages.add(loggingEvent.getMessage().toString());
+    }
+
+    public List<String> getMessages() {
+      return messages;
+    }
+    public void close() {}
+
+    @Override
+    public boolean requiresLayout() {
+      return false;
+    }
   }
 
   /**

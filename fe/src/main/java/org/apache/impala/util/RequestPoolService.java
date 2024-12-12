@@ -21,25 +21,32 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.api.records.QueueACL;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.impala.thrift.TVerifyRequestPoolResult;
+import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationConfigurationException;
+import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.FSQueueType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.impala.authorization.User;
 import org.apache.impala.common.ByteUnits;
-import org.apache.impala.common.ImpalaException;
 import org.apache.impala.common.InternalException;
-import org.apache.impala.common.JniUtil;
 import org.apache.impala.common.RuntimeEnv;
 import org.apache.impala.thrift.TErrorCode;
-import org.apache.impala.thrift.TPoolConfigParams;
 import org.apache.impala.thrift.TPoolConfig;
 import org.apache.impala.thrift.TResolveRequestPoolParams;
 import org.apache.impala.thrift.TResolveRequestPoolResult;
@@ -53,6 +60,15 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import static org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationFileLoaderService.addQueryLimits;
 
 /**
  * Admission control utility class that provides user to request pool mapping, ACL

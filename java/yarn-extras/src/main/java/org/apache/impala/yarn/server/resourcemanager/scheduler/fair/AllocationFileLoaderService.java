@@ -447,6 +447,9 @@ public class AllocationFileLoaderService extends AbstractService {
     lastSuccessfulReload = clock.getTime();
     lastReloadAttemptFailed = false;
 
+    verifyConfiguration(info);
+    LOG.info("Completed loading allocation file " + allocFile);
+
     reloadListener.onReload(info);
   }
 
@@ -591,7 +594,45 @@ public class AllocationFileLoaderService extends AbstractService {
     }
   }
 
-  public interface Listener {
-    public void onReload(AllocationConfiguration info);
+  public void verifyConfiguration(AllocationConfiguration allocationConfiguration) {
+    Map<FSQueueType, Set<String>> configuredQueues =
+        allocationConfiguration.getConfiguredQueues();
+    Set<String> parentQueues = configuredQueues.get(FSQueueType.PARENT);
+    Set<String> leafQueues = configuredQueues.get(FSQueueType.LEAF);
+    String root = "root";
+    if (parentQueues.size() == 1 && parentQueues.contains(root)) {
+      Map<String, Integer> rootUserQueryLimits =
+          allocationConfiguration.getUserQueryLimits(root);
+      Map<String, Integer> rootGroupQueryLimits =
+          allocationConfiguration.getGroupQueryLimits(root);
+      for (String leafQueue : leafQueues) {
+        if (leafQueue.startsWith(root)) {
+          Map<String, Integer> groupQueryLimits =
+              allocationConfiguration.getGroupQueryLimits(leafQueue);
+          Map<String, Integer> userQueryLimits =
+              allocationConfiguration.getUserQueryLimits(leafQueue);
+          verifyQueryLimits(leafQueue, "user", rootUserQueryLimits, userQueryLimits);
+          verifyQueryLimits(leafQueue, "group", rootGroupQueryLimits, groupQueryLimits);
+        }
+      }
+    }
   }
+
+  private void verifyQueryLimits(String leafQueue, String type,
+      Map<String, Integer> rootQueryLimits, Map<String, Integer> queryLimits) {
+    for (Map.Entry<String, Integer> stringIntegerEntry : rootQueryLimits.entrySet()) {
+      String key = stringIntegerEntry.getKey();
+      int rootLimit = stringIntegerEntry.getValue();
+      System.out.println("verifyQueryLimits queue " + leafQueue + " type=" + type
+          + " root key=" + key + " value=" + rootLimit);
+      Integer leafLimit = queryLimits.get(key);
+      if (leafLimit != null && leafLimit > rootLimit) {
+        LOG.warn("In queue '" + leafQueue + "' the " + type + " limit for '" + key
+            + "' of " + leafLimit + " is greater than the root limit " + rootLimit
+            + " and so will have no effect");
+      }
+    }
+  }
+
+  public interface Listener { public void onReload(AllocationConfiguration info); }
 }

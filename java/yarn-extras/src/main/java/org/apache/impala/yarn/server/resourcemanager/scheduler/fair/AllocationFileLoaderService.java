@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -245,7 +246,13 @@ public class AllocationFileLoaderService extends AbstractService {
     if (number == -1) {
       throw new AllocationConfigurationException("No totalCount for " + parentName);
     }
-    for (String name : nameList) { limits.put(name, number); }
+    for (String name : nameList) {
+      Integer oldVal = limits.put(name, number);
+      if (oldVal != null) {
+        throw new AllocationConfigurationException("Duplicate entry for " + tagName + " '" + name + "' in pool '" + queueName +
+            "' has multiple values " + oldVal + " and " + number);
+      }
+    }
   }
 
   /**
@@ -447,6 +454,9 @@ public class AllocationFileLoaderService extends AbstractService {
     lastSuccessfulReload = clock.getTime();
     lastReloadAttemptFailed = false;
 
+    verifyConfiguration(info);
+    LOG.info("Completed loading allocation file " + allocFile);
+
     reloadListener.onReload(info);
   }
 
@@ -591,7 +601,70 @@ public class AllocationFileLoaderService extends AbstractService {
     }
   }
 
-  public interface Listener {
-    public void onReload(AllocationConfiguration info);
+  /**
+   * After the AllocationConfiguration has been loaded, run some global
+   * consistency checks
+   */
+  public void verifyConfiguration(AllocationConfiguration allocationConfiguration) {
+    Map<FSQueueType, Set<String>> configuredQueues =
+        allocationConfiguration.getConfiguredQueues();
+    Set<String> parentQueues = configuredQueues.get(FSQueueType.PARENT);
+    Set<String> leafQueues = configuredQueues.get(FSQueueType.LEAF);
+    String root = "root";
+    if (parentQueues.size() == 1 && parentQueues.contains(root)) {
+      Map<String, Integer> rootUserQueryLimits =
+          allocationConfiguration.getUserQueryLimits(root);
+      Map<String, Integer> rootGroupQueryLimits =
+          allocationConfiguration.getGroupQueryLimits(root);
+      for (String leafQueue : leafQueues) {
+        if (leafQueue.startsWith(root)) {
+          Map<String, Integer> groupQueryLimits =
+              allocationConfiguration.getGroupQueryLimits(leafQueue);
+          Map<String, Integer> userQueryLimits =
+              allocationConfiguration.getUserQueryLimits(leafQueue);
+          verifyQueryLimits(leafQueue, "user", rootUserQueryLimits, userQueryLimits);
+          verifyQueryLimits(leafQueue, "group", rootGroupQueryLimits, groupQueryLimits);
+
+          verifyLeafAcls(allocationConfiguration, leafQueue);
+        }
+      }
+    }
   }
+
+  /**
+   * Look for the case where the queue has no SUBMIT acl and log a Warning.
+   */
+  private static void verifyLeafAcls(
+      AllocationConfiguration allocationConfiguration, String leafQueue) {
+    AccessControlList queueAcl =
+        allocationConfiguration.getQueueAcl(leafQueue, QueueACL.SUBMIT_APPLICATIONS);
+    Collection<String> users = queueAcl.getUsers();
+    Collection<String> groups = queueAcl.getGroups();
+    if (!queueAcl.isAllAllowed() && users.isEmpty() && groups.isEmpty()) {
+      LOG.warn("In queue '" + leafQueue + " no aclSubmitApps permissions were "
+          + "found, this will prevent query submission on this queue");
+    }
+  }
+
+  /**
+   * Look for the case where a leaf level User Quota will have no effect
+   * because of a root level quota. Log warnings when this case is found.
+   */
+  private void verifyQueryLimits(String leafQueue, String type,
+      Map<String, Integer> rootQueryLimits, Map<String, Integer> queryLimits) {
+    for (Map.Entry<String, Integer> stringIntegerEntry : rootQueryLimits.entrySet()) {
+      String key = stringIntegerEntry.getKey();
+      int rootLimit = stringIntegerEntry.getValue();
+      System.out.println("verifyQueryLimits queue " + leafQueue + " type=" + type
+          + " root key=" + key + " value=" + rootLimit);
+      Integer leafLimit = queryLimits.get(key);
+      if (leafLimit != null && leafLimit > rootLimit) {
+        LOG.warn("In queue '" + leafQueue + "' the " + type + " limit for '" + key
+            + "' of " + leafLimit + " is greater than the root limit " + rootLimit
+            + " and so will have no effect");
+      }
+    }
+  }
+
+  public interface Listener { public void onReload(AllocationConfiguration info); }
 }

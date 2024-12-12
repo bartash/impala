@@ -34,12 +34,9 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.impala.authorization.User;
 import org.apache.impala.common.ByteUnits;
-import org.apache.impala.common.ImpalaException;
 import org.apache.impala.common.InternalException;
-import org.apache.impala.common.JniUtil;
 import org.apache.impala.common.RuntimeEnv;
 import org.apache.impala.thrift.TErrorCode;
-import org.apache.impala.thrift.TPoolConfigParams;
 import org.apache.impala.thrift.TPoolConfig;
 import org.apache.impala.thrift.TResolveRequestPoolParams;
 import org.apache.impala.thrift.TResolveRequestPoolResult;
@@ -291,6 +288,10 @@ public class RequestPoolService {
   public void stop() {
     Preconditions.checkState(running_.get());
     stopInternal();
+  }
+
+  public boolean isRunning() {
+    return running_.get();
   }
 
   /**

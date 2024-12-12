@@ -229,6 +229,15 @@ public class TestRequestPoolService {
     checkPoolAcls("root.queueD", asList("userB", "userA"), asList("userZ"));
   }
 
+  static boolean containsSubstring(List<String> list, String substring) {
+    for (String str : list) {
+      if (str.contains(substring)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   @Test
   public void testVerifyConfiguration() throws Exception {
     Log log  = LogFactory.getLog(AllocationFileLoaderService.class.getName());
@@ -247,8 +256,20 @@ public class TestRequestPoolService {
     String msg1 = "In queue 'root.group-set-small' the user limit for 'howard' of 100 is greater than the root " +
         "limit 4 and so will have no effect";
     Assert.assertTrue(warnings.contains(msg1));
-    Assert. assertTrue(logAppender.getMessages().contains(msg1));
+
+    boolean allocationCompleted = false;
+    List<String> messages = logAppender.getMessages();
+    for (int i = 0; i < 10; i++) {
+      if (containsSubstring(messages, "Completed loading allocation file")) {
+        allocationCompleted = true;
+        break;
+      }
+      Thread.sleep(250);
+    }
+    Assert.assertTrue("allocation file not loaded in time", allocationCompleted);
+    Assert.assertTrue(containsSubstring(messages, msg1));
   }
+
 
   private class ReadableAppender extends AppenderSkeleton {
     List<String> messages = new ArrayList<>();

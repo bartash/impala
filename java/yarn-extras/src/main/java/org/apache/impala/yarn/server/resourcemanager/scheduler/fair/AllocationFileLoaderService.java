@@ -605,11 +605,50 @@ public class AllocationFileLoaderService extends AbstractService {
     }
   }
 
-  /**
-   * @return allocation file, this may be null if service initialization is incomplete.
-   */
-  public File getAllocFile() {
-    return allocFile;
+
+  public TVerifyRequestPoolResult verifyConfiguration() throws InternalException {
+    TVerifyRequestPoolResult verifyRequestPoolResult = new TVerifyRequestPoolResult();
+
+    Verifier verifier = new Verifier();
+//    verifier.doVerify();
+
+    AllocationConfiguration allocationConfiguration = allocationConf_.get();
+
+    Map<FSQueueType, Set<String>> configuredQueues = allocationConfiguration.getConfiguredQueues();
+    Set<String> parentQueues = configuredQueues.get(FSQueueType.PARENT);
+    Set<String> leafQueues = configuredQueues.get(FSQueueType.LEAF);
+    String root = "root";
+    if (parentQueues.size() == 1 && parentQueues.contains(root)) {
+      Map<String, Integer> rootUserQueryLimits = allocationConfiguration.getUserQueryLimits(root);
+      Map<String, Integer> rootGroupQueryLimits = allocationConfiguration.getGroupQueryLimits(root);
+      for (String leafQueue : leafQueues) {
+        if (leafQueue.startsWith(root)) {
+          Map<String, Integer> groupQueryLimits = allocationConfiguration.getGroupQueryLimits(leafQueue);
+          Map<String, Integer> userQueryLimits = allocationConfiguration.getUserQueryLimits(leafQueue);
+          verifyQueryLimits(verifyRequestPoolResult, leafQueue, "user", rootUserQueryLimits, userQueryLimits);
+          verifyQueryLimits(verifyRequestPoolResult, leafQueue, "group", rootGroupQueryLimits, groupQueryLimits);
+        }
+      }
+    }
+
+
+
+    return verifyRequestPoolResult;
+  }
+
+  private void verifyQueryLimits(TVerifyRequestPoolResult verifyRequestPoolResult,
+                                 String leafQueue, String type, Map<String, Integer> rootQueryLimits,
+                                 Map<String, Integer> queryLimits) {
+    for (Map.Entry<String, Integer> stringIntegerEntry : rootQueryLimits.entrySet()) {
+      String key = stringIntegerEntry.getKey();
+      int rootLimit = stringIntegerEntry.getValue();
+      System.out.println("verifyQueryLimits queue " + leafQueue + " type=" + type + " root key=" + key + " value=" +rootLimit);
+      Integer leafLimit = queryLimits.get(key);
+      if (leafLimit != null && leafLimit > rootLimit) {
+        verifyRequestPoolResult.addToWarnings("In queue '" + leafQueue + "' the " + type + " limit for '" + key + "' of " + leafLimit +
+            " is greater than the root limit " + rootLimit + " and so will have no effect");
+      }
+    }
   }
 
   public interface Listener {

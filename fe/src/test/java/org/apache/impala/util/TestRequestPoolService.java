@@ -26,12 +26,16 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.impl.Log4JLogger;
+import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.spi.LoggingEvent;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -47,7 +51,6 @@ import static org.apache.impala.yarn.server.resourcemanager.scheduler.fair.
     AllocationFileLoaderService.addQueryLimits;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.util.StringUtils;
 
 import org.apache.impala.yarn.server.resourcemanager.scheduler.fair.AllocationFileLoaderService;
 
@@ -120,12 +123,12 @@ public class TestRequestPoolService {
    */
   private void createPoolService(String allocationFile, String llamaConfFile)
       throws Exception {
-    allocationConfFile_ = tempFolder.newFile("fair-scheduler-temp-file.xml");
+    allocationConfFile_ = tempFolder.newFile();
     Files.copy(getClasspathFile(allocationFile), allocationConfFile_);
 
     String llamaConfPath = null;
     if (llamaConfFile != null) {
-      llamaConfFile_ = tempFolder.newFile("llama-conf-temp-file.xml");
+      llamaConfFile_ = tempFolder.newFile();
       Files.copy(getClasspathFile(llamaConfFile), llamaConfFile_);
       llamaConfPath = llamaConfFile_.getAbsolutePath();
     }
@@ -162,7 +165,7 @@ public class TestRequestPoolService {
 
   @After
   public void cleanUp() throws Exception {
-    if (poolService_ != null) poolService_.stop();
+    if (poolService_ != null && poolService_.isRunning()) poolService_.stop();
   }
 
   /**
@@ -219,6 +222,108 @@ public class TestRequestPoolService {
     checkPoolAcls("root.queueA", asList("userA", "userB", "userZ"), EMPTY_LIST);
     checkPoolAcls("root.queueB", asList("userB", "root"), asList("userA", "userZ"));
     checkPoolAcls("root.queueD", asList("userB", "userA"), asList("userZ"));
+  }
+
+  static boolean containsSubstring(List<String> list, String substring) {
+    for (String str : list) {
+      if (str.contains(substring)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Test the exceptions that are thrown if the fair-scheduler configuration file contains
+   * errors.
+   */
+  @Test
+  public void testBadConfiguration() {
+    List<String> bad_configs = Arrays.asList(
+        "bad_duplicate_user_limit_leaf.xml",
+        "bad_duplicate_user_limit_root.xml",
+        "bad_duplicate_group_limit_leaf.xml",
+        "bad_duplicate_group_limit_root.xml"
+    );
+    List<String> expected_errors = Arrays.asList(
+        "Duplicate entry for user 'alice' in pool 'root.group-set-small' has multiple " +
+            "values 4 and 5",
+        "Duplicate entry for user 'alice' in pool 'root' has multiple values 4 and 5",
+        "Duplicate entry for group 'it' in pool 'root.group-set-small' has multiple " +
+            "values 2 and 3",
+        "Duplicate entry for group 'it' in pool 'root' has multiple values 2 and 3"
+    );
+    for (int i = 0; i < bad_configs.size(); i++) {
+      String config = bad_configs.get(i);
+      String expected_error = expected_errors.get(i);
+      try {
+        createPoolService("bad_configurations/" + config, LLAMA_CONFIG_FILE);
+        Assert.fail("should have got exception");
+      }
+      catch (Exception e) {
+        System.out.println("e.getMessage() = " + e.getMessage());
+        Assert.assertTrue(e.getMessage().contains(expected_error));
+      }
+    }
+  }
+
+  /**
+   * Test the warnings that are produced after the fair-scheduler file has been read.
+   */
+  @Test
+  public void testVerifyConfiguration() throws Exception {
+    // Capture log messages
+    Log log = LogFactory.getLog(AllocationFileLoaderService.class.getName());
+    Log4JLogger log4JLogger = (Log4JLogger) log;
+    ReadableAppender logAppender = new ReadableAppender();
+    log4JLogger.getLogger().addAppender(logAppender);
+
+    try {
+      List<String> expected_warnings = Arrays.asList(
+          "In queue 'root.group-set-small' the user limit for 'howard' of 100 is "
+              + "greater than the root limit 4 and so will have no effect",
+          "In queue 'root.group-set-small' the group limit for 'support' of 10 is "
+              + "greater than the root limit 6 and so will have no effect",
+          "In queue 'root.group-set-small no aclSubmitApps permissions were found, " +
+              "this will prevent query submission on this queue"
+      );
+
+      createPoolService(
+          "bad_configurations/warnings-fair-scheduler-test.xml", LLAMA_CONFIG_FILE);
+
+      // Wait for the allocation file to be loaded.
+      boolean allocationCompleted = false;
+      List<String> messages = logAppender.getMessages();
+      for (int i = 0; i < 10; i++) {
+        if (containsSubstring(messages, "Completed loading allocation file")) {
+          allocationCompleted = true;
+          break;
+        }
+        Thread.sleep(250);
+      }
+      Assert.assertTrue("allocation file not loaded in time", allocationCompleted);
+
+      // Check for expected warnings
+      for (String expected_warning : expected_warnings) {
+        Assert.assertTrue("missing message: " + expected_warning,
+            containsSubstring(messages, expected_warning));
+      }
+    } finally { log4JLogger.getLogger().removeAppender(logAppender); }
+  }
+
+  /**
+   * Unit test for doQueryLimitParsing() error cases.
+   */
+  @Test
+  public void testLimitsParsingErrors() {
+    String xmlString5 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<userQueryLimit>",
+        "    <user>John</user>",
+        "    <user>John</user>",
+        "    <totalCount>30</totalCount>",
+        "</userQueryLimit>"
+    );
+    assertFailureMessage(xmlString5, "Duplicate value given for name");
   }
 
   /**
@@ -497,51 +602,23 @@ public class TestRequestPoolService {
     Assert.assertEquals(expected3, parsed3);
   }
 
+  private static class ReadableAppender extends AppenderSkeleton {
+    List<String> messages = new ArrayList<>();
+    @Override
+    protected void append(LoggingEvent loggingEvent) {
+      System.out.println("DDDD " + loggingEvent.getMessage());
+      messages.add(loggingEvent.getMessage().toString());
+    }
 
-  /**
-   * Unit test for doQueryLimitParsing() error cases.
-   */
-  @Test
-  public void testLimitsParsingErrors() throws Exception {
-    String xmlString1 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit>",
-        "    <totalCount>30</totalCount>",
-        "</userQueryLimit>"
-    );
-    assertFailureMessage(xmlString1, "Empty user names");
-    String xmlString2 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit>",
-        "    <user>John</user>",
-        "    <user>Barry</user>",
-        "    <totalCount>30</totalCount>",
-        "    <totalCount>31</totalCount>",
-        "</userQueryLimit>"
-    );
-    assertFailureMessage(xmlString2, "Duplicate totalCount tags");
-    String xmlString3 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit>",
-        "    <user>John</user>",
-        "    <user>Barry</user>",
-        "    <totalCount>fish</totalCount>",
-        "</userQueryLimit>"
-    );
-    assertFailureMessage(xmlString3, "Could not parse query totalCount");
-    String xmlString4 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit>",
-        "    <user>John</user>",
-        "    <user>Barry</user>",
-        "</userQueryLimit>"
-    );
-    assertFailureMessage(xmlString4, "No totalCount for");
+    public List<String> getMessages() {
+      return messages;
+    }
+    public void close() {}
 
-    String xmlString5 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit>",
-        "    <user>John</user>",
-        "    <user>John</user>",
-        "    <totalCount>30</totalCount>",
-        "</userQueryLimit>"
-    );
-    assertFailureMessage(xmlString5, "Duplicate value given for name");
+    @Override
+    public boolean requiresLayout() {
+      return false;
+    }
   }
 
   private void checkModifiedConfigResults()

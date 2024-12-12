@@ -241,12 +241,17 @@ public class TestRequestPoolService {
   public void testBadConfiguration() throws Exception {
     List<String> bad_configs = Arrays.asList(
         "bad_duplicate_user_limit_leaf.xml",
-        "bad_duplicate_user_limit_root.xml"
+        "bad_duplicate_user_limit_root.xml",
+        "bad_duplicate_group_limit_leaf.xml",
+        "bad_duplicate_group_limit_root.xml"
     );
     List<String> expected_errors = Arrays.asList(
         "Duplicate entry for user 'alice' in pool 'root.group-set-small' has multiple " +
             "values 4 and 5",
-        "Duplicate entry for user 'alice' in pool 'root' has multiple values 4 and 5"
+        "Duplicate entry for user 'alice' in pool 'root' has multiple values 4 and 5",
+        "Duplicate entry for group 'it' in pool 'root.group-set-small' has multiple " +
+            "values 2 and 3",
+        "Duplicate entry for group 'it' in pool 'root' has multiple values 2 and 3"
     );
     for (int i = 0; i < bad_configs.size(); i++) {
       String config = bad_configs.get(i);

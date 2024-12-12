@@ -169,7 +169,7 @@ public class TestRequestPoolService {
 
   @After
   public void cleanUp() throws Exception {
-    if (poolService_ != null) poolService_.stop();
+    if (poolService_ != null && poolService_.isRunning()) poolService_.stop();
   }
 
   /**
@@ -235,6 +235,19 @@ public class TestRequestPoolService {
       }
     }
     return false;
+  }
+
+  @Test
+  public void testBadConfiguration() throws Exception {
+    String expected = "Duplicate entry for user 'alice' in pool 'root.group-set-small' has multiple values 4 and 5";
+    try {
+      createPoolService("bad_duplicate_user_limit.xml", LLAMA_CONFIG_FILE_MODIFIED);
+      Assert.fail("should have got exception");
+    }
+    catch (Exception e) {
+      System.out.println("e.getMessage() = " + e.getMessage());
+      Assert.assertTrue(e.getMessage().contains(expected));
+    }
   }
 
   @Test

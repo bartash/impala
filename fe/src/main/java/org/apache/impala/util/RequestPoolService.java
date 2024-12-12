@@ -308,6 +308,10 @@ public class RequestPoolService {
     stopInternal();
   }
 
+  public boolean isRunning() {
+    return running_.get();
+  }
+
   /**
    * Stops the RequestPoolService instance without checking the running state. Only
    * called by stop() (which is only used in tests) or by start() if a failure occurs.

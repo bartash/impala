@@ -248,8 +248,8 @@ public class AllocationFileLoaderService extends AbstractService {
     for (String name : nameList) {
       Integer oldVal = limits.put(name, number);
       if (oldVal != null) {
-        throw new AllocationConfigurationException("Duplicate entry for " + tagName + " in pool " + queueName +
-            " has multiple values " + oldVal + " and " + number);
+        throw new AllocationConfigurationException("Duplicate entry for " + tagName + " '" + name + "' in pool '" + queueName +
+            "' has multiple values " + oldVal + " and " + number);
       }
     }
   }

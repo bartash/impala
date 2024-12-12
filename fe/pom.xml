@@ -211,10 +211,10 @@ under the License.
         brings with it tons of other unnecessary dependencies including thrift 0.9.3
         which can cause build failures.
         -->
-        <exclusion>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-exec</artifactId>
-        </exclusion>
+<!--        <exclusion>-->
+<!--          <groupId>org.apache.hive</groupId>-->
+<!--          <artifactId>hive-exec</artifactId>-->
+<!--        </exclusion>-->
         <!-- Exclude the aws-java-sdk-bundle dependency because the Impala minimal
              version of this dependency is used instead. -->
         <exclusion>
@@ -779,10 +779,10 @@ under the License.
                  * LD_PRELOAD needs to include libjsig.so for JVM/native signal handling.
             -->
             <LD_LIBRARY_PATH>
-              ${env.IMPALA_TOOLCHAIN_PACKAGES_HOME}/gcc-${env.IMPALA_GCC_VERSION}/lib64
+              /home/asherman/git/asf/Impala/toolchain/toolchain-packages-gcc10.4.0/gcc-10.4.0/lib64
             </LD_LIBRARY_PATH>
             <LD_PRELOAD>
-              ${env.LIB_JSIG}
+              /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/libjsig.so
             </LD_PRELOAD>
           </environmentVariables>
         </configuration>
@@ -1060,11 +1060,11 @@ under the License.
       <id>thrift-home-defined</id>
       <activation>
         <file>
-          <exists>${env.THRIFT_JAVA_HOME}/bin/thrift</exists>
+          <exists>/home/asherman/git/asf/Impala/toolchain/toolchain-packages-gcc10.4.0/thrift-0.16.0-p7/bin/thrift</exists>
           </file>
       </activation>
       <properties>
-        <thrift.executable>${env.THRIFT_JAVA_HOME}/bin/thrift</thrift.executable>
+        <thrift.executable>/home/asherman/git/asf/Impala/toolchain/toolchain-packages-gcc10.4.0/thrift-0.16.0-p7/bin/thrift</thrift.executable>
       </properties>
     </profile>
     <profile>

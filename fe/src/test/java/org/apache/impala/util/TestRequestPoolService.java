@@ -239,23 +239,26 @@ public class TestRequestPoolService {
 
   @Test
   public void testBadConfiguration() throws Exception {
-    String expected = "Duplicate entry for user 'alice' in pool 'root.group-set-small' has multiple values 4 and 5";
-    try {
-      createPoolService("bad_configurations/bad_duplicate_user_limit_leaf.xml", LLAMA_CONFIG_FILE);
-      Assert.fail("should have got exception");
-    }
-    catch (Exception e) {
-      System.out.println("e.getMessage() = " + e.getMessage());
-      Assert.assertTrue(e.getMessage().contains(expected));
-    }
-    expected = "Duplicate entry for user 'alice' in pool 'root' has multiple values 4 and 5";
-    try {
-      createPoolService("bad_configurations/bad_duplicate_user_limit_root.xml", LLAMA_CONFIG_FILE);
-      Assert.fail("should have got exception");
-    }
-    catch (Exception e) {
-      System.out.println("e.getMessage() = " + e.getMessage());
-      Assert.assertTrue(e.getMessage().contains(expected));
+    List<String> bad_configs = Arrays.asList(
+        "bad_duplicate_user_limit_leaf.xml",
+        "bad_duplicate_user_limit_root.xml"
+    );
+    List<String> expected_errors = Arrays.asList(
+        "Duplicate entry for user 'alice' in pool 'root.group-set-small' has multiple " +
+            "values 4 and 5",
+        "Duplicate entry for user 'alice' in pool 'root' has multiple values 4 and 5"
+    );
+    for (int i = 0; i < bad_configs.size(); i++) {
+      String config = bad_configs.get(i);
+      String expected_error = expected_errors.get(i);
+      try {
+        createPoolService("bad_configurations/" + config, LLAMA_CONFIG_FILE);
+        Assert.fail("should have got exception");
+      }
+      catch (Exception e) {
+        System.out.println("e.getMessage() = " + e.getMessage());
+        Assert.assertTrue(e.getMessage().contains(expected_error));
+      }
     }
   }
 

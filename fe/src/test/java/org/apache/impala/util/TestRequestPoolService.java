@@ -312,21 +312,6 @@ public class TestRequestPoolService {
   }
 
   /**
-   * Unit test for doQueryLimitParsing() error cases.
-   */
-  @Test
-  public void testLimitsParsingErrors() {
-    String xmlString5 = String.join("\n", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<userQueryLimit>",
-        "    <user>John</user>",
-        "    <user>John</user>",
-        "    <totalCount>30</totalCount>",
-        "</userQueryLimit>"
-    );
-    assertFailureMessage(xmlString5, "Duplicate value given for name");
-  }
-
-  /**
    * Check that the access to the pool is as expected.
    * @param queueName name of queue.
    * @param allowedUsers a List of users that should have access

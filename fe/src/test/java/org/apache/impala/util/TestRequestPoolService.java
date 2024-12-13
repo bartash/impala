@@ -684,7 +684,7 @@ public class TestRequestPoolService {
     Map<String, Integer> rootQueryLimits = new HashMap<>();
     Map<String, Integer> rootGroupLimits = new HashMap<>();
     rootQueryLimits.put("userD", 2);
-    checkPoolConfigResult(8888888888
+    checkPoolConfigResult(
         "root", 15, 100, -1, 30000L, "", rootQueryLimits, rootGroupLimits);
     // not_a_valid_option=foo.bar gets filtered out when parsing the query options on
     // the backend, but it should be observed coming from the test file here.

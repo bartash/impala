@@ -610,6 +610,17 @@ public class TestRequestPoolService {
       messages.add(loggingEvent.getMessage().toString());
     }
 
+    public List<String> getMessages() {
+      return messages;
+    }
+    public void close() {}
+
+    @Override
+    public boolean requiresLayout() {
+      return false;
+    }
+  }
+
   /**
    * Unit test for doQueryLimitParsing() error cases.
    */

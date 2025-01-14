@@ -526,6 +526,9 @@ void THttpServer::flush() {
       h << rpc_context->http_header_x_request_id << CRLF;
     }
   }
+  if (!header_x_request_id_.empty()) {
+    h << HEADER_REQUEST_ID << ": " << header_x_request_id_;
+  }
   h << CRLF;
   string header = h.str();
 

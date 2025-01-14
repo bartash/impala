@@ -527,7 +527,7 @@ void THttpServer::flush() {
     }
   }
   if (!header_x_request_id_.empty()) {
-    h << HEADER_REQUEST_ID << ": " << header_x_request_id_;
+    h << HEADER_REQUEST_ID << ": " << header_x_request_id_ << CRLF;
   }
   h << CRLF;
   string header = h.str();

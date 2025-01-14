@@ -273,8 +273,10 @@ void THttpServer::headersDone() {
   if (!header_x_request_id_.empty()) {
     impala::RpcEventHandler::InvocationContext* rpc_context =
         impala::RpcEventHandler::GetThreadRPCContext();
-    // FIXME this is a copy, can we do better?
-    rpc_context->http_header_x_request_id = header_x_request_id_;
+    if (rpc_context) {
+      // FIXME this is a copy, can we do better?
+      rpc_context->http_header_x_request_id = header_x_request_id_;
+    }
   }
 
 
@@ -519,8 +521,10 @@ void THttpServer::flush() {
   }
   impala::RpcEventHandler::InvocationContext* rpc_context =
       impala::RpcEventHandler::GetThreadRPCContext();
-  if (!rpc_context->http_header_x_request_id.empty()) {
-    h << rpc_context->http_header_x_request_id << CRLF;
+  if (rpc_context) {
+    if (!rpc_context->http_header_x_request_id.empty()) {
+      h << rpc_context->http_header_x_request_id << CRLF;
+    }
   }
   h << CRLF;
   string header = h.str();

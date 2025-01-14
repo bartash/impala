@@ -36,6 +36,7 @@
 #include "common/logging.h"
 #include "common/status.h"
 #include "rpc/authentication-util.h"
+#include "rpc/rpc-trace.h"
 
 DECLARE_bool(trusted_domain_use_xff_header);
 DECLARE_bool(trusted_domain_empty_xff_header_use_origin);
@@ -268,6 +269,15 @@ void THttpServer::headersDone() {
         << (header_x_session_id_.empty() ? "" : " x-session-id=" + header_x_session_id_)
         << (header_x_query_id_.empty() ? "" : " x-query-id=" + header_x_query_id_);
   }
+
+  if (!header_x_request_id_.empty()) {
+    impala::RpcEventHandler::InvocationContext* rpc_context =
+        impala::RpcEventHandler::GetThreadRPCContext();
+    // FIXME this is a copy, can we do better?
+    rpc_context->http_header_x_request_id = header_x_request_id_;
+  }
+
+
 
   // Trim and truncate the value of the 'X-Forwarded-For' header.
   string origin = origin_;
@@ -506,6 +516,11 @@ void THttpServer::flush() {
   vector<string> return_headers = callbacks_.return_headers_fn();
   for (const string& header : return_headers) {
     h << header << CRLF;
+  }
+  impala::RpcEventHandler::InvocationContext* rpc_context =
+      impala::RpcEventHandler::GetThreadRPCContext();
+  if (!rpc_context->http_header_x_request_id.empty()) {
+    h << rpc_context->http_header_x_request_id << CRLF;
   }
   h << CRLF;
   string header = h.str();

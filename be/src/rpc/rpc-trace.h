@@ -156,6 +156,9 @@ class RpcEventHandler : public apache::thrift::TProcessorEventHandler {
     // Reference count for registration and automatic deletion
     AtomicInt64 refcnt_;
 
+    // FIXME comment
+    std::string http_header_x_request_id;
+
     // Add a reference to this InvocationContext so that it can live longer than
     // the RPC call for stats collection purposes.
     void Register();

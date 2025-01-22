@@ -153,4 +153,23 @@ TEST(QueryStateRecordTest, PerHostStatePeakMemoryComparatorEqual) {
   EXPECT_FALSE(PerHostPeakMemoryComparator(pair_b, pair_a));
 }
 
-} //namespace impala
+/// Add a BackendExecParam
+void add_param(QuerySchedulePB& query_schedule, int slots_to_use, bool is_coordinator) {
+  BackendExecParamsPB* params = query_schedule.add_backend_exec_params();
+  params->set_slots_to_use(slots_to_use);
+  params->set_is_coord_backend(is_coordinator);
+}
+
+TEST(QueryStateRecordTest, AdmissionSlots) {
+  QuerySchedulePB query_schedule;
+  add_param(query_schedule, 4, true);
+  add_param(query_schedule, 7, false);
+  add_param(query_schedule, 7, false);
+  int coordinator_slots = QueryStateRecord::get_admission_slots(&query_schedule, true);
+  int executor_slots = QueryStateRecord::get_admission_slots(&query_schedule, false);
+
+  EXPECT_EQ(coordinator_slots, 4);
+  EXPECT_EQ(executor_slots, 7);
+}
+
+} // namespace impala

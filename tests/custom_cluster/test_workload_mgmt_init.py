@@ -181,10 +181,11 @@ class TestWorkloadManagementInitWait(TestWorkloadManagementInitBase):
                     "--workload_mgmt_drop_tables=impala_query_log,impala_query_live",
       disable_log_buffering=True)
   def test_upgrade_1_0_0_to_1_1_0(self, vector):
+    # FIXME asherman these tests
     """Asserts that an upgrade from version 1.0.0 to 1.1.0 succeeds when starting with no
        existing workload management tables."""
 
-    # Veriy the initial table create on version 1.0.0 succeeded.
+    # Verify the initial table create on version 1.0.0 succeeded.
     self.check_schema("1.0.0", vector)
     self.assert_log_contains("catalogd", "WARNING", r"Target schema version '1.0.0' is "
         r"not the latest schema version '\d+\.\d+\.\d+'")
@@ -208,16 +209,16 @@ class TestWorkloadManagementInitWait(TestWorkloadManagementInitBase):
         log_symlinks=True, additional_impalad_opts="--query_log_write_interval_s=15")
 
     self.assert_catalogd_log_contains("WARNING", "Target schema version '1.0.0' is not "
-        "the latest schema version '1.1.0'")
+        "the latest schema version '1.2.0'")
 
-    # The workload management tables will be on schema version 1.1.0.
-    self.check_schema("1.1.0", vector)
+    # The workload management tables will be on schema version 1.2.0.
+    self.check_schema("1.2.0", vector)
 
     # The workload management processing will be running on schema version 1.0.0.
     self.assert_catalogd_all_tables(r"Target schema version '1.0.0' of the '{}' table is "
         r"lower than the actual schema version")
 
-    # Run a query and ensure it does not populate version 1.1.0 fields.
+    # Run a query and ensure it does not populate version 1.2.0 fields.
     res = self.client.execute("select * from functional.alltypes")
     assert res.success
 
@@ -230,7 +231,9 @@ class TestWorkloadManagementInitWait(TestWorkloadManagementInitBase):
           TQueryTableColumn.WHERE_COLUMNS: "",
           TQueryTableColumn.JOIN_COLUMNS: "",
           TQueryTableColumn.AGGREGATE_COLUMNS: "",
-          TQueryTableColumn.ORDERBY_COLUMNS: ""})
+          TQueryTableColumn.ORDERBY_COLUMNS: "",
+          TQueryTableColumn.COORDINATOR_SLOTS: "0",
+          TQueryTableColumn.EXECUTOR_SLOTS: "0",})
 
     # Check the query log table.
     impalad.service.wait_for_metric_value(
@@ -241,7 +244,9 @@ class TestWorkloadManagementInitWait(TestWorkloadManagementInitBase):
           TQueryTableColumn.WHERE_COLUMNS: "NULL",
           TQueryTableColumn.JOIN_COLUMNS: "NULL",
           TQueryTableColumn.AGGREGATE_COLUMNS: "NULL",
-          TQueryTableColumn.ORDERBY_COLUMNS: "NULL"})
+          TQueryTableColumn.ORDERBY_COLUMNS: "NULL",
+          TQueryTableColumn.COORDINATOR_SLOTS: "NULL",
+          TQueryTableColumn.EXECUTOR_SLOTS: "NULL",})
 
   @CustomClusterTestSuite.with_args(cluster_size=1, disable_log_buffering=True,
       log_symlinks=True,

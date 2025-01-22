@@ -146,6 +146,11 @@ struct QueryStateRecord {
   /// True if this query was retried, false otherwise.
   bool was_retried = false;
 
+  /// Number of Admission Control Slots used on Coordinator.
+  int64_t coordinator_slots;
+  /// Number of Admission Control Slots used on Executor.
+  int64_t executor_slots;
+
   /// If this query was retried, the query id of the retried query.
   std::unique_ptr<const TUniqueId> retried_query_id;
 

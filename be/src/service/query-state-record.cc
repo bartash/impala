@@ -73,6 +73,8 @@ void QueryStateRecord::Init(const ClientRequestState& query_handle) {
   query_handle.summary_profile()->GetTimeline(&timeline);
 
   Coordinator* coord = query_handle.GetCoordinator();
+  coordinator_slots = 0;
+  executor_slots = 0;
   if (coord != nullptr) {
     num_completed_scan_ranges = coord->scan_progress().num_complete();
     total_scan_ranges = coord->scan_progress().total();
@@ -81,6 +83,14 @@ void QueryStateRecord::Init(const ClientRequestState& query_handle) {
     const auto& utilization = coord->ComputeQueryResourceUtilization();
     total_peak_mem_usage = utilization.total_peak_mem_usage;
     cluster_mem_est = query_handle.schedule()->cluster_mem_est();
+    for (const auto& entry : query_handle.schedule()->backend_exec_params()) {
+      if (entry.is_coord_backend()) {
+        coordinator_slots = entry.slots_to_use();
+      } else {
+        // FIXME add optimization to avoid repetitively setting this
+        executor_slots = entry.slots_to_use();
+      }
+    }
     bytes_read = utilization.bytes_read;
     bytes_sent = utilization.exchange_bytes_sent + utilization.scan_bytes_sent;
     has_coord = true;

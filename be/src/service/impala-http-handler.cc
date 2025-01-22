@@ -645,6 +645,11 @@ void ImpalaHttpHandler::QueryStateToJson(const QueryStateRecord& record,
 
   Value resource_pool(record.resource_pool.c_str(), document->GetAllocator());
   value->AddMember("resource_pool", resource_pool, document->GetAllocator());
+  
+  int64_t coordinator_slots = record.coordinator_slots;
+  value->AddMember("coordinator_slots", coordinator_slots, document->GetAllocator());  
+  int64_t executor_slots = record.executor_slots;
+  value->AddMember("executor_slots", executor_slots, document->GetAllocator());
 }
 
 void ImpalaHttpHandler::QueryStateHandler(const Webserver::WebRequest& req,

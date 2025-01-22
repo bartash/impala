@@ -146,6 +146,9 @@ struct QueryStateRecord {
   /// True if this query was retried, false otherwise.
   bool was_retried = false;
 
+  int64_t coordinator_slots;
+  int64_t executor_slots;
+
   /// If this query was retried, the query id of the retried query.
   std::unique_ptr<const TUniqueId> retried_query_id;
 

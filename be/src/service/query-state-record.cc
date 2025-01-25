@@ -86,11 +86,11 @@ void QueryStateRecord::Init(const ClientRequestState& query_handle) {
     for (const auto& entry : query_handle.schedule()->backend_exec_params()) {
       if (entry.is_coord_backend()) {
         coordinator_slots = entry.slots_to_use();
-        VLOG(1) << "set coordinator_slots=" << coordinator_slots;
+        LOG(INFO) << "set coordinator_slots=" << coordinator_slots;
       } else {
         // FIXME add optimization to avoid repetitively setting this
         executor_slots = entry.slots_to_use();
-        VLOG(1) << "set executor_slots=" << executor_slots;
+        LOG(INFO) << "set executor_slots=" << executor_slots;
       }
     }
     bytes_read = utilization.bytes_read;

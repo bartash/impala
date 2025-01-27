@@ -608,9 +608,15 @@ def assert_query(query_tbl, client, expected_cluster_id="", raw_profile=None,
   # OrderBy Columns
   assert_col(TQueryTableColumn.ORDERBY_COLUMNS, r'\n\s+OrderBy Columns:\s+(.*?)\n')
 
+  # Coordinator Slots Columns
+  assert_col(TQueryTableColumn.COORDINATOR_SLOTS, r'\n\s+Coordinator Slots:\s+(.*?)\n')
+
+  # Executor Slots Columns
+  assert_col(TQueryTableColumn.EXECUTOR_SLOTS, r'\n\s+Executor Slots:\s+(.*?)\n')
+
   # Assert all entries have been tested and added to ret_data
   for i in range(len(TQueryTableColumn._VALUES_TO_NAMES)):
-    assert TQueryTableColumn._VALUES_TO_NAMES[i] in ret_data, ret_data
+    assert TQueryTableColumn._VALUES_TO_NAMES[i] in ret_data, TQueryTableColumn._VALUES_TO_NAMES[i] + " XINX "
 
   return ret_data
 # function assert_query

@@ -209,10 +209,10 @@ class TestWorkloadManagementInitWait(TestWorkloadManagementInitBase):
         log_symlinks=True, additional_impalad_opts="--query_log_write_interval_s=15")
 
     self.assert_catalogd_log_contains("WARNING", "Target schema version '1.0.0' is not "
-        "the latest schema version '1.1.0'")
+        "the latest schema version '1.2.0'")
 
     # The workload management tables will be on schema version 1.1.0.
-    self.check_schema("1.1.0", vector)
+    self.check_schema("1.2.0", vector)
 
     # The workload management processing will be running on schema version 1.0.0.
     self.assert_catalogd_all_tables(r"Target schema version '1.0.0' of the '{}' table is "

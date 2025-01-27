@@ -181,6 +181,7 @@ class TestWorkloadManagementInitWait(TestWorkloadManagementInitBase):
                     "--workload_mgmt_drop_tables=impala_query_log,impala_query_live",
       disable_log_buffering=True)
   def test_upgrade_1_0_0_to_1_1_0(self, vector):
+    # FIXME asherman these tests
     """Asserts that an upgrade from version 1.0.0 to 1.1.0 succeeds when starting with no
        existing workload management tables."""
 

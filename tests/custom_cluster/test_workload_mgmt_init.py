@@ -232,8 +232,8 @@ class TestWorkloadManagementInitWait(TestWorkloadManagementInitBase):
           TQueryTableColumn.JOIN_COLUMNS: "",
           TQueryTableColumn.AGGREGATE_COLUMNS: "",
           TQueryTableColumn.ORDERBY_COLUMNS: "",
-          TQueryTableColumn.COORDINATOR_SLOTS: "",
-          TQueryTableColumn.EXECUTOR_SLOTS: "",})
+          TQueryTableColumn.COORDINATOR_SLOTS: "1",
+          TQueryTableColumn.EXECUTOR_SLOTS: "0",})
 
     # Check the query log table.
     impalad.service.wait_for_metric_value(
@@ -245,8 +245,8 @@ class TestWorkloadManagementInitWait(TestWorkloadManagementInitBase):
           TQueryTableColumn.JOIN_COLUMNS: "NULL",
           TQueryTableColumn.AGGREGATE_COLUMNS: "NULL",
           TQueryTableColumn.ORDERBY_COLUMNS: "",
-          TQueryTableColumn.COORDINATOR_SLOTS: "",
-          TQueryTableColumn.EXECUTOR_SLOTS: "",})
+          TQueryTableColumn.COORDINATOR_SLOTS: "1",
+          TQueryTableColumn.EXECUTOR_SLOTS: "0",})
 
   @CustomClusterTestSuite.with_args(cluster_size=1, disable_log_buffering=True,
       log_symlinks=True,

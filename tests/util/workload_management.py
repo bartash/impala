@@ -610,7 +610,7 @@ def assert_query(query_tbl, client, expected_cluster_id="", raw_profile=None,
 
   # Assert all entries have been tested and added to ret_data
   for i in range(len(TQueryTableColumn._VALUES_TO_NAMES)):
-    assert TQueryTableColumn._VALUES_TO_NAMES[i] in ret_data
+    assert TQueryTableColumn._VALUES_TO_NAMES[i] in ret_data, ret_data
 
   return ret_data
 # function assert_query

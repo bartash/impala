@@ -58,7 +58,7 @@ describe formatted sys.impala_query_log
 'orderby_columns','string',NULL
 ---- RESULTS: VERIFY_IS_SUBSET
 '','schema_version      ','1.0.0               '
-'','wm_schema_version   ','1.1.0               '
+'','wm_schema_version   ','1.2.0               '
 ---- TYPES
 string,string,string
 ====

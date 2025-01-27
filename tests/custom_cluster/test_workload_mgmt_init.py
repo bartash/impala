@@ -184,7 +184,7 @@ class TestWorkloadManagementInitWait(TestWorkloadManagementInitBase):
     """Asserts that an upgrade from version 1.0.0 to 1.1.0 succeeds when starting with no
        existing workload management tables."""
 
-    # Veriy the initial table create on version 1.0.0 succeeded.
+    # Verify the initial table create on version 1.0.0 succeeded.
     self.check_schema("1.0.0", vector)
     self.assert_log_contains("catalogd", "WARNING", r"Target schema version '1.0.0' is "
         r"not the latest schema version '\d+\.\d+\.\d+'")

@@ -609,10 +609,10 @@ def assert_query(query_tbl, client, expected_cluster_id="", raw_profile=None,
   assert_col(TQueryTableColumn.ORDERBY_COLUMNS, r'\n\s+OrderBy Columns:\s+(.*?)\n')
 
   # Coordinator Slots Columns
-  assert_col(TQueryTableColumn.COORDINATOR_SLOTS, r'\n\s+Coordinator Slots:\s+(.*?)\n')
+  assert_col(TQueryTableColumn.COORDINATOR_SLOTS, r'\n\s+\-\s+AdmissionSlots:\s+(\d*?)\s+.*?\n')
 
   # Executor Slots Columns
-  assert_col(TQueryTableColumn.EXECUTOR_SLOTS, r'\n\s+Executor Slots:\s+(.*?)\n')
+  assert_col(TQueryTableColumn.EXECUTOR_SLOTS, r'\n\s+\-\s+AdmissionSlots:\s+(\d*?)\s+.*?\n')
 
   # Assert all entries have been tested and added to ret_data
   for i in range(len(TQueryTableColumn._VALUES_TO_NAMES)):

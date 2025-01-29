@@ -377,7 +377,7 @@ class TestWorkloadManagementInitWait(TestWorkloadManagementInitBase):
 
     self.restart_cluster(vector, cluster_size=1, log_symlinks=True,
         additional_impalad_opts="--query_log_write_interval_s=30")
-    self.check_schema("1.1.0", vector)
+    self.check_schema(self.LATEST_SCHEMA, vector)
 
     # Run a query and ensure it does not populate version 1.1.0 fields.
     res = self.client.execute("select * from functional.alltypes")

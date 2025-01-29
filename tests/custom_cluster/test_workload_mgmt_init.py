@@ -40,6 +40,8 @@ class TestWorkloadManagementInitBase(CustomClusterTestSuite):
   QUERY_TBL_LIVE_NAME = "impala_query_live"
   QUERY_TBL_LIVE = "{0}.{1}".format(WM_DB, QUERY_TBL_LIVE_NAME)
 
+  LATEST_SCHEMA = "1.2.0"
+
   @classmethod
   def get_workload(self):
     return 'functional-query'
@@ -209,10 +211,10 @@ class TestWorkloadManagementInitWait(TestWorkloadManagementInitBase):
         log_symlinks=True, additional_impalad_opts="--query_log_write_interval_s=15")
 
     self.assert_catalogd_log_contains("WARNING", "Target schema version '1.0.0' is not "
-        "the latest schema version '1.2.0'")
+        "the latest schema version '{}'".format(self.LATEST_SCHEMA))
 
-    # The workload management tables will be on schema version 1.2.0.
-    self.check_schema("1.2.0", vector)
+    # The workload management tables will be on the latest schema version.
+    self.check_schema(self.LATEST_SCHEMA, vector)
 
     # The workload management processing will be running on schema version 1.0.0.
     self.assert_catalogd_all_tables(r"Target schema version '1.0.0' of the '{}' table is "

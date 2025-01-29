@@ -285,7 +285,7 @@ class TestWorkloadManagementInitWait(TestWorkloadManagementInitBase):
         .format(self.WM_DB)).success
 
     self.restart_cluster(vector, log_symlinks=True)
-    self.check_schema("1.1.0", vector)
+    self.check_schema(self.LATEST_SCHEMA, vector)
 
   def _run_invalid_table_prop_test(self, table, prop_name, vector, expect_success=False):
     """Runs a test where one of the workload management schema version table properties on
@@ -524,11 +524,11 @@ class TestWorkloadManagementInitNoWait(TestWorkloadManagementInitBase):
        Cluster sizes of 1 are used to speed up the initial setup."""
     self.wait_for_log_exists("impalad", "FATAL")
     self.assert_impalad_log_contains("FATAL", r"Workload management schema version "
-        r"'0.0.1' is not one of the known versions: '1.0.0', '1.1.0'$")
+        r"'0.0.1' is not one of the known versions: '1.0.0', '1.1.0' '1.2.0'$")
 
     self.wait_for_log_exists("catalogd", "FATAL")
     self.assert_catalogd_log_contains("FATAL", r"Workload management schema version "
-        r"'0.0.1' is not one of the known versions: '1.0.0', '1.1.0'$")
+        r"'0.0.1' is not one of the known versions: '1.0.0', '1.1.0' '1.2.0'$")
 
   @CustomClusterTestSuite.with_args(start_args="--enable_catalogd_ha",
       statestored_args="--use_subscriber_id_as_catalogd_priority=true",

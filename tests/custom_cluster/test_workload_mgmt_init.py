@@ -148,9 +148,9 @@ class TestWorkloadManagementInitWait(TestWorkloadManagementInitBase):
       disable_log_buffering=True)
   def test_no_upgrade(self, vector):
     """Tests that no upgrade happens when starting a cluster where the workload management
-       tables are already at version 1.1.0."""
-    self.restart_cluster(vector, schema_version="1.1.0", log_symlinks=True)
-    self.check_schema("1.1.0", vector)
+       tables are already at the latest version."""
+    self.restart_cluster(vector, schema_version=self.LATEST_SCHEMA, log_symlinks=True)
+    self.check_schema(self.LATEST_SCHEMA, vector)
 
     self.assert_catalogd_log_contains("INFO", r"Workload management table .*? will be "
         r"upgraded", expected_count=0)
@@ -165,16 +165,26 @@ class TestWorkloadManagementInitWait(TestWorkloadManagementInitBase):
     """Asserts that workload management tables are properly created on version 1.0.0 using
        a 10 node cluster when no tables exist."""
     self.check_schema("1.0.0", vector, multiple_impalad=True)
+  @CustomClusterTestSuite.with_args(cluster_size=10, disable_log_buffering=True,
+      log_symlinks=True,
+      impalad_args="--enable_workload_mgmt --workload_mgmt_schema_version=1.1.0",
+      catalogd_args="--enable_workload_mgmt "
+                    "--workload_mgmt_schema_version=1.1.0 "
+                    "--workload_mgmt_drop_tables=impala_query_log,impala_query_live")
+  def test_create_on_version_1_1_0(self, vector):
+    """Asserts that workload management tables are properly created on version 1.0.0 using
+       a 10 node cluster when no tables exist."""
+    self.check_schema("1.1.0", vector, multiple_impalad=True)
 
   @CustomClusterTestSuite.with_args(cluster_size=10, disable_log_buffering=True,
       log_symlinks=True,
       impalad_args="--enable_workload_mgmt",
       catalogd_args="--enable_workload_mgmt "
                     "--workload_mgmt_drop_tables=impala_query_log,impala_query_live")
-  def test_create_on_version_1_1_0(self, vector):
-    """Asserts that workload management tables are properly created on version 1.1.0 using
+  def test_create_on_version_1_2_0(self, vector):
+    """Asserts that workload management tables are properly created on the latest version using
        a 10 node cluster when no tables exist."""
-    self.check_schema("1.1.0", vector, multiple_impalad=True)
+    self.check_schema(self.LATEST_SCHEMA, vector, multiple_impalad=True)
 
   @CustomClusterTestSuite.with_args(cluster_size=1,
       impalad_args="--enable_workload_mgmt --workload_mgmt_schema_version=1.0.0",

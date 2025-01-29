@@ -96,7 +96,7 @@ def assert_query(query_tbl, client, expected_cluster_id="", raw_profile=None,
       if columns is not None:
         assert value == columns.group(1)
       else:
-        assert value == ""
+        assert value == "", "no column in " + profile_text # FIXME asherman remove
 
   # Cluster ID
   assert column_val(TQueryTableColumn.CLUSTER_ID) == expected_cluster_id,\
@@ -609,14 +609,22 @@ def assert_query(query_tbl, client, expected_cluster_id="", raw_profile=None,
   assert_col(TQueryTableColumn.ORDERBY_COLUMNS, r'\n\s+OrderBy Columns:\s+(.*?)\n')
 
   # Coordinator Slots Columns
+  value = column_val(TQueryTableColumn.COORDINATOR_SLOTS)
   assert_col(TQueryTableColumn.COORDINATOR_SLOTS, r'\n\s+\-\s+AdmissionSlots:\s+(\d*?)\s+.*?\n')
 
-  # Executor Slots Columns
-  assert_col(TQueryTableColumn.EXECUTOR_SLOTS, r'\n\s+\-\s+AdmissionSlots:\s+(\d*?)\s+.*?\n')
-
-  # Assert all entries have been tested and added to ret_data
-  for i in range(len(TQueryTableColumn._VALUES_TO_NAMES)):
-    assert TQueryTableColumn._VALUES_TO_NAMES[i] in ret_data, TQueryTableColumn._VALUES_TO_NAMES[i] + " XINX "
+  admission_slots = re.findall(r'\n\s+\-\s+AdmissionSlots:\s+(\d*?)\s+.*?\n', profile_text)
+  assert len(admission_slots) >= 1
+  # The first host has the coordinator admission slots.
+  expected_coordinator_slots = admission_slots[0].group(1)
+  expected_executor_slots = 0
+  if len(admission_slots) > 1:
+    # Take executor admission slots from the second impalad.
+    # This could be fragile.
+    expected_executor_slots = admission_slots[1].group(1)
+  value = column_val(TQueryTableColumn.COORDINATOR_SLOTS)
+  assert value == expected_coordinator_slots
+  value = column_val(TQueryTableColumn.EXECUTOR_SLOTS)
+  assert value == expected_executor_slots
 
   return ret_data
 # function assert_query

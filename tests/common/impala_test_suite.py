@@ -1481,6 +1481,7 @@ class ImpalaTestSuite(BaseTestSuite):
             # the logs from other tests). Skip lines with invalid unicode.
             try:
               line = line.decode()
+              print("FIXME ASHERMAN" + line)
             except UnicodeDecodeError:
               continue
             re_result = pattern.search(line)

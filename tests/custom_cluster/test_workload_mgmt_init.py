@@ -524,11 +524,11 @@ class TestWorkloadManagementInitNoWait(TestWorkloadManagementInitBase):
        Cluster sizes of 1 are used to speed up the initial setup."""
     self.wait_for_log_exists("impalad", "FATAL")
     self.assert_impalad_log_contains("FATAL", r"Workload management schema version "
-        r"'0.0.1' is not one of the known versions: '1.0.0', '1.1.0' '1.2.0'$")
+        r"'0.0.1' is not one of the known versions: '1.0.0', '1.1.0', '1.2.0'$")
 
     self.wait_for_log_exists("catalogd", "FATAL")
     self.assert_catalogd_log_contains("FATAL", r"Workload management schema version "
-        r"'0.0.1' is not one of the known versions: '1.0.0', '1.1.0' '1.2.0'$")
+        r"'0.0.1' is not one of the known versions: '1.0.0', '1.1.0', '1.2.0'$")
 
   @CustomClusterTestSuite.with_args(start_args="--enable_catalogd_ha",
       statestored_args="--use_subscriber_id_as_catalogd_priority=true",

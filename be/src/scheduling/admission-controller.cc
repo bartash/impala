@@ -2758,7 +2758,6 @@ string AdmissionController::GetStalenessDetailLocked(
 
 void AdmissionController::PoolToJsonLocked(const string& pool_name,
     rapidjson::Value* resource_pools, rapidjson::Document* document) {
-
   auto it = pool_stats_.find(pool_name);
   if (it == pool_stats_.end()) return;
   PoolStats* stats = &it->second;
@@ -2794,8 +2793,6 @@ void AdmissionController::PoolToJsonLocked(const string& pool_name,
         document->GetAllocator());
     query_info.AddMember("num_backends", state->per_backend_schedule_states().size(),
         document->GetAllocator());
-    // Here we can loop through backends, find 1 is _coordinator, find 1 is executor
-    // and get slots
     queued_queries.PushBack(query_info, document->GetAllocator());
     return true;
   });

@@ -608,19 +608,16 @@ def assert_query(query_tbl, client, expected_cluster_id="", raw_profile=None,
   # OrderBy Columns
   assert_col(TQueryTableColumn.ORDERBY_COLUMNS, r'\n\s+OrderBy Columns:\s+(.*?)\n')
 
-  # Coordinator Slots Columns
-  value = column_val(TQueryTableColumn.COORDINATOR_SLOTS)
-  assert_col(TQueryTableColumn.COORDINATOR_SLOTS, r'\n\s+\-\s+AdmissionSlots:\s+(\d*?)\s+.*?\n')
-
+  # Coordinator and Executor Slots Columns
   admission_slots = re.findall(r'\n\s+\-\s+AdmissionSlots:\s+(\d*?)\s+.*?\n', profile_text)
   assert len(admission_slots) >= 1
   # The first host has the coordinator admission slots.
-  expected_coordinator_slots = admission_slots[0].group(1)
-  expected_executor_slots = 0
+  expected_coordinator_slots = admission_slots[0]
+  expected_executor_slots = "0"
   if len(admission_slots) > 1:
     # Take executor admission slots from the second impalad.
     # This could be fragile.
-    expected_executor_slots = admission_slots[1].group(1)
+    expected_executor_slots = admission_slots[1]
   value = column_val(TQueryTableColumn.COORDINATOR_SLOTS)
   assert value == expected_coordinator_slots
   value = column_val(TQueryTableColumn.EXECUTOR_SLOTS)

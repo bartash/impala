@@ -627,7 +627,7 @@ def assert_query(query_tbl, client, expected_cluster_id="", raw_profile=None,
   if TQueryTableColumn.EXECUTOR_SLOTS in expected_overrides:
     assert value == expected_overrides[TQueryTableColumn.EXECUTOR_SLOTS]
   else:
-    assert value == expected_coordinator_slots
+    assert value == expected_executor_slots
 
   return ret_data
 # function assert_query

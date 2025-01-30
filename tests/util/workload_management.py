@@ -96,7 +96,7 @@ def assert_query(query_tbl, client, expected_cluster_id="", raw_profile=None,
       if columns is not None:
         assert value == columns.group(1)
       else:
-        assert value == "", "no column in " + profile_text # FIXME asherman remove
+        assert value == ""
 
   # Cluster ID
   assert column_val(TQueryTableColumn.CLUSTER_ID) == expected_cluster_id,\

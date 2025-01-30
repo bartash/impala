@@ -193,7 +193,6 @@ class TestWorkloadManagementInitWait(TestWorkloadManagementInitBase):
                     "--workload_mgmt_drop_tables=impala_query_log,impala_query_live",
       disable_log_buffering=True)
   def test_upgrade_1_0_0_to_1_1_0(self, vector):
-    # FIXME asherman these tests
     """Asserts that an upgrade from version 1.0.0 to 1.1.0 succeeds when starting with no
        existing workload management tables."""
 
@@ -210,6 +209,30 @@ class TestWorkloadManagementInitWait(TestWorkloadManagementInitBase):
         r"'1.0.0' and will be upgraded")
 
     self.check_schema("1.1.0", vector)
+
+  @CustomClusterTestSuite.with_args(cluster_size=1,
+      impalad_args="--enable_workload_mgmt --workload_mgmt_schema_version=1.1.0",
+      catalogd_args="--enable_workload_mgmt "
+                    "--workload_mgmt_schema_version=1.1.0 "
+                    "--workload_mgmt_drop_tables=impala_query_log,impala_query_live",
+      disable_log_buffering=True)
+  def test_upgrade_1_1_0_to_1_2_0(self, vector):
+    """Asserts that an upgrade from version 1.1.0 to 1.2.0 succeeds when starting with no
+       existing workload management tables."""
+
+    # Verify the initial table create on version 1.0.0 succeeded.
+    self.check_schema("1.1.0", vector)
+    self.assert_log_contains("catalogd", "WARNING", r"Target schema version '1.1.0' is "
+        r"not the latest schema version '\d+\.\d+\.\d+'")
+
+    self.restart_cluster(vector, schema_version="1.2.0", cluster_size=1,
+        log_symlinks=True)
+
+    # Assert the upgrade process ran.
+    self.assert_catalogd_all_tables(r"Workload management table '{}' is at version "
+        r"'1.1.0' and will be upgraded")
+
+    self.check_schema("1.2.0", vector)
 
   @CustomClusterTestSuite.with_args(cluster_size=1, impalad_args="--enable_workload_mgmt",
       catalogd_args="--enable_workload_mgmt", disable_log_buffering=True)

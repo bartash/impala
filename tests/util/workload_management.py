@@ -619,9 +619,15 @@ def assert_query(query_tbl, client, expected_cluster_id="", raw_profile=None,
     # This could be fragile.
     expected_executor_slots = admission_slots[1]
   value = column_val(TQueryTableColumn.COORDINATOR_SLOTS)
-  assert value == expected_coordinator_slots
+  if TQueryTableColumn.COORDINATOR_SLOTS in expected_overrides:
+    assert value == expected_overrides[TQueryTableColumn.COORDINATOR_SLOTS]
+  else:
+    assert value == expected_coordinator_slots
   value = column_val(TQueryTableColumn.EXECUTOR_SLOTS)
-  assert value == expected_executor_slots
+  if TQueryTableColumn.EXECUTOR_SLOTS in expected_overrides:
+    assert value == expected_overrides[TQueryTableColumn.EXECUTOR_SLOTS]
+  else:
+    assert value == expected_coordinator_slots
 
   return ret_data
 # function assert_query

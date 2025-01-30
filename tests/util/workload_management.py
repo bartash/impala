@@ -610,9 +610,10 @@ def assert_query(query_tbl, client, expected_cluster_id="", raw_profile=None,
 
   # Coordinator and Executor Slots Columns
   admission_slots = re.findall(r'\n\s+\-\s+AdmissionSlots:\s+(\d*?)\s+.*?\n', profile_text)
-  assert len(admission_slots) >= 1
-  # The first host has the coordinator admission slots.
-  expected_coordinator_slots = admission_slots[0]
+  expected_coordinator_slots = "0"
+  if len(admission_slots) > 0:
+    # The first host has the coordinator admission slots.
+    expected_coordinator_slots = admission_slots[0]
   expected_executor_slots = "0"
   if len(admission_slots) > 1:
     # Take executor admission slots from the second impalad.

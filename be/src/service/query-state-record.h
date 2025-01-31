@@ -175,7 +175,8 @@ struct QueryStateRecord {
   private:
   // Common initialization for constructors.
   void Init(const ClientRequestState& exec_state);
-   int getInt(const ClientRequestState& query_handle, const impala::BackendExecParamsPB& backend_exec_params) const;
+
+  int getInt(const ClientRequestState& query_handle, const BackendExecParamsPB& backend_exec_params) const;
 }; // struct QueryStateRecord
 
 /// Return the estimated size of given record in bytes.

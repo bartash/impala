@@ -143,7 +143,9 @@ void QueryStateRecord::Init(const ClientRequestState& query_handle) {
 }
 int QueryStateRecord::getInt(const ClientRequestState& query_handle) const {
   int x;
-  for (const auto& entry : query_handle.schedule()->backend_exec_params()) {
+  const google::protobuf::RepeatedPtrField<::impala::BackendExecParamsPB>& backendExecParams =
+      query_handle.schedule()->backend_exec_params();
+  for (const auto& entry : backendExecParams) {
     if (entry.is_coord_backend()) {
       x = entry.slots_to_use();
 //        coordinator_slots_set = true;

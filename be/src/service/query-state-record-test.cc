@@ -15,15 +15,16 @@
 // specific language governing permissions and limitations
 // under the License.
 
+#include "service/query-state-record.h"
+
 #include <limits>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "testutil/gtest-util.h"
-
+#include "client-request-state.h"
 #include "gen-cpp/Types_types.h"
-#include "service/query-state-record.h"
+#include "testutil/gtest-util.h"
 
 namespace impala {
 
@@ -151,6 +152,11 @@ TEST(QueryStateRecordTest, PerHostStatePeakMemoryComparatorEqual) {
 
   EXPECT_FALSE(PerHostPeakMemoryComparator(pair_a, pair_b));
   EXPECT_FALSE(PerHostPeakMemoryComparator(pair_b, pair_a));
+}
+
+TEST(QueryStateRecordTest, AdmssisonSlots) {
+  ClientRequestState query_handle;
+  QueryStateRecord QueryStateRecord(query_handle);
 }
 
 } //namespace impala

@@ -83,20 +83,11 @@ void QueryStateRecord::Init(const ClientRequestState& query_handle) {
     const auto& utilization = coord->ComputeQueryResourceUtilization();
     total_peak_mem_usage = utilization.total_peak_mem_usage;
     cluster_mem_est = query_handle.schedule()->cluster_mem_est();
-    for (const auto& entry : query_handle.schedule()->backend_exec_params()) {
-      if (entry.is_coord_backend()) {
-        coordinator_slots = entry.slots_to_use();
-        LOG(INFO) << "set coordinator_slots=" << coordinator_slots;
-      } else {
-        // We're making a big assumption, setting a single value of executor_slots,
-        // even though the number could vary across the backends. In other words
-        // we assume the query is uniform across the executors. On balance it seems
-        // more useful to have this figure than to not have it.
-        // FIXME add optimization to avoid repetitively setting this
-        executor_slots = entry.slots_to_use();
-        LOG(INFO) << "set executor_slots=" << executor_slots;
-      }
-    }
+//    bool coordinator_slots_set = false;
+//    bool executor_slots_set = false;
+    int x = 0;
+    x = getInt(query_handle);
+    coordinator_slots = x;
     bytes_read = utilization.bytes_read;
     bytes_sent = utilization.exchange_bytes_sent + utilization.scan_bytes_sent;
     has_coord = true;
@@ -149,6 +140,17 @@ void QueryStateRecord::Init(const ClientRequestState& query_handle) {
   if (was_retried) {
     retried_query_id = make_unique<TUniqueId>(query_handle.retried_id());
   }
+}
+int QueryStateRecord::getInt(const ClientRequestState& query_handle) const {
+  int x;
+  for (const auto& entry : query_handle.schedule()->backend_exec_params()) {
+    if (entry.is_coord_backend()) {
+      x = entry.slots_to_use();
+//        coordinator_slots_set = true;
+      LOG(INFO) << "set coordinator_slots=" << coordinator_slots;
+    }
+  }
+    return x;
 }
 
 bool QueryStateRecord::StartTimeComparator::operator() (

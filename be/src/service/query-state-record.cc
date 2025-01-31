@@ -90,7 +90,8 @@ void QueryStateRecord::Init(const ClientRequestState& query_handle) {
       } else {
         // We're making a big assumption, setting a single value of executor_slots,
         // even though the number could vary across the backends. In other words
-        // we assume the query is uniform across the executors.
+        // we assume the query is uniform across the executors. On balance it seems
+        // more useful to have this figure than to not have it.
         // FIXME add optimization to avoid repetitively setting this
         executor_slots = entry.slots_to_use();
         LOG(INFO) << "set executor_slots=" << executor_slots;

@@ -155,8 +155,6 @@ TEST(QueryStateRecordTest, PerHostStatePeakMemoryComparatorEqual) {
 }
 
 TEST(QueryStateRecordTest, AdmssisonSlots) {
-  ClientRequestState query_handle;
-  QueryStateRecord QueryStateRecord(query_handle);
 }
 
 } //namespace impala

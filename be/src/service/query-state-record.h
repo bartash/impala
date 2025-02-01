@@ -25,12 +25,14 @@
 #include "gen-cpp/ExecStats_types.h"
 #include "gen-cpp/Types_types.h"
 #include "gen-cpp/statestore_service.pb.h"
+#include "gen-cpp/admission_control_service.service.h"
 #include "util/network-util.h"
 
 namespace impala {
 
 class BackendExecParamsPB;
 class ClientRequestState;
+class QuerySchedulePB;
 
 /// Snapshot of a query's state, archived in the query log. Not mutated after
 /// construction.  Please update EstimateSize() if field member changed.
@@ -176,7 +178,7 @@ struct QueryStateRecord {
   // Common initialization for constructors.
   void Init(const ClientRequestState& exec_state);
 
-  int getInt(const ClientRequestState& query_handle, const BackendExecParamsPB& backend_exec_params) const;
+  int getInt(const ClientRequestState& query_handle, const QuerySchedulePB* query_schedule, const BackendExecParamsPB& backend_exec_params) const;
 }; // struct QueryStateRecord
 
 /// Return the estimated size of given record in bytes.

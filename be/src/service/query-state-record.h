@@ -178,7 +178,7 @@ struct QueryStateRecord {
   // Common initialization for constructors.
   void Init(const ClientRequestState& exec_state);
 
-  int getInt(const QuerySchedulePB* query_schedule) const;
+  static int get_coordinator_slots(const QuerySchedulePB* query_schedule);
 }; // struct QueryStateRecord
 
 /// Return the estimated size of given record in bytes.

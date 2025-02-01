@@ -88,8 +88,7 @@ void QueryStateRecord::Init(const ClientRequestState& query_handle) {
     int x = 0;
 //    for (const auto& entry : query_handle.schedule()->backend_exec_params()) {
 
-      x = getInt(query_handle.schedule());
-    coordinator_slots = x;
+    coordinator_slots = get_coordinator_slots(query_handle.schedule());
     bytes_read = utilization.bytes_read;
     bytes_sent = utilization.exchange_bytes_sent + utilization.scan_bytes_sent;
     has_coord = true;
@@ -143,7 +142,7 @@ void QueryStateRecord::Init(const ClientRequestState& query_handle) {
     retried_query_id = make_unique<TUniqueId>(query_handle.retried_id());
   }
 }
-int QueryStateRecord::getInt(const QuerySchedulePB* query_schedule) const {
+int QueryStateRecord::get_coordinator_slots(const QuerySchedulePB* query_schedule)  {
   int x;
 
   for (const auto& entry : query_schedule->backend_exec_params()) {

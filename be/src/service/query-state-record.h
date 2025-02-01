@@ -30,7 +30,7 @@
 
 namespace impala {
 
-class BackendExecParamsPB;
+//class BackendExecParamsPB;
 class ClientRequestState;
 class QuerySchedulePB;
 

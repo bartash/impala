@@ -154,7 +154,7 @@ TEST(QueryStateRecordTest, PerHostStatePeakMemoryComparatorEqual) {
   EXPECT_FALSE(PerHostPeakMemoryComparator(pair_b, pair_a));
 }
 
-TEST(QueryStateRecordTest, AdmssisonSlots) {
+TEST(QueryStateRecordTest, AdmissionSlots) {
   QuerySchedulePB query_schedule;
   int coordinator_slots = QueryStateRecord::get_coordinator_slots(&query_schedule);
   int executor_slots = QueryStateRecord::get_executor_slots(&query_schedule);

@@ -174,11 +174,13 @@ struct QueryStateRecord {
     bool operator() (const QueryStateRecord& lhs, const QueryStateRecord& rhs) const;
   };
 
-  private:
+  static int get_executor_slots(const QuerySchedulePB* query_schedule);
+
+    static int get_coordinator_slots(const QuerySchedulePB* query_schedule);
+
+ private:
   // Common initialization for constructors.
   void Init(const ClientRequestState& exec_state);
-
-  static int get_coordinator_slots(const QuerySchedulePB* query_schedule);
 }; // struct QueryStateRecord
 
 /// Return the estimated size of given record in bytes.

@@ -85,10 +85,10 @@ void QueryStateRecord::Init(const ClientRequestState& query_handle) {
     cluster_mem_est = query_handle.schedule()->cluster_mem_est();
 //    bool coordinator_slots_set = false;
 //    bool executor_slots_set = false;
-    int x = 0;
 //    for (const auto& entry : query_handle.schedule()->backend_exec_params()) {
 
     coordinator_slots = get_coordinator_slots(query_handle.schedule());
+    executor_slots = get_executor_slots(query_handle.schedule());
     bytes_read = utilization.bytes_read;
     bytes_sent = utilization.exchange_bytes_sent + utilization.scan_bytes_sent;
     has_coord = true;
@@ -142,14 +142,27 @@ void QueryStateRecord::Init(const ClientRequestState& query_handle) {
     retried_query_id = make_unique<TUniqueId>(query_handle.retried_id());
   }
 }
+
 int QueryStateRecord::get_coordinator_slots(const QuerySchedulePB* query_schedule)  {
-  int x;
+  int x = 0;
 
   for (const auto& entry : query_schedule->backend_exec_params()) {
     if (entry.is_coord_backend()) {
       x = entry.slots_to_use();
 //        coordinator_slots_set = true;
       LOG(INFO) << "set coordinator_slots=" << coordinator_slots;
+    }
+  }
+    return x;
+}
+int QueryStateRecord::get_executor_slots(const QuerySchedulePB* query_schedule)  {
+  int x = 0;
+
+  for (const auto& entry : query_schedule->backend_exec_params()) {
+    if (!entry.is_coord_backend()) {
+      x = entry.slots_to_use();
+//        coordinator_slots_set = true;
+      LOG(INFO) << "set executor slots=" << coordinator_slots;
     }
   }
     return x;

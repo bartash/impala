@@ -171,6 +171,9 @@ TEST(QueryStateRecordTest, AdmissionSlots) {
 
   EXPECT_EQ(coordinator_slots, 4);
   EXPECT_EQ(executor_slots, 7);
+
+  // FIXME still need to test QueryStateRecord constructor?? Could we have separete initSLots methd called from Init?
+  // FIXME remove old get_executor_slots methds
 }
 
 } // namespace impala

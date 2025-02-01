@@ -163,7 +163,7 @@ TEST(QueryStateRecordTest, AdmissionSlots) {
   params = query_schedule.add_backend_exec_params();
   params->set_slots_to_use(7);
   params = query_schedule.add_backend_exec_params();
-  params->set_slots_to_use(7;
+  params->set_slots_to_use(7);
   int coordinator_slots = QueryStateRecord::get_coordinator_slots(&query_schedule);
   int executor_slots = QueryStateRecord::get_executor_slots(&query_schedule);
   std::cout << " coordinator_slots=" << coordinator_slots << std::endl;

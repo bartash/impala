@@ -166,8 +166,9 @@ TEST(QueryStateRecordTest, AdmissionSlots) {
   add_param(query_schedule, 4, true);
   add_param(query_schedule, 7, false);
   add_param(query_schedule, 7, false);
-  int coordinator_slots = QueryStateRecord::get_coordinator_slots(&query_schedule);
-  int executor_slots = QueryStateRecord::get_executor_slots(&query_schedule);
+  int coordinator_slots = QueryStateRecord::get_slots(&query_schedule, true);
+  int executor_slots = QueryStateRecord::get_slots(&query_schedule, false);
+
   EXPECT_EQ(coordinator_slots, 4);
   EXPECT_EQ(executor_slots, 7);
 }

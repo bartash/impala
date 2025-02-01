@@ -156,15 +156,20 @@ TEST(QueryStateRecordTest, PerHostStatePeakMemoryComparatorEqual) {
 
 TEST(QueryStateRecordTest, AdmissionSlots) {
   QuerySchedulePB query_schedule;
-  BackendExecParamsPB* params = query_schedule.add_backend_exec_params();
+  BackendExecParamsPB* params;
+  params = query_schedule.add_backend_exec_params();
   params->set_is_coord_backend(true);
   params->set_slots_to_use(4);
+  params = query_schedule.add_backend_exec_params();
+  params->set_slots_to_use(7);
+  params = query_schedule.add_backend_exec_params();
+  params->set_slots_to_use(7;
   int coordinator_slots = QueryStateRecord::get_coordinator_slots(&query_schedule);
   int executor_slots = QueryStateRecord::get_executor_slots(&query_schedule);
   std::cout << " coordinator_slots=" << coordinator_slots << std::endl;
   std::cout << " executor_slots=" << executor_slots << std::endl;
   EXPECT_EQ(coordinator_slots, 4);
-  EXPECT_EQ(executor_slots, 0);
+  EXPECT_EQ(executor_slots, 7);
 }
 
 } //namespace impala

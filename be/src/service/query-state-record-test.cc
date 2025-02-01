@@ -155,7 +155,7 @@ TEST(QueryStateRecordTest, PerHostStatePeakMemoryComparatorEqual) {
 }
 
 TEST(QueryStateRecordTest, AdmissionSlots) {
-  QuerySchedulePB *query_schedule = 0;
+  QuerySchedulePB *query_schedule = new QuerySchedulePB();
   int coordinator_slots = QueryStateRecord::get_coordinator_slots(query_schedule);
   int executor_slots = QueryStateRecord::get_executor_slots(query_schedule);
   std::cout << " coordinator_slots=" << coordinator_slots << std::endl;

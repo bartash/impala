@@ -143,26 +143,26 @@ void QueryStateRecord::Init(const ClientRequestState& query_handle) {
   }
 }
 
-int QueryStateRecord::get_coordinator_slots(const QuerySchedulePB* query_schedule)  {
-  int x = 0;
+int64_t QueryStateRecord::get_coordinator_slots(const QuerySchedulePB* query_schedule)  {
+  int64_t x = 0;
 
   for (const auto& entry : query_schedule->backend_exec_params()) {
     if (entry.is_coord_backend()) {
       x = entry.slots_to_use();
 //        coordinator_slots_set = true;
-      LOG(INFO) << "set coordinator_slots=" << coordinator_slots;
+      LOG(INFO) << "set coordinator_slots=" << x;
     }
   }
     return x;
 }
-int QueryStateRecord::get_executor_slots(const QuerySchedulePB* query_schedule)  {
-  int x = 0;
+int64_t QueryStateRecord::get_executor_slots(const QuerySchedulePB* query_schedule)  {
+    int64_t x = 0;
 
   for (const auto& entry : query_schedule->backend_exec_params()) {
     if (!entry.is_coord_backend()) {
       x = entry.slots_to_use();
 //        coordinator_slots_set = true;
-      LOG(INFO) << "set executor slots=" << coordinator_slots;
+      LOG(INFO) << "set executor slots=" << x;
     }
   }
     return x;

@@ -174,9 +174,9 @@ struct QueryStateRecord {
     bool operator() (const QueryStateRecord& lhs, const QueryStateRecord& rhs) const;
   };
 
-  static int get_executor_slots(const QuerySchedulePB* query_schedule);
+  static int64_t get_executor_slots(const QuerySchedulePB* query_schedule);
 
-    static int get_coordinator_slots(const QuerySchedulePB* query_schedule);
+  static int64_t get_coordinator_slots(const QuerySchedulePB* query_schedule);
 
  private:
   // Common initialization for constructors.

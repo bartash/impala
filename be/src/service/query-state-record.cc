@@ -83,12 +83,8 @@ void QueryStateRecord::Init(const ClientRequestState& query_handle) {
     const auto& utilization = coord->ComputeQueryResourceUtilization();
     total_peak_mem_usage = utilization.total_peak_mem_usage;
     cluster_mem_est = query_handle.schedule()->cluster_mem_est();
-//    bool coordinator_slots_set = false;
-//    bool executor_slots_set = false;
-//    for (const auto& entry : query_handle.schedule()->backend_exec_params()) {
-
-    coordinator_slots = get_slots(query_handle.schedule(), true);
-    executor_slots = get_slots(query_handle.schedule(), false);
+    coordinator_slots = get_admission_slots(query_handle.schedule(), true);
+    executor_slots = get_admission_slots(query_handle.schedule(), false);
     bytes_read = utilization.bytes_read;
     bytes_sent = utilization.exchange_bytes_sent + utilization.scan_bytes_sent;
     has_coord = true;
@@ -143,31 +139,8 @@ void QueryStateRecord::Init(const ClientRequestState& query_handle) {
   }
 }
 
-int64_t QueryStateRecord::get_coordinator_slots(const QuerySchedulePB* query_schedule) {
-  int64_t number_slots = 0;
-  for (const auto& entry : query_schedule->backend_exec_params()) {
-    if (entry.is_coord_backend()) {
-      number_slots = entry.slots_to_use();
-      // Stop looking as soon as we find one suitable backend.
-      break;
-    }
-  }
-  return number_slots;
-}
-
-int64_t QueryStateRecord::get_executor_slots(const QuerySchedulePB* query_schedule) {
-  int64_t number_slots = 0;
-  for (const auto& entry : query_schedule->backend_exec_params()) {
-    if (!entry.is_coord_backend()) {
-      number_slots = entry.slots_to_use();
-      // Stop looking as soon as we find one suitable backend.
-      break;
-    }
-  }
-  return number_slots;
-}
-
-int64_t QueryStateRecord::get_slots(const QuerySchedulePB* query_schedule, bool is_coordinator) {
+int64_t QueryStateRecord::get_admission_slots(
+    const QuerySchedulePB* query_schedule, bool is_coordinator) {
   int64_t number_slots = 0;
   for (const auto& entry : query_schedule->backend_exec_params()) {
     if (entry.is_coord_backend() == is_coordinator) {
@@ -179,7 +152,7 @@ int64_t QueryStateRecord::get_slots(const QuerySchedulePB* query_schedule, bool 
   return number_slots;
 }
 
-bool QueryStateRecord::StartTimeComparator::operator() (
+bool QueryStateRecord::StartTimeComparator::operator()(
     const QueryStateRecord& lhs, const QueryStateRecord& rhs) const {
   if (lhs.start_time_us == rhs.start_time_us) return lhs.id < rhs.id;
   return lhs.start_time_us < rhs.start_time_us;

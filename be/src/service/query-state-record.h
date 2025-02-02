@@ -173,10 +173,11 @@ struct QueryStateRecord {
     bool operator() (const QueryStateRecord& lhs, const QueryStateRecord& rhs) const;
   };
 
-  static int64_t get_slots(const QuerySchedulePB* query_schedule, bool is_coordinator);
-  static int64_t get_executor_slots(const QuerySchedulePB* query_schedule);
-
-  static int64_t get_coordinator_slots(const QuerySchedulePB* query_schedule);
+  /// Get the number of admission slots used from the Query Schedule.
+  /// If 'is_coordinator' is true then only look at the coordinator backend, otherwise
+  /// use the value from the first executor backend.
+  static int64_t get_admission_slots(
+      const QuerySchedulePB* query_schedule, bool is_coordinator);
 
  private:
   // Common initialization for constructors.

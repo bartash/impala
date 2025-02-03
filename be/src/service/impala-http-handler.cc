@@ -505,6 +505,14 @@ void ImpalaHttpHandler::AddQueryRecordTips(Document* document) {
 
   document->AddMember("tips_statement", "The statement submitted for the query.",
       document->GetAllocator());
+
+  document->AddMember("tips_coordinator_slots",
+      "The number of admission control slots used on the coordinator.",
+      document->GetAllocator());
+
+  document->AddMember("tips_executor_slots",
+      "The number of admission control slots used on the executors.",
+      document->GetAllocator());
 }
 
 std::string ImpalaHttpHandler::ProgressToString(int64_t num_completed, int64_t total) {

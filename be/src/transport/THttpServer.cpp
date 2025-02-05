@@ -422,6 +422,8 @@ void THttpServer::headersDone() {
         }
       }
     }
+    // FIXME reset origin
+    origin_ == "";
   }
 
   // Bypass auth for connections if trusted auth header was found in connection string.
@@ -602,7 +604,6 @@ void THttpServer::resetAuthState() {
   auth_value_ = "";
   cookie_value_ = "";
   saml_port_ = -1;
-  origin_ = "";
 }
 
 }

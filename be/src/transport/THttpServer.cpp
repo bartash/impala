@@ -424,7 +424,7 @@ void THttpServer::headersDone() {
     }
     // FIXME reset origin
     VLOG_QUERY << "XFF resetting origin from " << origin_ << " to empty";
-    origin_ == "";
+    origin_ = "";
   }
 
   // Bypass auth for connections if trusted auth header was found in connection string.

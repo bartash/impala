@@ -176,7 +176,11 @@ void THttpServer::parseHeader(char* header) {
   } else if (MatchesHeader(header, HEADER_X_FORWARDED_FOR, sz)) {
     // Only set the origin field the first time that we see the 'X-Forwarded-For' header.
     if (origin_.empty()) {
+      VLOG_QUERY << "orign empty set XFF=" << value;
       origin_ = value;
+    }
+    else {
+      VLOG_QUERY << "orign already has " << origin_ << " so not setting XFF=" << value;
     }
   } else if ((has_ldap_ || has_kerberos_ || has_saml_ || has_jwt_ || has_oauth_)
       && MatchesHeader(header, HEADER_AUTHORIZATION, sz)) {
@@ -418,6 +422,9 @@ void THttpServer::headersDone() {
         }
       }
     }
+    // FIXME reset origin
+    VLOG_QUERY << "XFF resetting origin from " << origin_ << " to empty";
+    origin_ = "";
   }
 
   // Bypass auth for connections if trusted auth header was found in connection string.

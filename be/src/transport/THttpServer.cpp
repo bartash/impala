@@ -180,7 +180,7 @@ void THttpServer::parseHeader(char* header) {
       origin_ = value;
     }
     else {
-      VLOG_QUERY << "orign already has " << origin_ << " so not settting XFF=" << value;
+      VLOG_QUERY << "orign already has " << origin_ << " so not setting XFF=" << value;
     }
   } else if ((has_ldap_ || has_kerberos_ || has_saml_ || has_jwt_ || has_oauth_)
       && MatchesHeader(header, HEADER_AUTHORIZATION, sz)) {
@@ -423,6 +423,7 @@ void THttpServer::headersDone() {
       }
     }
     // FIXME reset origin
+    VLOG_QUERY << "XFF resetting origin from " << origin_ << " to empty";
     origin_ == "";
   }
 

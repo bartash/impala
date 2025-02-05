@@ -602,6 +602,7 @@ void THttpServer::resetAuthState() {
   auth_value_ = "";
   cookie_value_ = "";
   saml_port_ = -1;
+  origin_ = "";
 }
 
 }

@@ -286,6 +286,8 @@ void THttpServer::headersDone() {
 
   // Trim and truncate the value of the 'X-Forwarded-For' header.
   string origin = origin_;
+  // After copying origin, reset the value so that it can be reused for the next message.
+  origin_ = "";
   StripWhiteSpace(&origin);
   if (origin.length() > MAX_X_FORWARDED_HEADER_LENGTH) {
     origin = origin.substr(0, MAX_X_FORWARDED_HEADER_LENGTH);
@@ -401,30 +403,27 @@ void THttpServer::headersDone() {
   // the client started the SAML workflow then it doesn't expect Impala to succeed with
   // another mechanism.
   if (!authorized && check_trusted_domain_) {
-    string origin;
+    string transport_origin;
     if (FLAGS_trusted_domain_use_xff_header) {
-      impala::Status status = impala::GetXFFOriginClientAddress(origin_, origin);
+      impala::Status status = impala::GetXFFOriginClientAddress(origin, transport_origin);
       if (!status.ok()) LOG(WARNING) << status.GetDetail();
     } else {
-      origin = transport_->getOrigin();
+      transport_origin = transport_->getOrigin();
     }
-    StripWhiteSpace(&origin);
-    if (origin.empty() && FLAGS_trusted_domain_use_xff_header &&
+    StripWhiteSpace(&transport_origin);
+    if (transport_origin.empty() && FLAGS_trusted_domain_use_xff_header &&
         FLAGS_trusted_domain_empty_xff_header_use_origin) {
-      origin = transport_->getOrigin();
-      StripWhiteSpace(&origin);
+      transport_origin = transport_->getOrigin();
+      StripWhiteSpace(&transport_origin);
     }
-    if (!origin.empty()) {
-      if (callbacks_.trusted_domain_check_fn(origin, auth_value_)) {
+    if (!transport_origin.empty()) {
+      if (callbacks_.trusted_domain_check_fn(transport_origin, auth_value_)) {
         authorized = true;
         if (metrics_enabled_) {
           http_metrics_->total_trusted_domain_check_success_->Increment(1);
         }
       }
     }
-    // FIXME reset origin
-    VLOG_QUERY << "XFF resetting origin from " << origin_ << " to empty";
-    origin_ = "";
   }
 
   // Bypass auth for connections if trusted auth header was found in connection string.
